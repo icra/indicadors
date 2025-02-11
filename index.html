@@ -74,15 +74,22 @@
             </div>
           </div>
 
-          <div v-if="historial.length" small style="text-align:right">
-            recent queries
-            <select small @change="scopus.query = $event.target.value" v-if="historial.length">
-              <option v-for="q in historial">
-                {{q}}
-              </option>
-            </select>
-          </div>
+          <div style="text-align:right">
+            <div>
+              <button xsmall @click="alert(permalink)">
+                get permalink
+              </button>
+            </div>
 
+            <div v-if="historial.length" small>
+              recent queries
+              <select small @change="scopus.query = $event.target.value" v-if="historial.length">
+                <option v-for="q in historial">
+                  {{q}}
+                </option>
+              </select>
+            </div>
+          </div>
         </td>
       </tr>
       <tr>
@@ -136,7 +143,7 @@
                             <b>{{entry["dc:creator"]}}&nbsp;</b>
                             <small><i>{{entry["dc:title"]}}</i></small>
                           </summary>
-                          <div>
+                          <div v-if="entry['prism:doi']">
                             <a target=_blank :href="`https://doi.org/${entry['prism:doi']}`">
                               https://doi.org/{{entry['prism:doi']}}
                             </a>
@@ -258,12 +265,19 @@
 </div>
 
 <script>//Vue
+  let usp = new URLSearchParams(window.location.search);
+  let query = usp.get('query');
+  if(query){
+    query = decodeURIComponent(query);
+    console.log(query);
+  }
+
   let app = Vue.createApp({
     data(){return{
       //data for querying publications (elsevier's scopus)
       scopus:{
         API_KEY:"7f59af901d2d86f78a1fd60c1bf9426a",
-        query:`AF-ID(60110375) AND PUBYEAR IS ${new Date().getFullYear()-1}`,
+        query:query||`AF-ID(60110375) AND PUBYEAR IS ${new Date().getFullYear()-1}`,
         response:null,           //cache
         result:null,             //cache
         result_is_loading:false, //is the query in process?
@@ -342,7 +356,7 @@
         //compute necessary number of requests
         let totalResults = data["search-results"]["opensearch:totalResults"];
         let itemsPerPage = data["search-results"]["opensearch:itemsPerPage"];
-        let n_requests = Math.ceil(totalResults/itemsPerPage);
+        let n_requests = Math.ceil(totalResults/itemsPerPage) || 1;
         let urls_next_pages=[];//save urls to request here
         for(let i=1;i<n_requests;i++){ //omit first search
           let start = i*itemsPerPage;
@@ -477,6 +491,9 @@
           return obj
         }
       },
+      alert(str){
+        alert(str);
+      },
       /*</utils>*/
     },
 
@@ -531,6 +548,13 @@
           });
         });
         return cites;
+      },
+
+      permalink(){
+        let origin = window.location.origin;
+        let path   = window.location.pathname;
+        let search = `?query=${encodeURIComponent(this.scopus.query)}`;
+        return origin+path+search;
       },
     },
 
