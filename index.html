@@ -263,7 +263,7 @@
       //data for querying publications (elsevier's scopus)
       scopus:{
         API_KEY:"7f59af901d2d86f78a1fd60c1bf9426a",
-        query:`AF-ID(60110375) AND PUBYEAR IS ${new Date().getFullYear()}`,
+        query:`AF-ID(60110375) AND PUBYEAR IS ${new Date().getFullYear()-1}`,
         response:null,           //cache
         result:null,             //cache
         result_is_loading:false, //is the query in process?
