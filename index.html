@@ -36,8 +36,18 @@
     }
   </style>
 <head></head><body>
-(en construcció, febrer 2025, lbosch@icra.cat)<hr>
-<h3>Search ICRA publications in SCOPUS</h3>
+
+<div>(en construcció, febrer 2025, lbosch@icra.cat)</div><hr>
+
+<h3>
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <div>Search ICRA publications in SCOPUS</div>
+    <a xsmall href="//github.com/icra/indicadors" target=_blank>
+      github.com/icra/indicadors
+    </a>
+  </div>
+</h3>
+
 <div id=app>
   <fieldset>
     <legend>publications</legend>
@@ -76,13 +86,13 @@
             </div>
           </div>
 
-          <div style="text-align:right">
-            <div>
-              <button xsmall @click="alert(permalink)">
-                get permalink
-              </button>
-            </div>
-
+          <div
+            style="
+              display:flex;
+              justify-content:end;
+              align-items:center;
+            "
+          >
             <div v-if="historial.length" small>
               recent queries
               <select small @change="scopus.query = $event.target.value" v-if="historial.length">
@@ -91,6 +101,7 @@
                 </option>
               </select>
             </div>
+            <button xsmall @click="alert(permalink)">get permalink</button>
           </div>
         </td>
       </tr>
@@ -181,9 +192,7 @@
   <fieldset>
     <legend>total citations</legend>
     <div v-if="scopus.result && scopus.result_ok">
-      {{
-        calcula_cites_totals
-      }}
+      {{ calcula_cites_totals }}
     </div><div v-else style="color:#666">
       none
     </div>
@@ -266,7 +275,8 @@
   </fieldset>
 </div>
 
-<script>//Vue
+<script>
+  //GET params (index.html?query=query)
   let usp = new URLSearchParams(window.location.search);
   let query = usp.get('query');
   if(query){
@@ -279,8 +289,8 @@
       //data for querying publications (elsevier's scopus)
       scopus:{
         //API_KEY:"7f59af901d2d86f78a1fd60c1bf9426a",
-        API_KEY:"006782f7796da6b38899e0c889fa3c80",
-        query:query||`AF-ID(60110375) AND PUBYEAR IS ${new Date().getFullYear()-1}`,
+        API_KEY:"006782f7796da6b38899e0c889fa3c80",//clau mireia
+        query:query||`AF-ID(60110375) AND PUBYEAR IS ${new Date().getFullYear()-1}`,//default query
         response:null,           //cache
         result:null,             //cache
         result_is_loading:false, //is the query in process?
@@ -292,7 +302,7 @@
       //historial queries
       historial:[],
 
-      //cache for scopus api call for affiliation
+      //cache for scopus api call for affiliation TODO
       institution:null,
 
       //cache for journal info requested to scopus api
@@ -306,7 +316,7 @@
       },
 
       //utils
-      //some http error code descriptions
+      //http requests error code descriptions
       errors:{
         "400":"Bad request",
         "401":"Unauthorized",
