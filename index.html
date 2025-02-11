@@ -53,10 +53,12 @@
             <div>query</div>
 
             <div style="display:flex">
-              <textarea v-model="scopus.query"
+              <textarea
+                v-model="scopus.query"
                 query
                 style="font-size:smaller;margin-left:5px;min-width:200px"
                 placeholder="enter scopus query"
+                @keyup.enter="get_publications()"
               ></textarea>
               <button @click="scopus.query=''" :disabled="scopus.query==''">X</button>
             </div>
@@ -177,7 +179,7 @@
   </fieldset>
 
   <fieldset>
-    <legend>total cites</legend>
+    <legend>total citations</legend>
     <div v-if="scopus.result && scopus.result_ok">
       {{
         calcula_cites_totals
@@ -276,7 +278,8 @@
     data(){return{
       //data for querying publications (elsevier's scopus)
       scopus:{
-        API_KEY:"7f59af901d2d86f78a1fd60c1bf9426a",
+        //API_KEY:"7f59af901d2d86f78a1fd60c1bf9426a",
+        API_KEY:"006782f7796da6b38899e0c889fa3c80",
         query:query||`AF-ID(60110375) AND PUBYEAR IS ${new Date().getFullYear()-1}`,
         response:null,           //cache
         result:null,             //cache
