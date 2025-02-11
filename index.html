@@ -1,0 +1,541 @@
+<!doctype html><html>
+  <title>ICRA indicadors</title>
+  <meta charset="utf8">
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <style>
+    input[type=number]{
+      text-align:right;
+    }
+    legend{
+      font-weight:bold;
+    }
+    textarea{
+      field-sizing:content;
+      display:block;
+      padding:10px;
+      background:lightyellow;
+    }
+    td,th{
+      vertical-align:top;
+    }
+    summary:hover{
+      text-decoration:underline;
+      cursor:pointer;
+    }
+    [small]{
+      font-size:smaller;
+    }
+    [xsmall]{
+      font-size:x-small;
+    }
+    [nowrap]{
+      white-space:nowrap;
+    }
+    [center]{
+      text-align:center;
+    }
+  </style>
+<head></head><body>
+(en construcció, febrer 2025, lbosch@icra.cat)<hr>
+<h3>Search ICRA publications in SCOPUS</h3>
+<div id=app>
+  <fieldset>
+    <legend>publications</legend>
+    <table border=1>
+      <tr>
+        <td>
+          <div
+            style="
+              display:flex;
+              align-items:center;
+            "
+          >
+            <div>query</div>
+
+            <div style="display:flex">
+              <textarea v-model="scopus.query"
+                query
+                style="font-size:smaller;margin-left:5px;min-width:200px"
+                placeholder="enter scopus query"
+              ></textarea>
+              <button @click="scopus.query=''" :disabled="scopus.query==''">X</button>
+            </div>
+
+            <small style="font-size:x-small;margin:0 1em">
+              <a target=_blank href="https://schema.elsevier.com/dtds/document/bkapi/search/SCOPUSSearchTips.htm">scopus search guide</a>
+            </small>
+
+            <div>
+              <button xsmall @click="scopus.query+=' AND AF-ID(60110375)'">AF-ID(aff_id)</button>
+              <button xsmall @click="scopus.query+=' AND AUTH(bosch)'">AUTH(name)</button>
+              <button xsmall @click="scopus.query+=' AND AU-ID(56411720900)'">AU-ID(scopus_id)</button>
+              <button xsmall @click="scopus.query+=' AND ISSN(02697491)'">ISSN(journal_issn)</button>
+              <button xsmall @click="scopus.query+=' AND LANGUAGE(spanish)'">LANGUAGE(language_name)</button>
+            </div>
+          </div>
+
+          <div v-if="historial.length" small style="text-align:right">
+            recent queries
+            <select small @change="scopus.query = $event.target.value" v-if="historial.length">
+              <option v-for="q in historial">
+                {{q}}
+              </option>
+            </select>
+          </div>
+
+        </td>
+      </tr>
+      <tr>
+        <td colspan=2>
+          <button @click="get_publications()"
+            style="
+              padding:0.618em 1em;
+              background:lightgreen;
+            "
+          >
+            search &#128270;
+          </button>
+        </td>
+      </tr>
+      <tr>
+        <td colspan=2>
+          <details open>
+            <summary>
+              results
+              <code v-if="scopus.result && scopus.result_ok && scopus.result_is_loading==false">
+                ({{scopus.response["search-results"]["opensearch:totalResults"]}} total, 
+                {{scopus.result.map(page=>page.length).reduce((p,c)=>p+c,0)}} items received across {{scopus.number_of_requests}} requests)
+              </code>
+              <div v-if="scopus.result_is_loading">
+                loading...
+                <span v-if="scopus.number_of_requests">
+                  ({{scopus.current_request_number}} of {{scopus.number_of_requests}} requests to scopus API done)
+                </span>
+              </div>
+            </summary>
+            <div v-if="scopus.result_is_loading==false">
+              <div v-if="!scopus.result" style="color:#666">none</div>
+              <div v-if="scopus.result && scopus.result_ok==false">
+                {{scopus.result}}
+              </div>
+              <div v-if="scopus.result && scopus.result_ok">
+                <table border=1 style="font-size:smaller;border-collapse:collapse">
+                  <tr>
+                    <th>nº</th>
+                    <th>cited</th>
+                    <th>publication</th>
+                  </tr>
+                  <tbody v-for="page,i in scopus.result">
+                    <tr v-for="entry,j in page">
+                      <td style="font-size:smaller">{{25*i+j+1}}</td>
+                      <td style="font-size:smaller" center>{{entry["citedby-count"]}}</td>
+                      <td style="white-space:nowrap">
+                        <details>
+                          <summary>
+                            <code>[{{entry["prism:coverDate"]}}]</code>
+                            <b>{{entry["dc:creator"]}}&nbsp;</b>
+                            <small><i>{{entry["dc:title"]}}</i></small>
+                          </summary>
+                          <div>
+                            <a target=_blank :href="`https://doi.org/${entry['prism:doi']}`">
+                              https://doi.org/{{entry['prism:doi']}}
+                            </a>
+                          </div>
+                          <div>
+                            <div v-if="fwci[entry['prism:doi']]">
+                              FWCI: {{ fwci[entry["prism:doi"]] }}
+                            </div>
+                            <button v-if="!fwci[entry['prism:doi']]"
+                              @click="check_fwci(entry['prism:doi'])"
+                            >check fwci
+                            </button>
+                          </div>
+                          <table border=1>
+                            <tr v-for="val,key in entry">
+                              <th>{{key}}</th>
+                              <td>{{val}}</td>
+                            </tr>
+                          </table>
+                        </details>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </details>
+        </td>
+      </tr>
+    </table>
+  </fieldset>
+
+  <fieldset>
+    <legend>total cites</legend>
+    <div v-if="scopus.result && scopus.result_ok">
+      {{
+        calcula_cites_totals
+      }}
+    </div><div v-else style="color:#666">
+      none
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>journals summary</legend>
+    <div>
+      <div v-if="!get_revistes" style="color:#666">none</div>
+      <table v-if="get_revistes" border=1>
+        <tr>
+          <th>issn</th>
+          <th>eIssn</th>
+          <th>Journal name</th>
+          <th>Publications</th>
+          <th>metrics</th>
+        </tr>
+        <tr v-for="[key,val] in get_revistes">
+          <td small nowrap>
+            <span small>{{val.issn}}</span>
+          </td>
+          <td small nowrap>
+            <span small>{{val.eIssn}}</span>
+          </td>
+          <td nowrap :title="key">
+            {{key.substring(0,50)}}<span v-if="key.length>50">...</span>
+          </td>
+          <td nowrap small>{{val.articles}} publications</td>
+          <td small>
+            <details open v-if="journal_metrics[key]">
+              <summary>details</summary>
+              <pre>{{
+                JSON.stringify(
+                  recurse(
+                    journal_metrics[key],
+                    ['serial-metadata-response','entry',0]),
+                  null,
+                  "  ",
+                )
+              }}</pre>
+            </details>
+            <div v-if="!journal_metrics[key]">
+              <button small v-if="val.issn||val.eIssn" @click="check_journal(val.issn||val.eIssn,key)">check</button>
+            </div>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>ICRA affiliation impact metrics</legend>
+    <span>
+      (workinprogress: new api key needed)
+    </span>
+    <div v-if="institution">
+      <pre>{{
+        JSON.stringify(
+          institution,
+          null,
+          "  ",
+        )
+      }}</pre>
+    </div>
+    <div v-else>
+      <button @click="get_institution_impact">check</button>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>metrics</legend>
+    <div>
+      <ul>
+        <li> Increment en nombre d'articles científics al Q1 (segons Scopus) respecte any anterior
+        <li> Increment en nombre de cites anuals (segons Scopus) respecte any anterior
+        <li> Increment de Índex d'impacte (Impact factor) de la institució (segons Scopus) en el moment de l'anàlisi respecte any anterior
+        <li> Nombre d'articles científics al Q1 (segons Scopus) associats a la L17 i la L18
+      </ul>
+    </div>
+  </fieldset>
+</div>
+
+<script>//Vue
+  let app = Vue.createApp({
+    data(){return{
+      //data for querying publications (elsevier's scopus)
+      scopus:{
+        API_KEY:"7f59af901d2d86f78a1fd60c1bf9426a",
+        query:`AF-ID(60110375) AND PUBYEAR IS ${new Date().getFullYear()}`,
+        response:null,           //cache
+        result:null,             //cache
+        result_is_loading:false, //is the query in process?
+        result_ok:false,         //there is error?
+        number_of_requests:null,
+        current_request_number:0,
+      },
+
+      //historial queries
+      historial:[],
+
+      //cache for scopus api call for affiliation
+      institution:null,
+
+      //cache for journal info requested to scopus api
+      journal_metrics:{
+        //"journal name":{info},
+      },
+
+      //cache for fwci requested to scopus api (check_fwci())
+      fwci:{
+        //"doi":"fwci number",
+      },
+
+      //utils
+      //some http error code descriptions
+      errors:{
+        "400":"Bad request",
+        "401":"Unauthorized",
+        "403":"Forbidden",
+        "404":"Not found",
+        "429":"Too many requests",
+      },
+    }},
+
+    methods:{
+      //scopus api call: get publications based on scopus query
+      async get_publications(){
+        let API_KEY       = this.scopus.API_KEY;
+        let query         = this.scopus.query;
+        let encoded_query = encodeURIComponent(query);
+        let url           =`https://api.elsevier.com/content/search/scopus?query=${encoded_query}&apiKey=${API_KEY}`;
+
+        //reset results
+        this.scopus.response               = null;
+        this.scopus.result                 = null;
+        this.scopus.result_ok              = false;
+        this.scopus.result_is_loading      = true;
+        this.scopus.number_of_requests     = null;
+        this.scopus.current_request_number = 0;
+
+        //prepare http request to scopus api
+        let options={
+          headers:{
+            "Accept":"application/json",
+          },
+        };
+        let response = await fetch(url,options);
+        if(!response.ok){
+          this.scopus.result = `error ${response.status} ${this.errors[response.status]}`;
+          this.scopus.result_is_loading = false;
+          throw new Error("Error fetching Scopus data");
+        }
+
+        //response is ok
+        const data = await response.json();
+        this.scopus.response = data;
+
+        //save results (entries) here
+        let pages=[];
+
+        //each element in "pages" is an array of "entries" (a page of 25 results)
+        let first_page = data["search-results"].entry;
+        pages.push(first_page);
+
+        //compute necessary number of requests
+        let totalResults = data["search-results"]["opensearch:totalResults"];
+        let itemsPerPage = data["search-results"]["opensearch:itemsPerPage"];
+        let n_requests = Math.ceil(totalResults/itemsPerPage);
+        let urls_next_pages=[];//save urls to request here
+        for(let i=1;i<n_requests;i++){ //omit first search
+          let start = i*itemsPerPage;
+          let url   = `https://api.elsevier.com/content/search/scopus?start=${start}&count=${itemsPerPage}&query=${encoded_query}&apiKey=${API_KEY}`;
+          urls_next_pages.push(url);
+        }
+        this.scopus.number_of_requests     = n_requests;
+        this.scopus.current_request_number = 1;
+
+        if(urls_next_pages.length){
+          async function get_next_result_page(index){
+            index = index || 0;
+            app.scopus.current_request_number++;
+            let url = urls_next_pages[index];
+            if(!url) return;
+            console.log(`fetching request to ${url}`);
+            let resp = await fetch(url,options);
+            if(!resp.ok){
+              console.error(resp);
+              throw(`error ${resp.status} '${this.errors[resp.status]}' fetching "${url}"`);
+              return;
+            }
+            let data = await resp.json();
+            let page = data["search-results"].entry;
+            pages.push(page);
+
+            if(index < urls_next_pages.length-1){
+              await get_next_result_page(index+1);
+            }else{
+              return;
+            }
+          }
+          await get_next_result_page();
+        }
+
+        this.scopus.result            = pages;
+        this.scopus.result_ok         = true;
+        this.scopus.result_is_loading = false;
+
+        //save query to historial
+        this.historial.unshift(query);
+      },
+
+      //scopus api call: check journal quartile based on ISSN
+      async check_journal(issn,journal_name){
+        if(this.journal_metrics[journal_name]){
+          return this.journal_metrics[journal_name];
+        }
+
+        let API_KEY = this.scopus.API_KEY;
+        const url=`https://api.elsevier.com/content/serial/title?issn=${issn}&apiKey=${API_KEY}`;
+
+        //prepare http request to scopus api
+        let options={
+          headers:{
+            "Accept":"application/json",
+          },
+        };
+        let response = await fetch(url,options);
+        if(!response.ok) throw new Error("Error fetching Scopus Serial Title API");
+
+        const data = await response.json();
+
+        //cache result and return
+        this.journal_metrics[journal_name]=data;
+        return data;
+
+        //const journalInfo = data["serial-metadata-response"]["entry"][0];
+        //const quartiles = journalInfo["subject-area"];
+        //let q1Status = "Unknown";
+        //if(quartiles){
+        //  for(let area of quartiles) {
+        //    if(area["@abbrev"]=="Q1"){
+        //      q1Status="Q1";
+        //      break;
+        //    }
+        //  }
+        //}
+      },
+
+      //scopus api call: fetch FWCI for a publication using DOI
+      async check_fwci(doi){
+        if(this.fwci[doi]){
+          return this.fwci[doi];
+        }
+
+        const API_KEY=this.scopus.API_KEY;
+        const url=`https://api.elsevier.com/content/abstract/doi/${encodeURIComponent(doi)}?apiKey=${API_KEY}`;
+
+        let options={headers:{ "Accept":"application/json"}};
+        const response = await fetch(url,options);
+        if(!response.ok) throw new Error("Error fetching Scopus data");
+        const data     = await response.json();
+        console.log(data);
+        const coredata = data["abstracts-retrieval-response"]["coredata"];
+        const fwci     = coredata["field-weighted-citation-impact"] || "Not available";
+
+        //save to cache and return
+        this.fwci[doi]=fwci;
+        return fwci;
+      },
+
+      async get_institution_impact(){
+        let API_KEY = this.scopus.API_KEY;
+        let afid    = 60110375; //icra affiliation id
+        let url     = `https://api.elsevier.com/content/affiliation/affiliation_id/${afid}?apiKey=${API_KEY}`;
+
+        let options={headers:{"Accept":"application/json"}};
+        let response = await fetch(url,options);
+
+        if(!response.ok){
+          console.error(response);
+          throw(`error ${response.status} '${this.errors[response.status]}' fetching "${url}"`);
+          return;
+        }
+
+        let data = await response.json();
+        this.institution=data;
+        return data;
+      },
+
+      /*<utils>*/
+      //access an object by a series of keys
+      recurse(obj,keys){
+        if(keys.length==0) return obj;
+        if(obj[keys[0]]){
+          return this.recurse(
+            obj[keys[0]],
+            keys.slice(1),
+          );
+        }else{
+          return obj
+        }
+      },
+      /*</utils>*/
+    },
+
+    computed:{
+      get_revistes(){
+        if(
+          this.scopus.response  == null  ||
+          this.scopus.result    == null  ||
+          this.scopus.result_ok == false
+        ){
+          return false;
+        }
+        
+        let revistes={}; //ret val
+
+        let pages = this.scopus.result;
+        pages.forEach(page=>{
+          page.forEach(entry=>{
+            let nom_revista = entry["prism:publicationName"];
+            let issn        = entry["prism:issn"];
+            let eIssn       = entry["prism:eIssn"];
+            if(revistes[nom_revista]==undefined){
+              revistes[nom_revista]={issn,eIssn,articles:0};
+            }
+            revistes[nom_revista].articles++;
+          });
+        });
+
+        //ordena per nombre d'articles DESC
+        let revistes_sorted = Object.entries(revistes).sort((a,b)=>{
+          let aa = a[1].articles;
+          let bb = b[1].articles;
+          return bb-aa;
+        });
+
+        return revistes_sorted;
+      },
+
+      calcula_cites_totals(){
+        if(
+          this.scopus.response  == null  ||
+          this.scopus.result    == null  ||
+          this.scopus.result_ok == false
+        ){
+          return 0;
+        }
+
+        let cites = 0;
+        this.scopus.result.forEach(page=>{
+          page.forEach(entry=>{
+            cites += parseInt(entry["citedby-count"]);
+          });
+        });
+        return cites;
+      },
+    },
+
+    mounted(){
+      document.querySelector("textarea[query]").focus();
+    },
+  }).mount("#app");
+</script>
