@@ -37,9 +37,11 @@
   </style>
 <head></head><body>
 
-<div style="background:yellow">
-  En construcció des del 10 de febrer 2025 (lbosch@icra.cat)<br>
-  L'api de scopus té un límit al nº de peticions. És possible que salti l'error 429 "too many requests"
+<div style="border:2px solid;background:yellow">
+  (under development; started 10th Feb 2025, lbosch@icra.cat)<br>
+  Warning: the scopus API has a limit of requests.
+  It's possible that the error 429 "too many requests" appears.
+  This will be solved contracting a paid access to scopus.
 </div><hr>
 
 <h3>
@@ -53,7 +55,7 @@
 
 <div id=app>
   <fieldset>
-    <legend>publications</legend>
+    <legend>Publications</legend>
     <table border=1>
       <tr>
         <td>
@@ -193,7 +195,7 @@
   </fieldset>
 
   <fieldset>
-    <legend>total citations</legend>
+    <legend>Total citations</legend>
     <div v-if="scopus.result && scopus.result_ok">
       {{ calcula_cites_totals }}
     </div><div v-else style="color:#666">
@@ -202,7 +204,7 @@
   </fieldset>
 
   <fieldset>
-    <legend>journals summary</legend>
+    <legend>Journals summary</legend>
     <div>
       <div v-if="!get_revistes" style="color:#666">none</div>
       <table v-if="get_revistes" border=1>
@@ -249,7 +251,7 @@
   <fieldset>
     <legend>ICRA affiliation impact metrics</legend>
     <span>
-      (workinprogress: new api key needed)
+      (workinprogress: new api key needed, paid access)
     </span>
     <div v-if="institution">
       <pre>{{
