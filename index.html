@@ -129,7 +129,7 @@
             <summary>
               results
               <code v-if="scopus.result && scopus.result_ok && scopus.result_is_loading==false">
-                ({{scopus.response["search-results"]["opensearch:totalResults"]}} total, 
+                ({{scopus.response["search-results"]["opensearch:totalResults"]}} total,
                 {{scopus.result.map(page=>page.length).reduce((p,c)=>p+c,0)}} items received across {{scopus.number_of_requests}} requests)
               </code>
               <div v-if="scopus.result_is_loading">
@@ -196,7 +196,7 @@
   </fieldset>
 
   <fieldset>
-    <legend>Total citations</legend>
+    <legend>Total citations in the results</legend>
     <div v-if="scopus.result && scopus.result_ok">
       {{ calcula_cites_totals }}
     </div><div v-else style="color:#666">
@@ -205,18 +205,21 @@
   </fieldset>
 
   <fieldset>
-    <legend>Journals summary</legend>
-    <div>
-      <div v-if="!get_revistes" style="color:#666">none</div>
-      <table v-if="get_revistes" border=1>
+    <legend>Journals in the results</legend>
+    <div v-if="!get_revistes" style="color:#666">none</div>
+    <details open v-if="get_revistes">
+      <summary>Journals ({{get_revistes.length}}) sorted by number of publications</summary>
+      <table border=1>
         <tr>
+          <th>nº</th>
           <th>issn</th>
           <th>eIssn</th>
           <th>Journal name</th>
           <th>Publications</th>
           <th>metrics</th>
         </tr>
-        <tr v-for="[key,val] in get_revistes">
+        <tr v-for="[key,val],i in get_revistes">
+          <td>{{i+1}}</td>
           <td small nowrap>
             <span small>{{val.issn}}</span>
           </td>
@@ -241,12 +244,12 @@
               }}</pre>
             </details>
             <div v-if="!journal_metrics[key]">
-              <button small v-if="val.issn||val.eIssn" @click="check_journal(val.issn||val.eIssn,key)">check</button>
+              <button small v-if="val.issn||val.eIssn" @click="check_journal(val.issn||val.eIssn,key)">request</button>
             </div>
           </td>
         </tr>
       </table>
-    </div>
+    </details>
   </fieldset>
 
   <fieldset v-if="false">
@@ -429,14 +432,9 @@
         const url=`https://api.elsevier.com/content/serial/title?issn=${issn}&apiKey=${API_KEY}`;
 
         //prepare http request to scopus api
-        let options={
-          headers:{
-            "Accept":"application/json",
-          },
-        };
+        let options  = {headers:{"Accept":"application/json"}};
         let response = await fetch(url,options);
         if(!response.ok) throw new Error("Error fetching Scopus Serial Title API");
-
         const data = await response.json();
 
         //cache result and return
@@ -525,7 +523,7 @@
         ){
           return false;
         }
-        
+
         let revistes={}; //ret val
 
         let pages = this.scopus.result;
