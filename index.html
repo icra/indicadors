@@ -68,7 +68,7 @@
                 query
                 style="font-size:smaller;margin-left:5px;min-width:200px"
                 placeholder="enter scopus query"
-                @keyup.enter="get_publications()"
+                @keydown.enter.prevent="get_publications()"
               ></textarea>
               <button @click="scopus.query=''" :disabled="scopus.query==''">X</button>
             </div>
