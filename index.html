@@ -97,8 +97,9 @@
               justify-content:end;
               align-items:center;
             "
+            v-if="historial.length"
           >
-            <div v-if="historial.length" small>
+            <div small>
               recent queries
               <select small @change="scopus.query = $event.target.value" v-if="historial.length">
                 <option v-for="q in historial">
@@ -248,7 +249,7 @@
     </div>
   </fieldset>
 
-  <fieldset>
+  <fieldset v-if="false">
     <legend>ICRA affiliation impact metrics</legend>
     <span>
       (workinprogress: new api key needed, paid access)
@@ -263,26 +264,26 @@
       }}</pre>
     </div>
     <div v-else>
-      <button @click="get_institution_impact">check</button>
+      <button @click="get_institution_impact" disabled>check (disabled)</button>
     </div>
   </fieldset>
 
   <fieldset>
-    <legend>metrics to be calculated</legend>
+    <legend>Metrics to be calculated (Vicenç)</legend>
     <div>
       <ul>
-        <li> Increment en nombre d'articles científics al Q1 (segons Scopus) respecte any anterior
-        <li> Increment en nombre de cites anuals (segons Scopus) respecte any anterior
-        <li> Increment de Índex d'impacte (Impact factor) de la institució (segons Scopus) en el moment de l'anàlisi respecte any anterior
-        <li> Nombre d'articles científics al Q1 (segons Scopus) associats a la L17 i la L18
+        <li>Increment nombre d'articles al Q1 (segons Scopus) respecte any anterior
+        <li>Increment nombre cites anuals (segons Scopus) respecte any anterior
+        <li>Increment Impact factor de la institució (segons Scopus) en el moment de l'anàlisi respecte any anterior
+        <li>Nombre d'articles científics al Q1 (segons Scopus) associats a la L17 i la L18
       </ul>
     </div>
   </fieldset>
 </div>
 
 <script>
-  //GET params (index.html?query=query)
-  let usp = new URLSearchParams(window.location.search);
+  //read query from URL (index.html?query="query")
+  let usp   = new URLSearchParams(window.location.search);
   let query = usp.get('query');
   if(query){
     query = decodeURIComponent(query);
@@ -293,8 +294,8 @@
     data(){return{
       //data for querying publications (elsevier's scopus)
       scopus:{
-        //API_KEY:"7f59af901d2d86f78a1fd60c1bf9426a",
-        API_KEY:"006782f7796da6b38899e0c889fa3c80",//clau mireia
+        //API_KEY:"7f59af901d2d86f78a1fd60c1bf9426a", //clau web scopus
+        API_KEY:"006782f7796da6b38899e0c889fa3c80",   //clau mireia
         query:query||`AF-ID(60110375) AND PUBYEAR IS ${new Date().getFullYear()-1}`,//default query
         response:null,           //cache
         result:null,             //cache
