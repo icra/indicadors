@@ -21,13 +21,24 @@
     }
     table{
       border-collapse:collapse;
+      max-width:100%;
     }
     td,th{
       vertical-align:top;
     }
+    details[open] > summary {
+      background:#ddd;
+    }
+    summary[sticky]{
+      position:sticky;
+      top:0;
+      background:white;
+      border:1px solid #ccc;
+    }
     summary:hover{
       text-decoration:underline;
       cursor:pointer;
+      background:#ddd;
     }
     [small]{
       font-size:smaller;
@@ -52,13 +63,16 @@
 <head></head><body>
 
 <div><!--temporal warning tmp-->
-  <div style="border:2px solid;background:yellow;padding:10px" xsmall>
-    development started on 10th Feb 2025.<br>
-    Warning: the scopus API has a limit of requests.
-    It's possible that the error 429 "too many requests" appears.<br>
-    This will be solved contracting a paid access to scopus.<br>
-    <button onclick="this.parentNode.parentNode.style.display='none'">ok</button>
-  </div>
+  <details style="border:2px solid;padding:10px" small>
+    <summary>status: under development (February 2025)</summary>
+    <p>
+      development started on 10th Feb 2025.<br>
+      Warning: the scopus API has a limit of requests.
+      It's possible that the error 429 "too many requests" appears.<br>
+      This will be solved (hopefully) contracting a paid access to scopus.<br>
+    </p>
+    <button onclick="this.parentNode.style.display='none'">X</button>
+  </details>
 </div>
 
 <h3>
@@ -75,7 +89,7 @@
     <legend>Publications</legend>
     <table border=1 style="border-collapse:collapse;width:100%">
       <tr>
-        <td>query</td>
+        <td>Query</td>
         <td>
           <div flex>
             <div style="display:flex">
@@ -93,15 +107,15 @@
               <a target=_blank href="https://schema.elsevier.com/dtds/document/bkapi/search/SCOPUSSearchTips.htm">scopus search guide</a>
             </small>
 
-            <details open xsmall>
+            <details xsmall>
               <summary>most used fields</summary>
               <div>
-                <a href=# title="affiliation id"       @click="scopus.query+=' AF-ID(60110375)'">AF-ID</a>,
-                <a href=# title="author name"          @click="scopus.query+=' AUTH(bosch)'">AUTH</a>,
-                <a href=# title="author id"            @click="scopus.query+=' AU-ID(56411720900)'">AU-ID</a>,
-                <a href=# title="journal issn number"  @click="scopus.query+=' ISSN(02697491)'">ISSN</a>,
-                <a href=# title="publication language" @click="scopus.query+=' LANGUAGE(spanish)'">LANGUAGE</a>,
-                <a href=# title="publication year"     @click="scopus.query+=' PUBYEAR is 2025'">PUBYEAR</a>
+                <a href=# title="affiliation id"       @click="scopus.query+=' AND AF-ID(60110375)'">AF-ID</a>,
+                <a href=# title="author name"          @click="scopus.query+=' AND AUTH(bosch)'">AUTH</a>,
+                <a href=# title="author id"            @click="scopus.query+=' AND AU-ID(56411720900)'">AU-ID</a>,
+                <a href=# title="journal issn number"  @click="scopus.query+=' AND ISSN(02697491)'">ISSN</a>,
+                <a href=# title="publication language" @click="scopus.query+=' AND LANGUAGE(spanish)'">LANGUAGE</a>,
+                <a href=# title="publication year"     @click="scopus.query+=' AND PUBYEAR is 2025'">PUBYEAR</a>
               </div>
             </details>
           </div>
@@ -111,7 +125,7 @@
         <td></td>
         <td>
           <div flex>
-            <button @click="get_publications()"
+            <button @click="get_publications()" nowrap
               style="
                 padding:0.618em 1em;
                 background:lightgreen;
@@ -129,7 +143,7 @@
             >
               <div small>
                 <span>&nbsp;recent queries&nbsp;</span>
-                <select small @change="scopus.query = $event.target.value">
+                <select small @change="scopus.query=$event.target.value;get_publications()">
                   <option v-for="q in historial">
                     {{q}}
                   </option>
@@ -144,8 +158,7 @@
       <tr>
         <td colspan=2>
           <details open>
-            <summary>
-              results
+            <summary sticky>Results
               <span v-if="scopus.result && scopus.result_ok && scopus.result_is_loading==false">
                 ({{scopus.response["search-results"]["opensearch:totalResults"]}} results,
                 {{scopus.result.map(page=>page.length).reduce((p,c)=>p+c,0)}} items received, {{scopus.number_of_requests}} requests)
@@ -173,16 +186,16 @@
                   <tr>
                     <th>nº</th>
                     <th>cited</th>
-                    <th>publication</th>
+                    <th style="text-align:left">publication</th>
                   </tr>
                   <tbody v-for="page,i in scopus.result">
                     <tr v-for="entry,j in page">
                       <td style="font-size:smaller">{{25*i+j+1}}</td>
                       <td style="font-size:smaller" center>{{entry["citedby-count"]}}</td>
-                      <td style="overflow-x:hidden">
+                      <td>
                         <details>
                           <summary>
-                            <span>[{{entry["prism:coverDate"]}}]</span>
+                            <span>[{{entry["prism:coverDate"]}}]&nbsp;</span>
                             <b>{{entry["dc:creator"]}}&nbsp;</b>
                             <small><i>{{entry["dc:title"]}}</i></small>
                           </summary>
@@ -232,7 +245,11 @@
     <legend>Journals in the results</legend>
     <div v-if="!get_revistes" style="color:#666">none</div>
     <details open v-if="get_revistes">
-      <summary>Journals ({{get_revistes.length}}) sorted by number of publications</summary>
+      <summary sticky>Journals ({{get_revistes.length}}) &mdash; sorted by:
+        <select v-model="journals_sorted_by" @change="display_only(journals_sorted_by)">
+          <option v-for="op in journals_sorted_by_OPTIONS">{{op}}</option>
+        </select>
+      </summary>
       <table border=1>
         <tr>
           <th>nº</th>
@@ -241,111 +258,58 @@
           <th>Journal name</th>
           <th>Publications</th>
           <th>
-            metrics <button @click="request_all_journal_metrics()">request all</button>
+            metrics <button @click="request_all_journal_metrics()">request all journals</button>
             <div small>
-              <label><input type=checkbox v-model="metrics.snip">SNIP</label>
-              <label><input type=checkbox v-model="metrics.sjr">SJR</label>
-              <label><input type=checkbox v-model="metrics.citescore.current">CSc</label>
-              <label><input type=checkbox v-model="metrics.citescore.tracker">CSt</label>
-              <label><input type=checkbox v-model="metrics.more_details">(all)</label>
+              <label nowrap title="Source-Normalized Impact per Paper (SNIP): Measures contextual citation impact by taking differences in disciplinary characteristics into account; can be used to compare journals in different fields."><input type=checkbox v-model="metrics.snip">SNIP</label>
+              <label nowrap title="SCImago Journal Rank (SJR): A prestige metric for journals, book series and conference proceedings that weights the value of a citation based on the subject field, quality and reputation of the source."><input type=checkbox v-model="metrics.sjr">SJR</label>
+              <label nowrap title="CiteScore™ metrics: Introduced in 2016, a family of eight indicators to analyze the publication influence of serial titles. CiteScore metrics offer more robust, timely and accurate indicators of a serial title’s impact."><input type=checkbox v-model="metrics.citescore">CiteScore</label>
+              <label nowrap title="CiteScore™ metrics: Introduced in 2016, a family of eight indicators to analyze the publication influence of serial titles. CiteScore metrics offer more robust, timely and accurate indicators of a serial title’s impact."><input type=checkbox v-model="metrics.more_details">(all)</label>
             </div>
           </th>
         </tr>
         <tr v-for="[key,val],i in get_revistes">
-          <td>{{i+1}}</td>
-          <td small nowrap>
-            <span small>{{val.issn}}</span>
-          </td>
-          <td small nowrap>
-            <span small>{{val.eIssn}}</span>
-          </td>
-          <td nowrap :title="key">
-            {{key.substring(0,50)}}<span v-if="key.length>50">...</span>
-          </td>
-          <td nowrap small>
+          <td xsmall>{{i+1}}</td>
+          <td xsmall nowrap>{{val.issn}}</td>
+          <td xsmall nowrap>{{val.eIssn}}</td>
+          <td :title="key">
             <details>
-              <summary>{{val.articles.length}} publications</summary>
+              <summary>
+                {{key.substring(0,50)}}<span v-if="key.length>50">...</span>
+              </summary>
               <table small>
-                <tr v-for="entry in val.articles">
-                  <td>
-                    <span>[{{entry["prism:coverDate"]}}]</span>
-                    <b>{{entry["dc:creator"]}}&nbsp;</b>
-                    <small><i>{{entry["dc:title"]}}</i></small>
-                  </td>
+                <tbody v-for="entry in val.articles">
+                  <tr>
+                    <td>
+                      <a target=_blank :href="`https://doi.org/${entry['prism:doi']}`">
+                        [{{entry["prism:coverDate"]}}]
+                        <b>{{entry["dc:creator"]}}&nbsp;</b>
+                        <small><i>{{entry["dc:title"]}}</i></small>
+                      </a>
+                    </td>
+                  </tr>
                 </tr>
               </table>
             </details>
           </td>
+          <td nowrap small> {{val.articles.length}} publications </td>
           <td small>
             <div v-if="journal_metrics[key]">
               <table border=1 xsmall>
                 <tr v-if="metrics.snip">
-                  <td>SNIP</td>
-                  <td right>
-                    {{
-                      recurse(
-                        journal_metrics[key],
-                        ['serial-metadata-response','entry',0,'SNIPList','SNIP',0,"$"]
-                      )
-                    }}
-                    ({{
-                      recurse(
-                        journal_metrics[key],
-                        ['serial-metadata-response','entry',0,'SNIPList','SNIP',0,"@year"]
-                      )
-                    }})
-                  </td>
+                  <td>SNIP ({{ get_snip([key,val]).year }})</td>
+                  <td right>{{ get_snip([key,val]).score }}</td>
                 </tr>
                 <tr v-if="metrics.sjr">
-                  <td>SJR</td>
-                  <td right>
-                    {{
-                      recurse(
-                        journal_metrics[key],
-                        ['serial-metadata-response','entry',0,'SJRList','SJR',0,"$"]
-                      )
-                    }}
-                    ({{
-                      recurse(
-                        journal_metrics[key],
-                        ['serial-metadata-response','entry',0,'SJRList','SJR',0,"@year"]
-                      )
-                    }})
-                  </td>
+                  <td>SJR ({{  get_sjr([key,val]).year }})</td>
+                  <td right>{{ get_sjr([key,val]).score }}</td>
                 </tr>
-                <tr v-if="metrics.citescore.current">
-                  <td>CiteScore (current)</td>
-                  <td right>
-                    {{
-                      recurse(
-                        journal_metrics[key],
-                        ['serial-metadata-response','entry',0,'citeScoreYearInfoList','citeScoreCurrentMetric']
-                      )
-                    }}
-                    ({{
-                      recurse(
-                        journal_metrics[key],
-                        ['serial-metadata-response','entry',0,'citeScoreYearInfoList','citeScoreCurrentMetricYear']
-                      ),
-                    }})
-                  </td>
+                <tr v-if="metrics.citescore">
+                  <td>CiteScore (current) ({{ get_citescore_current([key,val]).year }})</td>
+                  <td right>{{                get_citescore_current([key,val]).score }}</td>
                 </tr>
-                <tr v-if="metrics.citescore.tracker">
-                  <td>CiteScore (tracker)</td>
-                  <td right>
-                    {{
-                      recurse(
-                        journal_metrics[key],
-                        ['serial-metadata-response','entry',0,'citeScoreYearInfoList','citeScoreTracker']
-                      )
-                    }}
-                    ({{
-                      recurse(
-                        journal_metrics[key],
-                        ['serial-metadata-response','entry',0,'citeScoreYearInfoList','citeScoreTrackerYear']
-                      ),
-                    }})
-                  </td>
+                <tr v-if="metrics.citescore">
+                  <td>CiteScore (tracker) ({{ get_citescore_tracker([key,val]).year }})</td>
+                  <td right>{{                get_citescore_tracker([key,val]).score }}</td>
                 </tr>
               </table>
             </div>
@@ -363,7 +327,7 @@
               }}</pre>
             </details>
             <div v-if="!journal_metrics[key]">
-              <button small v-if="val.issn||val.eIssn" @click="check_journal(val.issn||val.eIssn,key)">request</button>
+              <button small v-if="val.issn||val.eIssn" @click="check_journal(val.issn||val.eIssn,key)">request journal metrics</button>
             </div>
           </td>
         </tr>
@@ -425,6 +389,11 @@
         result_ok:false,         //there is error?
         number_of_requests:null,
         current_request_number:0,
+
+        //cache for queries
+        cache:{
+          /*"query":{results}*/
+        },
       },
 
       //historial queries
@@ -437,22 +406,30 @@
       journal_metrics:{
         //"journal name":{info},
       },
+      //journal metrics displayed
       metrics:{
         snip:false,
         sjr:true,
-        citescore:{
-          current:false,
-          tracker:false,
-        },
+        citescore:false,
         more_details:false,
       },
+
+      /*sort journals in the results by different metrics*/
+      journals_sorted_by:"number of publications",
+      journals_sorted_by_OPTIONS:[
+        "number of publications",
+        "SNIP",
+        "SJR",
+        "CiteScore (current)",
+        "CiteScore (tracker)",
+      ],
 
       //cache for fwci requested to scopus api (check_fwci())
       fwci:{
         //"doi":"fwci number",
       },
 
-      //utils
+      /*utils*/
       //http requests error code descriptions
       errors:{
         "400":"Bad request",
@@ -478,6 +455,17 @@
         this.scopus.result_is_loading      = true;
         this.scopus.number_of_requests     = null;
         this.scopus.current_request_number = 0;
+
+        //check cache before searching
+        if(this.scopus.cache[query]){
+          let cache                          = this.scopus.cache[query];
+          this.scopus.response               = cache.response;
+          this.scopus.result                 = cache.result;
+          this.scopus.result_ok              = true;
+          this.scopus.result_is_loading      = false;
+          this.scopus.number_of_requests     = cache.number_of_requests;
+          return;
+        }
 
         //prepare http request to scopus api
         let options={
@@ -546,8 +534,15 @@
         this.scopus.result_ok         = true;
         this.scopus.result_is_loading = false;
 
-        //save query to historial
+        //save query to historial (to position zero)
         this.historial.unshift(query);
+
+        //save results to cache
+        this.scopus.cache[query]={
+          response:           data,
+          result:             pages,
+          number_of_requests: n_requests,
+        };
       },
 
       //scopus api call: check journal quartile based on ISSN
@@ -556,10 +551,9 @@
           return this.journal_metrics[journal_name];
         }
 
+        //http request to scopus api
         let API_KEY = this.scopus.API_KEY;
-        const url=`https://api.elsevier.com/content/serial/title?issn=${issn}&apiKey=${API_KEY}`;
-
-        //prepare http request to scopus api
+        let url=`https://api.elsevier.com/content/serial/title?issn=${issn}&apiKey=${API_KEY}`;
         let options  = {headers:{"Accept":"application/json"}};
         let response = await fetch(url,options);
         if(!response.ok) throw new Error("Error fetching Scopus Serial Title API");
@@ -568,18 +562,6 @@
         //cache result and return
         this.journal_metrics[journal_name]=data;
         return data;
-
-        //const journalInfo = data["serial-metadata-response"]["entry"][0];
-        //const quartiles = journalInfo["subject-area"];
-        //let q1Status = "Unknown";
-        //if(quartiles){
-        //  for(let area of quartiles) {
-        //    if(area["@abbrev"]=="Q1"){
-        //      q1Status="Q1";
-        //      break;
-        //    }
-        //  }
-        //}
       },
 
       async request_all_journal_metrics(){
@@ -664,9 +646,99 @@
         return data;
       },
 
+      /*parse metrics read from scopus api*/
+      get_snip(journal_entry){
+        let key = journal_entry[0];
+        let jm  = this.journal_metrics;
+
+        let score = this.recurse(
+          jm[key],
+          ['serial-metadata-response','entry',0,'SNIPList','SNIP',0,"$"]
+        );
+        score = parseFloat(score);
+
+        let year = this.recurse(
+          jm[key],
+          ['serial-metadata-response','entry',0,'SNIPList','SNIP',0,"@year"]
+        );
+        year = parseInt(year);
+
+        return {score,year};
+      },
+      get_sjr(journal_entry){
+        let key = journal_entry[0];
+        let jm  = this.journal_metrics;
+
+        let score = this.recurse(
+          jm[key],
+          ['serial-metadata-response','entry',0,'SJRList','SJR',0,"$"],
+        );
+        score = parseFloat(score);
+
+        let year = this.recurse(
+          jm[key],
+          ['serial-metadata-response','entry',0,'SJRList','SJR',0,"@year"]
+        );
+        year = parseInt(year);
+
+        return {score,year};
+      },
+      get_citescore_current(journal_entry){
+        let key = journal_entry[0];
+        let jm  = this.journal_metrics;
+
+        let score = this.recurse(jm[key],
+          ['serial-metadata-response','entry',0,'citeScoreYearInfoList','citeScoreCurrentMetric']
+        );
+        score = parseFloat(score);
+
+        let year = this.recurse(jm[key],
+          ['serial-metadata-response','entry',0,'citeScoreYearInfoList','citeScoreCurrentMetricYear']
+        );
+        year = parseInt(year);
+
+        return {score,year};
+      },
+      get_citescore_tracker(journal_entry){
+        let key = journal_entry[0];
+        let jm  = this.journal_metrics;
+
+        let score = this.recurse(jm[key],
+          ['serial-metadata-response','entry',0,'citeScoreYearInfoList','citeScoreTracker']
+        );
+        score = parseFloat(score);
+
+        let year = this.recurse(jm[key],
+          ['serial-metadata-response','entry',0,'citeScoreYearInfoList','citeScoreTrackerYear']
+        );
+        year = parseInt(year);
+
+        return {score,year};
+      },
+
       /*<utils>*/
+      //uncheck all journal metrics and activate one
+      display_only(option_name){
+        let metric={
+          //journals_sorted_by_OPTIONS : metrics
+          "SNIP"                       : "snip",
+          "SJR"                        : "sjr",
+          "CiteScore (current)"        : "citescore",
+          "CiteScore (tracker)"        : "citescore",
+        }[option_name];
+
+        if(!metric) return;
+
+        //if metric exists, display only this one
+        Object.keys(this.metrics).forEach(key=>{
+          this.metrics[key]=false;
+        });
+        this.metrics[metric]=true;
+      },
+
       //access an object by a series of keys
       recurse(obj,keys){
+        if(!obj) return false;
         if(keys.length==0) return obj;
         if(obj[keys[0]]){
           return this.recurse(
@@ -674,9 +746,10 @@
             keys.slice(1),
           );
         }else{
-          return obj
+          return obj;
         }
       },
+      //show permalink
       alert(str){
         alert(str);
       },
@@ -708,11 +781,33 @@
           });
         });
 
-        //ordena per nombre d'articles DESC
+        //ordena revistes segons opció triada usuari
         let revistes_sorted = Object.entries(revistes).sort((a,b)=>{
-          let aa = a[1].articles.length;
-          let bb = b[1].articles.length;
-          return bb-aa;
+          if(this.journals_sorted_by=="number of publications"){
+            let aa = a[1].articles.length;
+            let bb = b[1].articles.length;
+            return bb-aa;
+          }
+          if(this.journals_sorted_by=="SJR"){
+            let aa = this.get_sjr(a).score;
+            let bb = this.get_sjr(b).score;
+            return bb-aa;
+          }
+          if(this.journals_sorted_by=="SNIP"){
+            let aa = this.get_snip(a).score;
+            let bb = this.get_snip(b).score;
+            return bb-aa;
+          }
+          if(this.journals_sorted_by=="CiteScore (current)"){
+            let aa = this.get_citescore_current(a).score;
+            let bb = this.get_citescore_current(b).score;
+            return bb-aa;
+          }
+          if(this.journals_sorted_by=="CiteScore (tracker)"){
+            let aa = this.get_citescore_tracker(a).score;
+            let bb = this.get_citescore_tracker(b).score;
+            return bb-aa;
+          }
         });
 
         return revistes_sorted;
