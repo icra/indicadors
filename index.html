@@ -243,14 +243,17 @@
 
   <fieldset>
     <legend>Journals in the results</legend>
-    <div v-if="!get_revistes" style="color:#666">none</div>
-    <details open v-if="get_revistes">
-      <summary sticky>Journals ({{get_revistes.length}}) &mdash; sorted by:
+    <details open>
+      <summary sticky>
+        Journals
+        <span v-if="get_revistes">({{get_revistes.length}})</span>
+        &mdash; sorted by:
         <select v-model="journals_sorted_by" @change="display_only(journals_sorted_by)">
           <option v-for="op in journals_sorted_by_OPTIONS">{{op}}</option>
         </select>
       </summary>
-      <table border=1>
+      <div v-if="!get_revistes" style="color:#666">none</div>
+      <table border=1 v-if="get_revistes">
         <tr>
           <th>nº</th>
           <th>issn</th>
@@ -258,6 +261,7 @@
           <th>Journal name</th>
           <th>Publications</th>
           <th>
+            SCOPUS journal 
             metrics <button @click="request_all_journal_metrics()">request all journals</button>
             <div small>
               <label nowrap title="Source-Normalized Impact per Paper (SNIP): Measures contextual citation impact by taking differences in disciplinary characteristics into account; can be used to compare journals in different fields."><input type=checkbox v-model="metrics.snip">SNIP</label>
@@ -266,6 +270,7 @@
               <label nowrap title="CiteScore™ metrics: Introduced in 2016, a family of eight indicators to analyze the publication influence of serial titles. CiteScore metrics offer more robust, timely and accurate indicators of a serial title’s impact."><input type=checkbox v-model="metrics.more_details">(all)</label>
             </div>
           </th>
+          <th v-if="scimagocsv">Scimago Journal Rank CSV metrics</th>
         </tr>
         <tr v-for="[key,val],i in get_revistes">
           <td xsmall>{{i+1}}</td>
@@ -327,7 +332,32 @@
               }}</pre>
             </details>
             <div v-if="!journal_metrics[key]">
-              <button small v-if="val.issn||val.eIssn" @click="check_journal(val.issn||val.eIssn,key)">request journal metrics</button>
+              <button small v-if="val.issn||val.eIssn" @click="check_journal(val.issn||val.eIssn,key)">
+                request journal info (SCOPUS)
+              </button>
+            </div>
+          </td>
+          <td v-if="scimagocsv">
+            <div v-if="scimagocsv[key]">
+              <table border=2 xsmall v-for="sjr in [scimagocsv[key]]">
+                <tbody v-if="sjr">
+                  <tr><th nowrap>SJR              <td>{{sjr.SJR}}</tr>
+                  <tr><th nowrap>SJR Best Quartile<th>{{sjr["SJR Best Quartile"]}}</th>
+                  <tr><th nowrap>H index          <td>{{sjr["H index"]}}</tr>
+                </tbody>
+              </table>
+              <details xsmall>
+                <summary>see all ScimagoJR metrics</summary>
+                <table border=2 xsmall>
+                  <tr v-for="val2,key2 in scimagocsv[key]">
+                    <th nowrap>{{key2}}</th>
+                    <td>{{val2}}</td>
+                  </tr>
+                </table>
+              </details>
+            </div>
+            <div v-if="!scimagocsv[key]">
+              <code>~journal not found in ScimagoJR CSV (workinprogress)</code>
             </div>
           </td>
         </tr>
@@ -355,15 +385,67 @@
   </fieldset>
 
   <fieldset>
-    <legend>Metrics to be calculated (Vicenç)</legend>
-    <div>
-      <ul>
-        <li>Increment nombre d'articles al Q1 (segons Scopus) respecte any anterior
-        <li>Increment nombre cites anuals (segons Scopus) respecte any anterior
-        <li>Increment Impact factor de la institució (segons Scopus) en el moment de l'anàlisi respecte any anterior
-        <li>Nombre d'articles científics al Q1 (segons Scopus) associats a la L17 i la L18
-      </ul>
-    </div>
+    <legend>Resultats globals (Excel Vicenç) (en construcció)</legend>
+    <ul>
+      <li>Increment nombre d'articles al Q1 (segons Scopus) respecte any anterior
+      <li>Increment nombre cites anuals (segons Scopus) respecte any anterior
+      <li>Increment Impact factor de la institució (segons Scopus) en el moment de l'anàlisi respecte any anterior
+      <li>Nombre d'articles científics al Q1 (segons Scopus) associats a la L17 i la L18
+        <b>(preguntar què és L17/L18)</b>
+      </li>
+    </ul>
+    <table border=1>
+      <tr>
+        <td>Nombre d'articles a revista Q1</td>
+        <td center>
+          <div v-if="get_articles_a_revista_Q1">
+            {{get_articles_a_revista_Q1.length}}
+          </div>
+        </td>
+        <td v-if="get_articles_a_revista_Q1">
+          <details small>
+            <summary>llista</summary>
+            <table border=1 small>
+              <tr v-for="entry in get_articles_a_revista_Q1">
+                <td><span>{{entry["prism:publicationName"]}}&nbsp;</span></td>
+                <td>Q1</td>
+                <td><b>{{entry["dc:creator"]}}&nbsp;</b></td>
+                <td>
+                  <small><i>
+                    <a target=_blank :href="`https://doi.org/${entry['prism:doi']}`">
+                      {{entry["dc:title"]}}
+                    </a>
+                  </i></small>
+                </td>
+              </tr>
+            </table>
+          </details>
+        </td>
+      </tr>
+      <tr>
+        <td>Nombre de cites</td>
+        <td center>
+          <div v-if="calcula_cites_totals">{{calcula_cites_totals}}</div>
+        </td>
+      </tr>
+      <tr>
+        <td style="vertical-align:middle">
+          Impact Factor 2024
+        </td>
+        <td style="vertical-align:middle">
+          A/B = 
+        </td>
+        <td>
+          <div>
+            A = number of times articles published in [2022,2023] were cited by indexed journals during [2024].
+          </div>
+          <hr>
+          <div>
+            B = total number of "citable items" published in [2022,2023]
+          </div>
+        </td>
+      </tr>
+    </table>
   </fieldset>
 </div>
 
@@ -428,6 +510,8 @@
       fwci:{
         //"doi":"fwci number",
       },
+
+      scimagocsv:null,
 
       /*utils*/
       //http requests error code descriptions
@@ -754,6 +838,71 @@
         alert(str);
       },
       /*</utils>*/
+
+      async get_scimagocsv(){
+        if(this.scimagocsv) return;
+
+        let res = await fetch("csv/scimagojr 2023.csv");
+        if(!res.ok) throw("error reading csv file");
+        let text = await res.text();
+
+        let csv = text.split("\n").map(line=>{
+          let row = line.split(";");
+
+          let indexs_to_delete=[];
+
+          for(let i=0;i<row.length;i++){
+            let val = row[i];
+            if(val[0]=="\"" && val.at(-1)!="\""){
+              let new_val = val;
+              let index = 1;
+              while(true){
+                let next_cell = row[i+index]; //value
+                indexs_to_delete.push(i+index);
+                new_val += ";"+next_cell; //join values
+                if(next_cell.at(-1)=="\""){
+                  break;
+                }else{
+                  index++;
+                }
+              }
+              row[i] = new_val;
+            }
+          }
+
+          indexs_to_delete.forEach(index=>{
+            row[index]="";
+          });
+
+          row = row.filter(cell=>cell!="");
+
+          return row;
+        });
+
+        csv.forEach(row=>{
+          row.forEach((cell,i)=>{
+            if(cell.at(0)=="\"" && cell.at(-1)=="\""){
+              row[i] = cell.replaceAll("\"","");
+            }
+          });
+        });
+
+        //delete last row
+        csv.pop();
+
+        let csv_dictionary={};
+        csv.forEach((row,i)=>{
+          if(i==0) return;
+          let obj={};
+          csv[0].forEach((field,j)=>{
+            obj[field] = row[j];
+          });
+
+          csv_dictionary[obj.Title] = obj;
+        });
+
+        this.scimagocsv = csv_dictionary;
+      },
     },
 
     computed:{
@@ -837,10 +986,42 @@
         let search = `?query=${encodeURIComponent(this.scopus.query)}`;
         return origin+path+search;
       },
+
+      get_articles_a_revista_Q1(){
+        if(
+          this.scopus.response  == null  ||
+          this.scopus.result    == null  ||
+          this.scopus.result_ok == false ||
+          this.scimagocsv       == null
+        ){
+          return false;
+        }
+
+        let articles=[];
+
+        let pages = this.scopus.result;
+
+        pages.forEach(page=>{
+          page.forEach(entry=>{
+            let nom_revista = entry["prism:publicationName"];
+
+            let sjr = this.scimagocsv[nom_revista];
+            if(!sjr) return;
+
+            if(sjr["SJR Best Quartile"]=="Q1"){
+              articles.push(entry);
+            }
+          });
+        });
+
+        return articles;
+      },
+
     },
 
     mounted(){
       document.querySelector("textarea[query]").focus();
+      this.get_scimagocsv();
     },
   }).mount("#app");
 </script>
