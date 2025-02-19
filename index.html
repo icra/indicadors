@@ -270,7 +270,11 @@
               <label nowrap title="CiteScore™ metrics: Introduced in 2016, a family of eight indicators to analyze the publication influence of serial titles. CiteScore metrics offer more robust, timely and accurate indicators of a serial title’s impact."><input type=checkbox v-model="metrics.more_details">(all)</label>
             </div>
           </th>
-          <th v-if="scimagocsv">Scimago Journal Rank CSV metrics</th>
+          <th>Scimago Journal Rank CSV metrics
+            <div v-if="!scimagocsv">
+              (loading...)
+            </div>
+          </th>
         </tr>
         <tr v-for="[key,val],i in get_revistes">
           <td xsmall>{{i+1}}</td>
@@ -281,6 +285,11 @@
               <summary>
                 {{key.substring(0,50)}}<span v-if="key.length>50">...</span>
               </summary>
+              <p small>
+                <a target=_blank :href="`https://www.scimagojr.com/journalsearch.php?q=${val.source_id}&tip=sid&clean=0`">
+                  https://www.scimagojr.com/journalsearch.php?q={{val.source_id}}&tip=sid&clean=0
+                </a>
+              </p>
               <table small>
                 <tbody v-for="entry in val.articles">
                   <tr>
@@ -360,6 +369,9 @@
               <code>~journal not found in ScimagoJR CSV (workinprogress)</code>
             </div>
           </td>
+          <td v-if="!scimagocsv">
+            (loading scimago csv...)
+          </td>
         </tr>
       </table>
     </details>
@@ -385,7 +397,7 @@
   </fieldset>
 
   <fieldset>
-    <legend>Resultats globals (Excel Vicenç) (en construcció)</legend>
+    <legend>Resultats globals (Excel Vicenç) <span style="background:yellow">(en construcció)</span></legend>
     <ul>
       <li>Increment nombre d'articles al Q1 (segons Scopus) respecte any anterior
       <li>Increment nombre cites anuals (segons Scopus) respecte any anterior
@@ -443,6 +455,17 @@
           <div>
             B = total number of "citable items" published in [2022,2023]
           </div>
+        </td>
+      </tr>
+      <tr>
+        <td style="vertical-align:middle">
+          H index
+        </td>
+        <td colspan=2>
+          Number of publications for which an author has been cited by other
+          authors at least that same number of times. For instance, an h-index
+          of 17 means that the scientist has published at least 17 papers that
+          have each been cited at least 17 times
         </td>
       </tr>
     </table>
@@ -923,9 +946,12 @@
             let nom_revista = entry["prism:publicationName"];
             let issn        = entry["prism:issn"];
             let eIssn       = entry["prism:eIssn"];
+            let source_id   = entry["source-id"];
+
             if(revistes[nom_revista]==undefined){
-              revistes[nom_revista]={issn,eIssn,articles:[]};
+              revistes[nom_revista]={issn,eIssn,source_id,articles:[]};
             }
+
             revistes[nom_revista].articles.push(entry);
           });
         });
@@ -1016,7 +1042,6 @@
 
         return articles;
       },
-
     },
 
     mounted(){
