@@ -1,0 +1,101 @@
+<!doctype html><html><head>
+  <title>ICRA indicadors</title>
+  <meta charset="utf8">
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <style>
+    body{
+      font-family: Eczar, IM Fell English, Georgia, serif;
+    }
+    [small]{
+      font-size:smaller;
+    }
+    [center]{
+      text-align:center;
+    }
+    [right]{
+      text-align:right;
+    }
+  </style>
+<head></head><body>
+
+<nav>
+  <a href="index.html">scopus</a>  |
+  <b href="centre.html">centre</b> |
+  <a href="ips.html">IPs</a>       |
+</nav><hr>
+
+<h2>Indicadors de centre</h2>
+
+<div id=app>
+  <table border=1>
+    <tr v-for="indi in [indicadors[0]]">
+      <th>Indicador</th>
+      <th v-for="obj,year in indi.years">{{year}}</th>
+    </tr>
+    <tbody v-for="indi in indicadors">
+      <tr>
+        <td small>{{indi.text}}</td>
+        <td v-for="obj,year in indi.years" center>
+          <span>{{obj.valor}}</span>
+          <span small style="color:#666">&nbsp;{{indi.unit}}</span>
+          <div v-for="incr in [indi.increment(year)]" small>
+            <span v-if="incr.delta>0"  style="color:green">(+{{incr.perc.toFixed(1)}}%)</span>
+            <span v-if="incr.delta<0"  style="color:red"  >({{ incr.perc.toFixed(1)}}%)</span>
+            <span v-if="incr.delta==0" style="color:#ccc" >(=)</span>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td>subindicadors aqui
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+  class Indicador{
+    constructor(text,unit,subindicadors){
+      /*
+        descripcio:    String
+        unit:          String
+        subindicadors: Array objectes Indicador
+      */
+      this.text = text;
+      this.unit = unit;
+      this.years={
+        "2023":{valor:10},
+        "2024":{valor:9.84},
+        "2025":{valor:10},
+        "2026":{valor:11},
+        "2027":{valor:15},
+        "2028":{valor:20},
+        "2029":{valor:12},
+      };
+      this.subindicadors=[];
+    }
+
+    increment(year){
+      let base  = this.years["2023"].valor||1; //number (absolute)
+      let curr  = this.years[String(year)].valor; //number (absolute)
+      let delta = curr - base; //number (delta)
+      let perc  = 100*delta/base; //number (%)
+      return {delta,perc};
+    }
+  }
+
+  let app = Vue.createApp({
+    data(){return{
+      indicadors:[
+        new Indicador(
+          "Aportació econòmica total a través de projectes o contractes de recerca","k€",[
+            new Indicador("Aportació econòmica a través de projectes de recerca competitius Europeus (Horizon)","k€"),
+            new Indicador("Aportació econòmica a través de projectes de recerca competitius Europeus (ERC, EIC)","k€"),
+            new Indicador("Aportació econòmica a través de projectes de recerca competitius estatals (AEI, ERANETs)","k€"),
+            new Indicador("Aportació econòmica a través de projectes de recerca competitius regionals (ACA, AGAUR)","k€"),
+            new Indicador("Aportació econòmica a través de projectes o contractes de recerca aplicada o KTT","k€"),
+          ],
+        ),
+      ],
+    }},
+  }).mount("#app");
+</script>

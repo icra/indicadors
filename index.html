@@ -1,4 +1,4 @@
-<!doctype html><html>
+<!doctype html><html><head>
   <title>ICRA indicadors</title>
   <meta charset="utf8">
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
@@ -60,7 +60,7 @@
       align-items:center;
     }
   </style>
-<head></head><body>
+</head><body>
 
 <div><!--temporal warning tmp-->
   <details style="border:2px solid;padding:10px" small>
@@ -74,6 +74,12 @@
     <button onclick="this.parentNode.style.display='none'">X</button>
   </details>
 </div>
+
+<nav>
+  <b href="index.html">scopus</b>  |
+  <a href="centre.html">centre</a> |
+  <a href="ips.html">IPs</a>       |
+</nav><hr>
 
 <h3>
   <div style="display:flex;justify-content:space-between;align-items:center">
@@ -1047,6 +1053,11 @@
     mounted(){
       document.querySelector("textarea[query]").focus();
       this.get_scimagocsv();
+
+      //if query is in the url, start search immediately
+      if(query){
+        this.get_publications();
+      }
     },
   }).mount("#app");
 </script>
