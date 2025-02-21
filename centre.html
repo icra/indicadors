@@ -18,6 +18,8 @@
   </style>
 <head></head><body>
 
+<b>en construcció</b>
+
 <nav>
   <a href="index.html">scopus</a>  |
   <b href="centre.html">centre</b> |
@@ -32,9 +34,9 @@
       <th>Indicador</th>
       <th v-for="obj,year in indi.years">{{year}}</th>
     </tr>
-    <tbody v-for="indi in indicadors">
+    <tbody v-for="indi,i in indicadors">
       <tr>
-        <td small>{{indi.text}}</td>
+        <td small>{{i+1}}. {{indi.text}}</td>
         <td v-for="obj,year in indi.years" center>
           <span>{{obj.valor}}</span>
           <span small style="color:#666">&nbsp;{{indi.unit}}</span>
