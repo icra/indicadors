@@ -71,6 +71,13 @@
       It's possible that the error 429 "too many requests" appears.<br>
       This will be solved (hopefully) contracting a paid access to scopus.<br>
     </p>
+    <b>coses pendents</b>
+    <ul>
+      <li>scimagojr CSV descarregar per tots els anys
+      <li>journal metrics buscar per ISSN i no per nom
+      <li>calcular per cada any X el nombre de cites fetes durant aquell any a tots els articles publicats
+      <li>policyprofiles.sagepub.com
+    </ul>
     <button onclick="this.parentNode.style.display='none'">X</button>
   </details>
 </div><hr>
@@ -212,17 +219,45 @@
                           </div>
                           <div>
                             <div v-if="fwci[entry['prism:doi']]">
-                              FWCI: {{ fwci[entry["prism:doi"]] }}
+                              <details><pre>{{
+                                JSON.stringify(
+                                  fwci[entry['prism:doi']],
+                                  null,
+                                  '  ',
+                                )
+                              }}</pre></details>
                             </div>
                             <button v-if="!fwci[entry['prism:doi']]"
                               @click="check_fwci(entry['prism:doi'])"
                             >check fwci
                             </button>
                           </div>
+
+                          <div>
+                            <div v-if="plumx[entry['prism:doi']]">
+                              <pre>{{
+                                JSON.stringify(
+                                  plumx[entry['prism:doi']],
+                                  null,
+                                  '  ',
+                                )
+                              }}</pre>
+                            </div>
+                            <button v-if="!plumx[entry['prism:doi']]"
+                              @click="get_plumx(entry['prism:doi'])"
+                            >get plumx
+                            </button>
+                          </div>
+
                           <table border=1>
                             <tr v-for="val,key in entry">
                               <th>{{key}}</th>
-                              <td>{{val}}</td>
+                              <td>
+                                <div v-if="val && (val.constructor===Object || val.constructor===Array)">
+                                  <pre>{{JSON.stringify(val,null,'  ')}}</pre>
+                                </div>
+                                <div v-else>{{val}}</div>
+                              </td>
                             </tr>
                           </table>
                         </details>
@@ -267,7 +302,7 @@
           <th>Journal name</th>
           <th>Publications</th>
           <th>
-            SCOPUS journal 
+            SCOPUS journal
             metrics <button @click="request_all_journal_metrics()">request all journals</button>
             <div small>
               <label nowrap title="Source-Normalized Impact per Paper (SNIP): Measures contextual citation impact by taking differences in disciplinary characteristics into account; can be used to compare journals in different fields."><input type=checkbox v-model="metrics.snip">SNIP</label>
@@ -448,10 +483,27 @@
       </tr>
       <tr>
         <td style="vertical-align:middle">
+          H index
+        </td>
+        <td center style="vertical-align:middle">
+          {{calcula_H_index}}
+        </td>
+        <td colspan=2 xsmall>
+          <p>
+            Number of publications that have been cited at least that same
+            number of times.
+          </p>
+          <p v-if="calcula_H_index">
+            Results: {{calcula_H_index}} papers have been cited {{calcula_H_index}} times (or more).
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td style="vertical-align:middle">
           Impact Factor 2024
         </td>
         <td style="vertical-align:middle">
-          A/B = 
+          A/B =
         </td>
         <td>
           <div>
@@ -461,17 +513,6 @@
           <div>
             B = total number of "citable items" published in [2022,2023]
           </div>
-        </td>
-      </tr>
-      <tr>
-        <td style="vertical-align:middle">
-          H index
-        </td>
-        <td colspan=2>
-          Number of publications for which an author has been cited by other
-          authors at least that same number of times. For instance, an h-index
-          of 17 means that the scientist has published at least 17 papers that
-          have each been cited at least 17 times
         </td>
       </tr>
     </table>
@@ -535,9 +576,12 @@
         "CiteScore (tracker)",
       ],
 
-      //cache for fwci requested to scopus api (check_fwci())
+      //cache for journal metrics
       fwci:{
         //"doi":"fwci number",
+      },
+      plumx:{
+        //"doi":{plumx_data},
       },
 
       scimagocsv:null,
@@ -674,6 +718,10 @@
 
         //cache result and return
         this.journal_metrics[journal_name]=data;
+
+        //get issn and eissn
+        console.log(data);
+
         return data;
       },
 
@@ -706,17 +754,29 @@
         const API_KEY=this.scopus.API_KEY;
         const url=`https://api.elsevier.com/content/abstract/doi/${encodeURIComponent(doi)}?apiKey=${API_KEY}`;
 
-        let options={headers:{ "Accept":"application/json"}};
+        let options={headers:{Accept:"application/json"}};
         const response = await fetch(url,options);
         if(!response.ok) throw new Error("Error fetching Scopus data");
         const data     = await response.json();
         console.log(data);
-        const coredata = data["abstracts-retrieval-response"]["coredata"];
-        const fwci     = coredata["field-weighted-citation-impact"] || "Not available";
+        //save to cache
+        this.fwci[doi]=data;
+      },
 
-        //save to cache and return
-        this.fwci[doi]=fwci;
-        return fwci;
+      async get_plumx(doi){
+        if(this.plumx[doi]){
+          return this.plumx[doi];
+        }
+
+        const API_KEY=this.scopus.API_KEY;
+        const url=`https://api.elsevier.com/analytics/plumx/doi/${encodeURIComponent(doi)}?apiKey=${API_KEY}`;
+
+        let options={headers:{Accept:"application/json"}};
+        const response = await fetch(url,options);
+        if(!response.ok) throw new Error("Error fetching PlumX data");
+        const data     = await response.json();
+        console.log(data);
+        this.plumx[doi]=data;
       },
 
       async check_scival(publication_id){
@@ -740,10 +800,11 @@
         console.log(data);
       },
 
+      //TODO no funciona
       async get_institution_impact(){
         let API_KEY = this.scopus.API_KEY;
         let afid    = 60110375; //icra affiliation id
-        let url     = `https://api.elsevier.com/content/affiliation/affiliation_id/${afid}?apiKey=${API_KEY}`;
+        let url     = `https://api.elsevier.com/content/affiliation/affiliation_id/${afid}`;
 
         let options={headers:{"Accept":"application/json"}};
         let response = await fetch(url,options);
@@ -755,11 +816,12 @@
         }
 
         let data = await response.json();
+        console.log(data);
         this.institution=data;
         return data;
       },
 
-      /*parse metrics read from scopus api*/
+      /*parse journal metrics from scopus api*/
       get_snip(journal_entry){
         let key = journal_entry[0];
         let jm  = this.journal_metrics;
@@ -1010,6 +1072,36 @@
           });
         });
         return cites;
+      },
+
+      calcula_H_index(){
+        if(
+          this.scopus.response  == null  ||
+          this.scopus.result    == null  ||
+          this.scopus.result_ok == false
+        ){
+          return 0;
+        }
+
+        let arr=[];
+        this.scopus.result.forEach(page=>{
+          page.forEach(entry=>{
+            let cites = parseInt(entry["citedby-count"]); //number
+            if(cites){
+              arr.push(cites);
+            }
+          });
+        });
+
+        //inicia impact factor = number of publications amb cites
+        let H_index = arr.length;
+        while(true){
+          let check = arr.filter(el=> el>=H_index ).length >= H_index;
+          if(check) break; //H_index found!
+          H_index--;       //otherwise: decrease H_index by 1
+        }
+        console.log({H_index,arr});
+        return H_index;
       },
 
       permalink(){
