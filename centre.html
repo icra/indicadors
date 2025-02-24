@@ -9,6 +9,9 @@
     [small]{
       font-size:smaller;
     }
+    [xsmall]{
+      font-size:x-small;
+    }
     [center]{
       text-align:center;
     }
@@ -39,7 +42,7 @@
         <td small>{{i+1}}. {{indi.text}}</td>
         <td v-for="obj,year in indi.years" center>
           <span>{{obj.valor}}</span>
-          <span small style="color:#666">&nbsp;{{indi.unit}}</span>
+          <span xsmall style="color:#666">&nbsp;{{indi.unit}}</span>
           <div v-for="incr in [indi.increment(year)]" small>
             <span v-if="incr.delta>0"  style="color:green">(+{{incr.perc.toFixed(1)}}%)</span>
             <span v-if="incr.delta<0"  style="color:red"  >({{ incr.perc.toFixed(1)}}%)</span>
@@ -48,7 +51,7 @@
         </td>
       </tr>
       <tr>
-        <td>subindicadors aqui
+        <td right>subindicadors aqui
       </tr>
     </tbody>
   </table>
@@ -56,31 +59,33 @@
 
 <script>
   class Indicador{
-    constructor(text,unit,subindicadors){
-      /*
-        descripcio:    String
-        unit:          String
-        subindicadors: Array objectes Indicador
-      */
-      this.text = text;
-      this.unit = unit;
+    constructor(text,unit, objectius, subindicadors){
+      this.text = text;        //String
+      this.unit = unit;        //String
+      this.base_year = "2023"; //String
+
+      objectius = objectius||{};
+
+      //objectius TODO{"2024":5,}
       this.years={
-        "2023":{valor:10},
-        "2024":{valor:9.84},
-        "2025":{valor:10},
-        "2026":{valor:11},
-        "2027":{valor:15},
-        "2028":{valor:20},
-        "2029":{valor:12},
+        "2023":{valor:10,   objectiu:false},
+        "2024":{valor:9.84, objectiu:objectius["2024"]||1}, //default objectiu: 1%
+        "2025":{valor:10,   objectiu:objectius["2025"]||1},
+        "2026":{valor:11,   objectiu:objectius["2026"]||1},
+        "2027":{valor:15,   objectiu:objectius["2027"]||1},
+        "2028":{valor:20,   objectiu:objectius["2028"]||1},
+        "2029":{valor:12,   objectiu:objectius["2029"]||1},
       };
-      this.subindicadors=[];
+
+      /* subindicadors: Array objectes Indicador */
+      this.subindicadors = subindicadors||[];
     }
 
     increment(year){
-      let base  = this.years["2023"].valor||1; //number (absolute)
-      let curr  = this.years[String(year)].valor; //number (absolute)
-      let delta = curr - base; //number (delta)
-      let perc  = 100*delta/base; //number (%)
+      let base  = this.years[this.base_year].valor||1; //number (absolute)
+      let curr  = this.years[String(year)].valor;      //number (absolute)
+      let delta = curr - base;                         //number (delta)
+      let perc  = 100*delta/base;                      //number (%)
       return {delta,perc};
     }
   }
@@ -89,7 +94,14 @@
     data(){return{
       indicadors:[
         new Indicador(
-          "Aportació econòmica total a través de projectes o contractes de recerca","k€",[
+          "Aportació econòmica total a través de projectes o contractes de recerca","k€",{
+            "2024":0,//%
+            "2025":2,//%
+            "2026":4,//%
+            "2027":6,//%
+            "2028":8,//%
+            "2029":10,//%
+          },[
             new Indicador("Aportació econòmica a través de projectes de recerca competitius Europeus (Horizon)","k€"),
             new Indicador("Aportació econòmica a través de projectes de recerca competitius Europeus (ERC, EIC)","k€"),
             new Indicador("Aportació econòmica a través de projectes de recerca competitius estatals (AEI, ERANETs)","k€"),
