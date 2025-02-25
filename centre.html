@@ -1,7 +1,14 @@
 <!doctype html><html><head>
   <title>ICRA indicadors</title>
   <meta charset="utf8">
+
+  <!--libs-->
+  <!--
+    - vue
+    - mssql
+  -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+
   <style>
     body{
       font-family: Eczar, IM Fell English, Georgia, serif;
@@ -17,6 +24,9 @@
     }
     [right]{
       text-align:right;
+    }
+    [monospace]{
+      font-family:monospace;
     }
   </style>
 <head></head><body>
@@ -41,13 +51,16 @@
       <tr>
         <td small>{{i+1}}. {{indi.text}}</td>
         <td v-for="obj,year in indi.years" center>
-          <span>{{obj.valor}}</span>
+          <span monospace>{{obj.valor}}</span>
           <span xsmall style="color:#666">&nbsp;{{indi.unit}}</span>
           <div v-for="incr in [indi.increment(year)]" small>
             <span v-if="incr.delta>0"  style="color:green">(+{{incr.perc.toFixed(1)}}%)</span>
             <span v-if="incr.delta<0"  style="color:red"  >({{ incr.perc.toFixed(1)}}%)</span>
             <span v-if="incr.delta==0" style="color:#ccc" >(=)</span>
           </div>
+        </td>
+        <td>
+          <button @click="indi.calcula()">calcula</button>
         </td>
       </tr>
       <tr>
@@ -68,13 +81,13 @@
 
       //objectius TODO{"2024":5,}
       this.years={
-        "2023":{valor:10,   objectiu:false},
-        "2024":{valor:9.84, objectiu:objectius["2024"]||1}, //default objectiu: 1%
-        "2025":{valor:10,   objectiu:objectius["2025"]||1},
-        "2026":{valor:11,   objectiu:objectius["2026"]||1},
-        "2027":{valor:15,   objectiu:objectius["2027"]||1},
-        "2028":{valor:20,   objectiu:objectius["2028"]||1},
-        "2029":{valor:12,   objectiu:objectius["2029"]||1},
+        "2023":{valor:0, objectiu:false},
+        "2024":{valor:0, objectiu:objectius["2024"]||1}, //default objectiu: 1%
+        "2025":{valor:0, objectiu:objectius["2025"]||1},
+        "2026":{valor:0, objectiu:objectius["2026"]||1},
+        "2027":{valor:0, objectiu:objectius["2027"]||1},
+        "2028":{valor:0, objectiu:objectius["2028"]||1},
+        "2029":{valor:0, objectiu:objectius["2029"]||1},
       };
 
       /* subindicadors: Array objectes Indicador */
@@ -88,19 +101,27 @@
       let perc  = 100*delta/base;                      //number (%)
       return {delta,perc};
     }
+
+    calcula(){
+      Object.keys(this.years).forEach(year=>{
+        app.calcula_aportacio_economica_projectes(year, this);
+      });
+    }
   }
 
   let app = Vue.createApp({
     data(){return{
+      projectes:null, //fetch cluster
+
       indicadors:[
         new Indicador(
           "Aportació econòmica total a través de projectes o contractes de recerca","k€",{
-            "2024":0,//%
-            "2025":2,//%
-            "2026":4,//%
-            "2027":6,//%
-            "2028":8,//%
-            "2029":10,//%
+            "2024": 0,//% (objectiu)
+            "2025": 2,//% (objectiu)
+            "2026": 4,//% (objectiu)
+            "2027": 6,//% (objectiu)
+            "2028": 8,//% (objectiu)
+            "2029":10,//% (objectiu)
           },[
             new Indicador("Aportació econòmica a través de projectes de recerca competitius Europeus (Horizon)","k€"),
             new Indicador("Aportació econòmica a través de projectes de recerca competitius Europeus (ERC, EIC)","k€"),
@@ -111,5 +132,52 @@
         ),
       ],
     }},
+
+    methods:{
+      calcula_aportacio_economica_projectes(year, indicador){
+        if(!this.projectes){return 0};
+
+        year = year || "2023";
+
+        let total_euros=0;
+
+        this.projectes.filter(proj=>{
+          let year_inici = proj.DataIniciReal.split("-")[0];
+          let year_final = proj.DataFiReal.split("-")[0];
+          return(
+            proj["Departament Àrea"]=="10. RECERCA" &&
+            year_inici <= year &&
+            year_final >= year
+          );
+        }).forEach(proj=>{
+          console.log(proj);
+          let euros = proj["Cobraments Reals"];
+          if(euros)
+            total_euros += euros;
+        });
+
+        //TODO
+        indicador.years[year].valor = total_euros;
+
+        console.log({year,total_euros})
+      },
+    },
   }).mount("#app");
+</script>
+
+<script>
+  //consulta client -> cluster -> sql server icra (icranet)
+  async function fetch_projectes(){
+    try{
+      let url="http://192.168.103.8:50000/projectes";
+      const response = await fetch(url);
+      if(!response.ok) throw("error fetching sql icranet")
+      const data    = await response.json();
+      app.projectes = data;
+      console.log(data);
+    }catch(err){
+      console.error('Error fetching data:', err);
+    }
+  }
+  fetch_projectes();
 </script>
