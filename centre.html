@@ -2,16 +2,19 @@
   <title>ICRA indicadors</title>
   <meta charset="utf8">
 
-  <!--libs-->
-  <!--
-    - vue
-    - mssql
-  -->
+  <!--lib vue-->
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
 
   <style>
     body{
       font-family: Eczar, IM Fell English, Georgia, serif;
+    }
+    table{
+      border-collapse:collapse;
+    }
+    summary:hover{
+      cursor:pointer;
+      text-decoration:underline;
     }
     [small]{
       font-size:smaller;
@@ -28,6 +31,16 @@
     [monospace]{
       font-family:monospace;
     }
+    [nom_bloc]{
+      color:darkblue;
+      cursor:pointer;
+    }
+    [nom_bloc]:hover{
+      text-decoration:underline;
+    }
+    [nowrap]{
+      white-space:nowrap;
+    }
   </style>
 <head></head><body>
 
@@ -42,66 +55,166 @@
 <h2>Indicadors de centre</h2>
 
 <div id=app>
-  <table border=1>
-    <tr v-for="indi in [indicadors[0]]">
-      <th>Indicador</th>
-      <th v-for="obj,year in indi.years">{{year}}</th>
-    </tr>
-    <tbody v-for="indi,i in indicadors">
+  <p>Puntuació total: 0 (preguntar exactament com calcular)</p><hr>
+
+  <!--secció indicadors-->
+  <details open>
+    <summary>Taula indicadors</summary>
+    <table border=1>
       <tr>
-        <td small>{{i+1}}. {{indi.text}}</td>
-        <td v-for="obj,year in indi.years" center>
-          <span monospace>{{obj.valor}}</span>
-          <span xsmall style="color:#666">&nbsp;{{indi.unit}}</span>
-          <div v-for="incr in [indi.increment(year)]" small>
-            <span v-if="incr.delta>0"  style="color:green">(+{{incr.perc.toFixed(1)}}%)</span>
-            <span v-if="incr.delta<0"  style="color:red"  >({{ incr.perc.toFixed(1)}}%)</span>
-            <span v-if="incr.delta==0" style="color:#ccc" >(=)</span>
-          </div>
-        </td>
-        <td>
-          <button @click="indi.calcula()">calcula</button>
+        <td center><b>Pes</b></td>
+        <td><b>Blocs</b></td>
+        <th v-for="year in years" center>{{year}}</th>
+      </tr>
+      <tbody v-for="bloc,i in blocs">
+        <tr style="background:#eee">
+          <td right><b>{{bloc.pes_percent}}%</b></td>
+          <td>
+            <b nom_bloc @click="bloc.visible^=1">
+              <span>{{i+1}}. {{bloc.nom}}</span>
+              <small> ({{bloc.indicadors.length}} ind.)</small>
+            </b>
+          </td>
+          <td v-for="year in years" center monospace title="Puntuació" style="color:darkblue">
+            <b v-if="false">{{bloc.puntuacio(year).toFixed(1)}}</b>
+          </td>
+        </tr>
+        <tr v-for="indi,j in bloc.indicadors" v-if="bloc.visible">
+          <td small right>{{indi.pes_percent}}%</td>
+          <td small>
+            <div style="display:flex;justify-content:space-between">
+              <div>{{i+1}}.{{j+1}}.
+                <span :title="indi.text">{{indi.text.slice(0,100)}}</span>
+                <span v-if="indi.text.length>100">...</span>
+              </div>
+              <div small style="color:#666" v-if="indi.unit">({{indi.unit}})</div>
+            </div>
+          </td>
+          <td v-for="obj,year in indi.years" center small nowrap>
+            <div v-for="incr in [indi.increment(year)]">
+              <div :title="`Canvi respecte ${indi.base_year}: ${incr.delta} ${indi.unit} (${incr.perc.toFixed(0)}%) | objectiu: +${incr.objectiu}% | compleix: ${incr.compleix?'Sí':'No'}`">
+                <!--valor cru indicador-->
+                <span monospace>{{obj.valor.toFixed(0)}}</span>
+
+                <!--increment i objectiu-->
+                <div v-if="!indi.years[year].excloure" small>
+                  <span :style="{color:incr.compleix?'green':'red'}">
+                    <span v-if="incr.delta>0">&uarr;</span>
+                    <span v-if="incr.delta<0">&darr;</span>
+                    <span>
+                      {{Math.abs(incr.perc).toFixed(0)}}%
+                    </span>
+                  </span>
+                  <span>
+                    (&uarr;{{incr.objectiu}}%)
+                  </span>
+                </div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <button @click="indi.calcula()" xsmall>obtenir dades</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </details><hr>
+
+  <!--secció projectes-->
+  <details open>
+    <summary>
+      Taula projectes
+      <span v-if="projectes">
+        (resultats: {{get_files_projectes.length}}/{{projectes.length}})
+      </span>
+    </summary>
+
+    <div v-if="!projectes">carregant projectes (SQL)...</div>
+
+    <!--checkboxes per veure columnes-->
+    <div v-if="projectes && projectes.length" small>
+      <label v-for="val,key in projectes[0]">
+        <input type=checkbox v-model="columnes_projectes[key]">
+        <span :style="{color:filtres_projectes[key]!=undefined?'blue':''}">{{key}}</span>
+      </label>
+    </div>
+
+    <table border=1 v-if="projectes && projectes.length" small>
+      <tr>
+        <th v-for="[key,_] in get_columnes_projectes">
+          {{key}}
+          <button v-if="filtres_projectes[key]!=undefined" @click="delete filtres_projectes[key]">
+            ="{{filtres_projectes[key]}}"
+          </button>
+        </th>
+      </tr>
+      <tr v-for="pro in get_files_projectes">
+        <td v-for="[key,_] in get_columnes_projectes">
+          <span @click="filtres_projectes[key]=pro[key]">{{pro[key]}}</span>
         </td>
       </tr>
-      <tr>
-        <td right>subindicadors aqui
-      </tr>
-    </tbody>
-  </table>
+    </table>
+  </details><hr>
 </div>
 
 <script>
+  class Bloc{
+    constructor(nom, pes_percent, indicadors){
+      this.nom         = nom;
+      this.pes_percent = pes_percent;
+      this.indicadors  = indicadors||[];
+
+      //GUI opcions
+      this.visible=1;
+    }
+
+    //suma puntuació de tots els indicadors
+    puntuacio(year){
+      return this.indicadors.map(i=>i.puntuacio(year)).reduce((p,c)=>p+c,0);
+    }
+  }
+
   class Indicador{
-    constructor(text,unit, objectius, subindicadors){
-      this.text = text;        //String
-      this.unit = unit;        //String
-      this.base_year = "2023"; //String
+    constructor(text,unit,pes_percent,objectius){
+      this.text        = text;             //String
+      this.unit        = unit;             //String
+      this.pes_percent = pes_percent || 0; //number
 
-      objectius = objectius||{};
+      this.base_year   = "2023";           //String
 
-      //objectius TODO{"2024":5,}
+      objectius = objectius||[]; //array percentatges
+
+      //objectius
       this.years={
-        "2023":{valor:0, objectiu:false},
-        "2024":{valor:0, objectiu:objectius["2024"]||1}, //default objectiu: 1%
-        "2025":{valor:0, objectiu:objectius["2025"]||1},
-        "2026":{valor:0, objectiu:objectius["2026"]||1},
-        "2027":{valor:0, objectiu:objectius["2027"]||1},
-        "2028":{valor:0, objectiu:objectius["2028"]||1},
-        "2029":{valor:0, objectiu:objectius["2029"]||1},
+        "2023":{valor:0, objectiu:0, excloure:true},
+        "2024":{valor:0, objectiu:0},
+        "2025":{valor:0, objectiu:objectius[1]||0},
+        "2026":{valor:0, objectiu:objectius[2]||0},
+        "2027":{valor:0, objectiu:objectius[3]||0},
+        "2028":{valor:0, objectiu:objectius[4]||0},
+        "2029":{valor:0, objectiu:objectius[5]||0},
       };
+    }
 
-      /* subindicadors: Array objectes Indicador */
-      this.subindicadors = subindicadors||[];
+    //calcula puntuació
+    puntuacio(year){
+      let pes = this.pes_percent/100;
+      let val = this.years[year] ? this.years[year].valor : 0;
+      let punts = pes*val;
+      return punts;
     }
 
     increment(year){
-      let base  = this.years[this.base_year].valor||1; //number (absolute)
-      let curr  = this.years[String(year)].valor;      //number (absolute)
-      let delta = curr - base;                         //number (delta)
-      let perc  = 100*delta/base;                      //number (%)
-      return {delta,perc};
+      let base     = this.years[this.base_year].valor||0; //number valor base
+      let curr     = this.years[String(year)].valor||0;   //number valor actual
+      let delta    = curr - base;                         //number diferencia
+      let perc     = 100*delta/base||0;                   //number diferencia (%)
+      let objectiu = this.years[year].objectiu;           //number objectiu (%)
+      let compleix = perc >= objectiu;                    //bool   compleix
+      return {delta,perc,objectiu,compleix};
     }
 
+    //calcula indicador
     calcula(){
       Object.keys(this.years).forEach(year=>{
         app.calcula_aportacio_economica_projectes(year, this);
@@ -109,33 +222,106 @@
     }
   }
 
+  let blocs=[
+    new Bloc("Excel·lència en recerca",30,[                                                                                                   /* 24, 25, 26, 27, 28, 29*/
+      new Indicador("Aportació econòmica total a través de projectes o contractes de recerca",                                       "k€",   10, [0,  2,  4,  6,  8, 10]),
+      new Indicador("Aportació econòmica a través de projectes de recerca competitius Europeus (Horizon)",                           "k€",    5, [0,  1,  2,  3,  4,  5]),
+      new Indicador("Aportació econòmica a través de projectes de recerca competitius Europeus (ERC-EIC)",                           "k€",    5, [0,  0,  5, 50, 50, 50]),
+      new Indicador("Aportació econòmica a través de projectes de recerca competitius estatals (AEI-ERANETs)",                       "k€",    5, [0,  1,  2,  3,  4,  5]),
+      new Indicador("Aportació econòmica a través de projectes de recerca competitius regionals (ACA-AGAUR)" ,                       "k€",    5, [0,  1,  2,  3,  4,  5]),
+      new Indicador("Nombre de projectes de recerca competitius vigents tipus Horizon coordinats",                                     "",   10, [0,  1,  1,  2,  2,  2]),
+      new Indicador("Nombre de projectes de recerca competitius vigents tipus ERC o EIC",                                              "", 12.5, [0,  1,  2,  2,  2,  2]),
+      new Indicador("Nombre de congressos/tallers/escoles d'estiu i altres activitats internacionals de recerca organitzats per ICRA", "",    5, [0,  5, 10, 10, 10, 15]),
+      new Indicador("Nombre de sessions especials en congressos organitzades per ICRA ",                                               "",    5, [0,  1,  2,  3,  4,  5]),
+      new Indicador("Nombre de comitès internacionals participats per ICRA ",                                                          "",  2.5, [0,  5, 10, 10, 10, 15]),
+      new Indicador("Nombre d'articles científics al Q1 (segons Scopus) ",                                                             "",   10, [0,  1,  2,  3,  4,  4]),
+      new Indicador("Nombre de cites anuals (segons Scopus) ",                                                                         "",   10, [0,  1,  2,  3,  4,  4]),
+      new Indicador("Índex d'impacte (Impact factor) de la institució (segons Scopus) en el moment de l'anàlisi ",                     "",    5, [0,  1,  2,  3,  4,  4]),
+      new Indicador("Nombre d'estades de recercaires (predocs, postdocs, seniors) internacionals a ICRA ",                             "",  2.5, [0,  1,  2,  3,  4,  4]),
+      new Indicador("Nombre d'estades de recercaires ICRA (predocs, postdocs, seniors) en centres internacionals ",                    "",  2.5, [0,  1,  2,  3,  4,  4]),
+      new Indicador("Rati d'èxit de les propostes de recerca competitives Europees (Horizon, ERC, EIC) ",                              "",    5, [0,  1,  2,  3,  4,  4]),
+    ]),
+    new Bloc("Promoure línies de recerca estratègiques",5,[
+      new Indicador("Aportació econòmica total a través de projectes o contractes de recerca a les noves línies L17 i L18", "k€",  50, [ 0,30,30,60,60,60]),
+      new Indicador("Nombre d'articles científics al Q1 (segons Scopus) associats a la L17 i la L18",                       "k€",  50, [ 0, 0, 5, 5,10,10]),
+    ]),
+    new Bloc("Promoure transferència",20,[
+      new Indicador("Percentatge de les aportacions de projectes/contractes de recerca tipus KTT respecte el total de les aportacions per recerca (competitius + KTT + mecenatge)", "", 10, [0, 13, 14, 16, 18, 18]),
+      new Indicador("Aportació econòmica a través de projectes/contractes tipus KTT ",                                                                                              "", 30, [0, 20, 30, 40, 50, 60]),
+      new Indicador("Nombre de projectes / contractes tipus KTT en curs ",                                                                                                          "", 15, [0,  5,  5, 10, 15, 20]),
+      new Indicador("Nombre de formacions / tallers per empreses / administracions organitzats per ICRA ",                                                                          "", 15, [0,  5, 10, 20, 25, 50]),
+      new Indicador("Nombre de projectes en l'àmbit de la indústria de coneixement (Llavor, Producte, Innovadors, EIC, o equivalents)",                                             "", 15, [0,  1,  2,  2,  2,  2]),
+      new Indicador("Nombre de doctorats industrials en curs",                                                                                                                      "", 15, [0,  1,  2,  2,  3,  3]),
+    ]),
+    new Bloc("Promoure mecenatge",5,[
+      new Indicador("Aportació econòmica a través de projectes de recerca per mecenatge", "k€", 70, [0, 20, 30, 40, 50, 60]),
+      new Indicador("Nombre de projectes de recerca per mecenatge",                        "",  30, [0,  2,  3,  4,  4,  5]),
+    ]),
+    new Bloc("Generació PI, spin-offs, start-ups",5,[
+      new Indicador("Nombre de patents/secrets industrials en tramitació o vigents",                           "", 20, [0, 1, 1,  2,  2,  2]),
+      new Indicador("Nombre d'spin-offs o start-ups amb participació d'ICRA en curs",                          "", 40, [0, 1, 1,  1,  1,  2]),
+      new Indicador("Percentatge d'articles científics amb socis industrials (no acadèmics) com a co-autors ", "", 40, [0, 5, 5, 10, 10, 15]),
+    ]),
+    new Bloc("Promoure impacte",20,[
+      new Indicador("Nombre d'estudiants d'ESO o Batxillerat acollits o mentoritzats des d'ICRA",                                              "", 10, [0, 10, 15, 20, 25, 30]),
+      new Indicador("Nombre de cites en legislació",                                                                                           "", 15, [0, 10, 15, 20, 25, 30]),
+      new Indicador("Nombre de participacions en comites d'experts en l'àmbit legislatiu i de gestió de l'aigua",                              "", 20, [0, 10, 15, 20, 25, 30]),
+      new Indicador("Nombre de premis/reconeixements a nivell regional/estatal",                                                               "",  5, [0, 10, 15, 20, 25, 30]),
+      new Indicador("Nombre de premis/reconeixements a nivell internacional",                                                                  "",  5, [0, 10, 15, 20, 25, 30]),
+      new Indicador("Nombre de narratives d'impacte sotmeses a CERCA i avaluades amb un excel·lent o outstanding",                             "", 15, [0,  1,  1,  2,  2,  3]),
+      new Indicador("Contribucions a canvis en la gestió de l'aigua a les conques internes de Catalunya",                                      "", 10, [0,  0,  1,  1,  2,  2]),
+      new Indicador("Nombre de llocs de treball generats mitjançant llicències amb participació d'ICRA",                                       "",  5, [0,  0,  1,  2,  2,  3]),
+      new Indicador("Nombre d'aliances sòlides amb entitats que tinguin una finalitat social (ambientals, esportives, culturals, educatives)", "", 15, [0,  1,  2,  2,  3,  3]),
+    ]),
+    new Bloc("Promoure comunicació",10,[
+      new Indicador("Nombre de seguidors/subscriptors a les xarxes socials d'ICRA",                                  "", 25, [0,  10,  15,  20,  25,  30]),
+      new Indicador("Nombre de comparticions (shares, retweets) a les xarxes socials d'ICRA",                        "",  5, [0,  10,  15,  20,  25,  30]),
+      new Indicador("Nombre de visualitzacions de sessions de streaming realitzades a les xarxes socials d'ICRA",    "", 10, [0, 100, 200, 300, 500, 800]),
+      new Indicador("Nombre d'actes de disseminació participats o organitzats per ICRA",                             "", 15, [0,   5,  10,  15,  20,  20]),
+      new Indicador("Nombre d'aparicions en els mitjans de comunicació escrits i audiovisuals regionals o estatals", "", 25, [0,  10,  15,  20,  25,  30]),
+      new Indicador("Nombre d'aparicions en els mitjans de comunicació escrits i audiovisuals internacionals",       "", 20, [0,  10,  15,  20,  25,  30]),
+    ]),
+    new Bloc("Relació amb patrons",5,[
+      new Indicador("Reunions de la Taula de l'Aigua amb l'ACA",                                                                                  "",  5, [0,  9,  9,  9,  9,  9]),
+      new Indicador("Hores computades per IPs a tasques associades a la taula de l'Aigua",                                                        "",  5, [0,300,400,500,550,600]),
+      new Indicador("Aportacions de projectes o contractes de KTT amb l'ACA, via contracte programa o licitació",                                 "", 25, [0, 10, 20, 30, 40, 45]),
+      new Indicador("Organització i participació en tallers UdG-ICRA per enfortir col·laboració en marc de l'aigua",                              "", 15, [0,  1,  1,  2,  2,  2]),
+      new Indicador("Iniciatives de recerca conjuntes UdG-ICRA",                                                                                  "", 15, [0,  1,  1,  2,  2,  2]),
+      new Indicador("Pressupost aconseguit en projectes de recerca competitiva i contractes de KTT conjuntament amb UdG",                         "", 25, [0,  0,  5,  5, 10, 10]),
+      new Indicador("Participació en actes/activitats organitzades per CERCA en l'àmbit de 'Dones i Ciència'/'Ciència a les escoles' o similars", "", 10, [0,  5, 10, 12, 15, 15]),
+    ]),
+  ];
+
+  //valors basals 2023
+  let basals=[2995,1248,38,1189,518,1,1,3,4,3,105,14215,11.75,5,1,20,0,0,12,395,21,3,0,0,0,0,3,1,13,1,87,3,1,0,0,0,0,1,1164,505,0,0,197,11,0,0,0,0,0,0,0];
+  blocs.forEach(bloc=>{
+    bloc.indicadors.forEach(indi=>{
+      indi.years["2023"].valor = basals.shift();
+    });
+  });
+
   let app = Vue.createApp({
     data(){return{
+      years:[2023,2024,2025,2026,2027,2028,2029],
+      blocs,
       projectes:null, //fetch cluster
 
-      indicadors:[
-        new Indicador(
-          "Aportació econòmica total a través de projectes o contractes de recerca","k€",{
-            "2024": 0,//% (objectiu)
-            "2025": 2,//% (objectiu)
-            "2026": 4,//% (objectiu)
-            "2027": 6,//% (objectiu)
-            "2028": 8,//% (objectiu)
-            "2029":10,//% (objectiu)
-          },[
-            new Indicador("Aportació econòmica a través de projectes de recerca competitius Europeus (Horizon)","k€"),
-            new Indicador("Aportació econòmica a través de projectes de recerca competitius Europeus (ERC, EIC)","k€"),
-            new Indicador("Aportació econòmica a través de projectes de recerca competitius estatals (AEI, ERANETs)","k€"),
-            new Indicador("Aportació econòmica a través de projectes de recerca competitius regionals (ACA, AGAUR)","k€"),
-            new Indicador("Aportació econòmica a través de projectes o contractes de recerca aplicada o KTT","k€"),
-          ],
-        ),
-      ],
+      columnes_projectes:{
+        "Estat":true,
+        "Acronim":true,
+      },
+      filtres_projectes:{
+        //columna:valor
+      },
     }},
 
     methods:{
+      //processsa dades llegides del ICRA SQL Server
       calcula_aportacio_economica_projectes(year, indicador){
-        if(!this.projectes){return 0};
+        if(!this.projectes){
+          throw("impossible calcular indicador");
+          return 0;
+        };
 
         year = year || "2023";
 
@@ -150,31 +336,49 @@
             year_final >= year
           );
         }).forEach(proj=>{
-          console.log(proj);
           let euros = proj["Cobraments Reals"];
           if(euros)
             total_euros += euros;
         });
 
-        //TODO
         indicador.years[year].valor = total_euros;
 
-        console.log({year,total_euros})
+        console.log({year,total_euros});
+      },
+    },
+
+    computed:{
+      get_columnes_projectes(){
+        return Object.entries(this.columnes_projectes).filter(en=>en[1]);
+      },
+      get_files_projectes(){
+        if(!this.projectes) return [];
+
+        let filtres = Object.entries(this.filtres_projectes);
+        if(filtres.length==0) return this.projectes;
+
+        return this.projectes.filter(row=>{
+          let bool = false;
+          return filtres.every(([key,val])=>row[key]==val);
+        });
       },
     },
   }).mount("#app");
 </script>
 
 <script>
-  //consulta client -> cluster -> sql server icra (icranet)
+  //consulta client -> cluster -> sql server (icranet)
   async function fetch_projectes(){
     try{
-      let url="http://192.168.103.8:50000/projectes";
-      const response = await fetch(url);
+      console.log("consulta: client -> undarius -> sql server icra ");
+      let url="http://undarius.icra.local:50000/projectes";
+
+      let response = await fetch(url);
       if(!response.ok) throw("error fetching sql icranet")
-      const data    = await response.json();
+
+      let data = await response.json();
       app.projectes = data;
-      console.log(data);
+      console.log({projectes:data});
     }catch(err){
       console.error('Error fetching data:', err);
     }
