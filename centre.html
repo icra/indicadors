@@ -65,6 +65,9 @@
         <td center><b>Pes</b></td>
         <td><b>Blocs</b></td>
         <th v-for="year in years" center>{{year}}</th>
+        <td center>
+          <button disabled>obtenir tots</button>
+        </td>
       </tr>
       <tbody v-for="bloc,i in blocs">
         <tr style="background:#eee">
@@ -78,6 +81,7 @@
           <td v-for="year in years" center monospace title="Puntuació" style="color:darkblue">
             <b v-if="false">{{bloc.puntuacio(year).toFixed(1)}}</b>
           </td>
+          <td></td>
         </tr>
         <tr v-for="indi,j in bloc.indicadors" v-if="bloc.visible">
           <td small right>{{indi.pes_percent}}%</td>
@@ -97,7 +101,7 @@
                 <span monospace>{{obj.valor.toFixed(0)}}</span>
 
                 <!--increment i objectiu-->
-                <div v-if="!indi.years[year].excloure" small>
+                <div v-if="!obj.excloure && obj.valor" small>
                   <span :style="{color:incr.compleix?'green':'red'}">
                     <span v-if="incr.delta>0">&uarr;</span>
                     <span v-if="incr.delta<0">&darr;</span>
@@ -112,8 +116,9 @@
               </div>
             </div>
           </td>
-          <td>
-            <button @click="indi.calcula()" xsmall>obtenir dades</button>
+          <td center>
+            <button v-if="indi.funcio_calculadora" @click="indi.calcula()" xsmall >obtenir dades</button>
+            <span v-else xsmall style="color:#bbb">pendent</span>
           </td>
         </tr>
       </tbody>
@@ -182,12 +187,14 @@
   }
 
   class Indicador{
-    constructor(text,unit,pes_percent,objectius){
+    constructor(text,unit,pes_percent,objectius,funcio_calculadora){
       this.text        = text;             //String
       this.unit        = unit;             //String
       this.pes_percent = pes_percent || 0; //number
 
       this.base_year   = "2023";           //String
+
+      this.funcio_calculadora = funcio_calculadora; //String
 
       objectius = objectius||[]; //array percentatges
 
@@ -224,7 +231,7 @@
     //calcula indicador
     calcula(){
       Object.keys(this.years).forEach(year=>{
-        app.calcula_aportacio_economica_projectes(year, this);
+        app[this.funcio_calculadora](year, this);
       });
     }
   }
@@ -236,7 +243,7 @@
       new Indicador("Aportació econòmica a través de projectes de recerca competitius Europeus (ERC-EIC)",                           "k€",    5, [0,  0,  5, 50, 50, 50]),
       new Indicador("Aportació econòmica a través de projectes de recerca competitius estatals (AEI-ERANETs)",                       "k€",    5, [0,  1,  2,  3,  4,  5]),
       new Indicador("Aportació econòmica a través de projectes de recerca competitius regionals (ACA-AGAUR)" ,                       "k€",    5, [0,  1,  2,  3,  4,  5]),
-      new Indicador("Nombre de projectes de recerca competitius vigents tipus Horizon coordinats",                                     "",   10, [0,  1,  1,  2,  2,  2]),
+      new Indicador("Nombre de projectes de recerca competitius vigents tipus Horizon coordinats",                                     "",   10, [0,  1,  1,  2,  2,  2], "calcula_nombre_projectes_Horizon"),
       new Indicador("Nombre de projectes de recerca competitius vigents tipus ERC o EIC",                                              "", 12.5, [0,  1,  2,  2,  2,  2]),
       new Indicador("Nombre de congressos/tallers/escoles d'estiu i altres activitats internacionals de recerca organitzats per ICRA", "",    5, [0,  5, 10, 10, 10, 15]),
       new Indicador("Nombre de sessions especials en congressos organitzades per ICRA ",                                               "",    5, [0,  1,  2,  3,  4,  5]),
@@ -316,6 +323,7 @@
       columnes_projectes:{
         "Estat":true,
         "Acronim":true,
+        "Departament Àrea":true,
       },
       filtres_projectes:{
         //columna:valor
@@ -324,7 +332,8 @@
 
     methods:{
       //processsa dades llegides del ICRA SQL Server
-      calcula_aportacio_economica_projectes(year, indicador){
+      //funció pels indicadors 1.6 i 1.7
+      calcula_nombre_projectes_Horizon(year, indicador){
         if(!this.projectes){
           throw("impossible calcular indicador");
           return 0;
@@ -332,25 +341,28 @@
 
         year = year || "2023";
 
-        let total_euros=0;
-
-        this.projectes.filter(proj=>{
-          let year_inici = proj.DataIniciReal.split("-")[0];
+        //calcula nombre de projectes horizon
+        let proj_Horizon = this.projectes.filter(proj=>{
           let year_final = proj.DataFiReal.split("-")[0];
           return(
-            proj["Departament Àrea"]=="10. RECERCA" &&
-            year_inici <= year &&
-            year_final >= year
+            (
+              proj["Estat"]=="410. Finalitzat" ||
+              proj["Estat"]=="220. En execució"
+            ) &&
+            proj["Departament Àrea"]    =="10. RECERCA"             &&
+            proj["Tipus de finançament"]=="020. COMPETITIU EUROPEU" &&
+            proj["Programa de finançament"]!=null                   &&
+            proj["Programa de finançament"].includes("H2020")       &&
+            year_final >= year                                      &&
+            1
           );
-        }).forEach(proj=>{
-          let euros = proj["Cobraments Reals"];
-          if(euros)
-            total_euros += euros;
         });
 
-        indicador.years[year].valor = total_euros;
+        let total = proj_Horizon.length;
 
-        console.log({year,total_euros});
+        indicador.years[year].valor = total;
+
+        console.log({year,proj_Horizon});
       },
     },
 
