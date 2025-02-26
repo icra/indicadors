@@ -129,9 +129,10 @@
       </span>
     </summary>
 
-    <p>
+    <p v-if="!projectes">
       Perquè aquesta secció funcioni cal descarregar i importar aquest certificat:
       <a href="https://undarius.icra.local:50000/server.cert">certificat HTTPS</a>
+      <hr>
     </p>
 
     <div v-if="!projectes">carregant projectes (SQL)...</div>
