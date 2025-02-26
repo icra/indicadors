@@ -55,7 +55,7 @@
 <h2>Indicadors de centre</h2>
 
 <div id=app>
-  <p>Puntuació total: 0 (preguntar com calcular exactament)</p><hr>
+  <p>Puntuació total: 0 (preguntar)</p><hr>
 
   <!--secció indicadors-->
   <details open>
@@ -136,12 +136,18 @@
     </summary>
 
     <div v-if="!projectes">
-      Perquè aquesta secció funcioni cal descarregar i importar aquest certificat:
-      <a href="https://undarius.icra.local:50000/server.cert">certificat HTTPS</a>
-      <hr>
+      Perquè tot funcioni cal:<ol>
+        <li>
+          Estar dins la xarxa de l'ICRA (o a la VPN)
+        </li>
+        <li>
+          Descarregar i importar aquest certificat:
+          <a href="https://undarius.icra.local:50000/server.cert">certificat HTTPS Undarius</a>
+        </li>
+      </ol>
     </div>
 
-    <div v-if="!projectes">carregant projectes (SQL)...</div>
+    <div v-if="!projectes && carregant">carregant projectes (SQL)...</div>
 
     <!--checkboxes per veure columnes-->
     <div v-if="projectes && projectes.length" small>
@@ -320,6 +326,7 @@
       years:[2023,2024,2025,2026,2027,2028,2029],
       blocs,
       projectes:null, //fetch cluster
+      carregant:true,
 
       columnes_projectes:{
         "Estat":true,
@@ -441,6 +448,7 @@
       console.log({projectes:data});
     }catch(err){
       console.error('Error fetching data:', err);
+      app.carregant = false;
     }
   }
   fetch_projectes();
