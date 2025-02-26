@@ -94,11 +94,12 @@
               <div small style="color:#666" v-if="indi.unit">({{indi.unit}})</div>
             </div>
           </td>
-          <td v-for="obj,year in indi.years" center small nowrap>
+          <td v-for="obj,year in indi.years" center small nowrap monospace>
             <div v-for="incr in [indi.increment(year)]">
               <div :title="`Canvi respecte ${indi.base_year}: ${incr.delta} ${indi.unit} (${incr.perc.toFixed(0)}%) | objectiu: +${incr.objectiu}% | compleix: ${incr.compleix?'Sí':'No'}`">
+
                 <!--valor cru indicador-->
-                <span monospace>{{obj.valor.toFixed(0)}}</span>
+                <span>{{obj.valor.toFixed(0)}}</span>
 
                 <!--increment i objectiu-->
                 <div v-if="!obj.excloure && obj.valor" small>
@@ -117,7 +118,7 @@
             </div>
           </td>
           <td center>
-            <button v-if="indi.funcio_calculadora" @click="indi.calcula()" xsmall >obtenir dades</button>
+            <button v-if="indi.funcio_calculadora" @click="indi.calcula()" xsmall :disabled="!projectes">obtenir dades</button>
             <span v-else xsmall style="color:#bbb">pendent</span>
           </td>
         </tr>
@@ -244,7 +245,7 @@
       new Indicador("Aportació econòmica a través de projectes de recerca competitius estatals (AEI-ERANETs)",                       "k€",    5, [0,  1,  2,  3,  4,  5]),
       new Indicador("Aportació econòmica a través de projectes de recerca competitius regionals (ACA-AGAUR)" ,                       "k€",    5, [0,  1,  2,  3,  4,  5]),
       new Indicador("Nombre de projectes de recerca competitius vigents tipus Horizon coordinats",                                     "",   10, [0,  1,  1,  2,  2,  2], "calcula_nombre_projectes_Horizon"),
-      new Indicador("Nombre de projectes de recerca competitius vigents tipus ERC o EIC",                                              "", 12.5, [0,  1,  2,  2,  2,  2]),
+      new Indicador("Nombre de projectes de recerca competitius vigents tipus ERC o EIC",                                              "", 12.5, [0,  1,  2,  2,  2,  2], "calcula_nombre_projectes_ERC"),
       new Indicador("Nombre de congressos/tallers/escoles d'estiu i altres activitats internacionals de recerca organitzats per ICRA", "",    5, [0,  5, 10, 10, 10, 15]),
       new Indicador("Nombre de sessions especials en congressos organitzades per ICRA ",                                               "",    5, [0,  1,  2,  3,  4,  5]),
       new Indicador("Nombre de comitès internacionals participats per ICRA ",                                                          "",  2.5, [0,  5, 10, 10, 10, 15]),
@@ -335,7 +336,9 @@
       //funció pels indicadors 1.6 i 1.7
       calcula_nombre_projectes_Horizon(year, indicador){
         if(!this.projectes){
-          throw("impossible calcular indicador");
+          let msg = "impossible calcular indicador";
+          alert(msg);
+          throw(msg);
           return 0;
         };
 
@@ -363,6 +366,43 @@
         indicador.years[year].valor = total;
 
         console.log({year,proj_Horizon});
+      },
+
+      calcula_nombre_projectes_ERC(year, indicador){
+        if(!this.projectes){
+          let msg = "impossible calcular indicador";
+          alert(msg);
+          throw(msg);
+          return 0;
+        };
+
+        year = year || "2023";
+
+        //calcula nombre de projectes horizon
+        let proj_ERC = this.projectes.filter(proj=>{
+          let year_final = proj.DataFiReal.split("-")[0];
+          return(
+            (
+              proj["Estat"]=="410. Finalitzat" ||
+              proj["Estat"]=="220. En execució"
+            ) &&
+            proj["Departament Àrea"]    =="10. RECERCA"             &&
+            proj["Tipus de finançament"]=="020. COMPETITIU EUROPEU" &&
+            proj["Programa de finançament"]!=null                   &&
+            (
+              proj["Programa de finançament"].includes("ERC") ||
+              proj["Programa de finançament"].includes("EIC")
+            ) &&
+            year_final >= year                                      &&
+            1
+          );
+        });
+
+        let total = proj_ERC.length;
+
+        indicador.years[year].valor = total;
+
+        console.log({year,proj_ERC});
       },
     },
 
