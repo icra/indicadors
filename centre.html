@@ -374,7 +374,7 @@
       console.log("consulta: client -> undarius -> sql server icra ");
       let url="http://undarius.icra.local:50000/projectes";
 
-      let options={referrerPolicy:"unsafe-url"};
+      let options={referrerPolicy:"unsafe-url",mode:"no-cors"};
       let response = await fetch(url,options);
       if(!response.ok) throw("error fetching sql icranet")
 
