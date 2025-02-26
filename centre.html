@@ -1,7 +1,6 @@
 <!doctype html><html><head>
   <title>ICRA indicadors</title>
   <meta charset="utf8">
-  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
 
   <!--lib vue-->
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
@@ -130,6 +129,11 @@
       </span>
     </summary>
 
+    <p>
+      Perquè aquesta secció funcioni cal descarregar i importar aquest certificat:
+      <a href="https://undarius.icra.local:50000/server.cert">certificat HTTPS</a>
+    </p>
+
     <div v-if="!projectes">carregant projectes (SQL)...</div>
 
     <!--checkboxes per veure columnes-->
@@ -157,6 +161,7 @@
     </table>
   </details><hr>
 </div>
+
 
 <script>
   class Bloc{
@@ -372,9 +377,9 @@
   async function fetch_projectes(){
     try{
       console.log("consulta: client -> undarius -> sql server icra ");
-      let url="http://undarius.icra.local:50000/projectes";
+      let url="https://undarius.icra.local:50000/projectes";
 
-      let options={referrerPolicy:"unsafe-url",mode:"no-cors"};
+      let options={};
       let response = await fetch(url,options);
       if(!response.ok) throw("error fetching sql icranet")
 
