@@ -569,11 +569,12 @@
 
       let options={};
       let response = await fetch(url,options);
-      if(!response.ok) throw("error fetching sql icranet")
+      if(!response.ok) throw("error fetching sql icranet");
 
       let data = await response.json();
       app.projectes = data;
       console.log({projectes:data});
+      app.carregant = false;
     }catch(err){
       console.error('Error fetching data:', err);
       app.carregant = false;
