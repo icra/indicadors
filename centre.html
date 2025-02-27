@@ -19,11 +19,17 @@
       cursor:pointer;
       text-decoration:underline;
     }
+    [bold]{
+      font-weight:bold;
+    }
     [small]{
       font-size:smaller;
     }
     [xsmall]{
       font-size:x-small;
+    }
+    [large]{
+      font-size:larger;
     }
     [center]{
       text-align:center;
@@ -76,11 +82,27 @@
     v-show="caption.visible"
   ></div>
 
-  <p>Puntuació total: 0 (pendent implementar fórmula. Puntuació = pes_bloc*pes_indicador*increment/objectiu)</p><hr>
+  <!--avís certificat-->
+  <div v-if="!projectes">
+    Perquè tot funcioni cal:<ol>
+      <li>
+        Estar dins la xarxa de l'ICRA (o a la VPN)
+      </li>
+      <li>
+        Descarregar i importar aquest certificat:
+        <a href="https://undarius.icra.local:50000/server.cert">certificat HTTPS Undarius</a>
+      </li>
+    </ol><hr>
+  </div>
 
   <!--secció indicadors-->
-  <details open>
-    <summary>Taula indicadors</summary>
+  <details>
+    <summary large bold>
+      Taula indicadors
+      <span v-if="projectes">
+        &mdash; Puntuació total: 0 (pendent implementar fórmula. Puntuació = pes_bloc*pes_indicador*increment/objectiu)
+      </span>
+    </summary>
     <p>
       <label>
         <input type=checkbox v-model="caption.actiu">
@@ -156,35 +178,25 @@
   </details><hr>
 
   <!--secció projectes-->
-  <details open>
-    <summary>
+  <details>
+    <summary large bold>
       Taula projectes
       <span v-if="projectes">
-        (resultats: {{get_files_projectes.length}}/{{projectes.length}})
+        &mdash; Resultats: {{get_files_projectes.length}}/{{projectes.length}}
       </span>
     </summary>
 
-    <div v-if="!projectes">
-      Perquè tot funcioni cal:<ol>
-        <li>
-          Estar dins la xarxa de l'ICRA (o a la VPN)
-        </li>
-        <li>
-          Descarregar i importar aquest certificat:
-          <a href="https://undarius.icra.local:50000/server.cert">certificat HTTPS Undarius</a>
-        </li>
-      </ol>
-    </div>
+    <div v-if="!projectes">carregant projectes (SQL)...</div>
 
-    <div v-if="!projectes && carregant">carregant projectes (SQL)...</div>
+    <div v-if="!projectes && !carregant">error consulta SQL Server ICRA</div>
 
     <!--checkboxes per veure columnes-->
-    <div v-if="projectes && projectes.length" small>
+    <p v-if="projectes && projectes.length" small>
       <label v-for="val,key in projectes[0]">
         <input type=checkbox v-model="columnes_projectes[key]">
         <span :style="{color:filtres_projectes[key]!=undefined?'blue':''}">{{key}}</span>
       </label>
-    </div>
+    </p>
 
     <table border=1 v-if="projectes && projectes.length" small>
       <tr>
@@ -193,6 +205,7 @@
           <button v-if="filtres_projectes[key]!=undefined" @click="delete filtres_projectes[key]">
             ="{{filtres_projectes[key]}}"
           </button>
+          <button @click="columnes_projectes[key]=false">X</button>
         </th>
       </tr>
       <tr v-for="pro in get_files_projectes">
@@ -201,6 +214,32 @@
         </td>
       </tr>
     </table>
+  </details><hr>
+
+  <!--secció personal rrhh-->
+  <details open>
+    <summary large bold>
+      Taula RRHH
+      <span v-if="personal">
+        &mdash; {{personal.length}} persones
+      </span>
+    </summary>
+    <div v-if="!personal">carregant personal (SQL)...</div>
+
+    <div>
+      <table border=1 v-if="personal && personal.length" small>
+        <tr>
+          <th v-for="val,key in personal[0]">
+            <button @click="personal.sort((a,b)=>a[key]>b[key]?1:-1)">&darr;{{key}}</button>
+          </th>
+        </tr>
+        <tr v-for="persona in personal">
+          <td v-for="val,key in persona">
+            {{val}}
+          </td>
+        </tr>
+      </table>
+    </div>
   </details><hr>
 </div>
 
@@ -382,8 +421,10 @@
     data(){return{
       years:[2023,2024,2025,2026,2027,2028,2029],
       blocs,
-      projectes:null, //fetch cluster
       carregant:true,
+
+      projectes:null, //fetch_taula_undarius()
+      personal:null,  //fetch_taula_undarius()
 
       columnes_projectes:{
         "Estat":true,
@@ -460,15 +501,14 @@
               proj["Estat"]=="410. Finalitzat" ||
               proj["Estat"]=="220. En execució"
             ) &&
-            proj["Departament Àrea"]    =="10. RECERCA"             &&
+            proj["Departament Àrea"]    =="10. RECERCA" &&
             proj["Tipus de finançament"]=="020. COMPETITIU EUROPEU" &&
-            proj["Programa de finançament"]!=null                   &&
+            proj["Programa de finançament"]!=null &&
             (
               proj["Programa de finançament"].includes("ERC") ||
               proj["Programa de finançament"].includes("EIC")
             ) &&
-            year_final >= year                                      &&
-            1
+            year_final >= year
           );
         });
 
@@ -562,23 +602,31 @@
 
 <script>
   //consulta client -> cluster -> sql server (icranet)
-  async function fetch_projectes(){
+  async function fetch_taula_undarius(nom_taula){
+    //nom_taula: String
+    if(![
+      "projectes",
+      "personal",
+    ].includes(nom_taula)){
+      throw("nom taula incorrecte");
+    }
+
     try{
       console.log("consulta: client -> undarius -> sql server icra ");
-      let url="https://undarius.icra.local:50000/projectes";
+      let url=`https://undarius.icra.local:50000/${nom_taula}`;
 
       let options={};
       let response = await fetch(url,options);
-      if(!response.ok) throw("error fetching sql icranet");
+      if(!response.ok) throw(`error fetching sql icranet (taula '${nom_taula}')`);
 
       let data = await response.json();
-      app.projectes = data;
-      console.log({projectes:data});
-      app.carregant = false;
+      app[nom_taula] = data;
+      console.log({taula:nom_taula, data});
     }catch(err){
       console.error('Error fetching data:', err);
       app.carregant = false;
     }
   }
-  fetch_projectes();
+  fetch_taula_undarius("projectes");
+  fetch_taula_undarius("personal");
 </script>
