@@ -81,6 +81,12 @@
   <!--secció indicadors-->
   <details open>
     <summary>Taula indicadors</summary>
+    <p>
+      <label>
+        <input type=checkbox v-model="caption.actiu">
+        Mostrar finestreta amb detalls al passar el ratolí per sobre un indicador
+      </label>
+    </p>
     <table border=1>
       <tr>
         <td center><b>Pes</b></td>
@@ -353,7 +359,10 @@
     visible:false,
     text:"caption text",
 
+    actiu:true,
+
     show(ev, new_text){
+      if(!this.actiu) return;
       ev.stopPropagation(); //prevent parent elements triggering show()
       if(new_text){
         caption.text=new_text;
@@ -364,6 +373,7 @@
       el.style.top=(ev.clientY+15)+"px";
     },
     hide(){
+      if(!this.actiu) return;
       this.visible=false;
     },
   };
@@ -379,6 +389,8 @@
         "Estat":true,
         "Acronim":true,
         "Departament Àrea":true,
+        "Tipus de finançament":true,
+        "Programa de finançament":true,
       },
       filtres_projectes:{
         //columna:valor
@@ -476,6 +488,7 @@
 
       crea_html_caption(indi,year,incr){
         let header = `
+          <b>Detalls indicador</b>
           <table border=1 small>
             <tr>
               <td>Canvi respecte ${indi.base_year}</td>
@@ -496,7 +509,7 @@
         if(arr){
           llista+="<hr>";
           llista+=`Nombre d'elements: ${arr.length}`;
-          llista+="<table border=1>";
+          llista+="<table border=1 xsmall>";
           arr.forEach((row,i)=>{
             if(i==0){
               llista+="<tr>";
