@@ -12,6 +12,9 @@
     table{
       border-collapse:collapse;
     }
+    td,th{
+      padding:0;
+    }
     summary:hover{
       cursor:pointer;
       text-decoration:underline;
@@ -41,6 +44,17 @@
     [nowrap]{
       white-space:nowrap;
     }
+    #caption{
+      position:fixed;
+      z-index:999;
+      background:white;
+      padding:0.3em 0.5em;
+      box-shadow: 1px 1px 1px 1px rgba(0,0,0,.1);
+      border:1px solid #ccc;
+      color:#666;
+      text-align:left;
+      max-width:800px;
+    }
   </style>
 <head></head><body>
 
@@ -55,7 +69,14 @@
 <h2>Indicadors de centre</h2>
 
 <div id=app>
-  <p>Puntuació total: 0 (preguntar)</p><hr>
+  <!--finestra petita mòbil-->
+  <div
+    id=caption
+    v-html="caption.text"
+    v-show="caption.visible"
+  ></div>
+
+  <p>Puntuació total: 0 (pendent implementar fórmula. Puntuació = pes_bloc*pes_indicador*increment/objectiu)</p><hr>
 
   <!--secció indicadors-->
   <details open>
@@ -95,9 +116,11 @@
             </div>
           </td>
           <td v-for="obj,year in indi.years" center small nowrap monospace>
-            <div v-for="incr in [indi.increment(year)]">
-              <div :title="`Canvi respecte ${indi.base_year}: ${incr.delta} ${indi.unit} (${incr.perc.toFixed(0)}%) | objectiu: +${incr.objectiu}% | compleix: ${incr.compleix?'Sí':'No'}`">
-
+            <div v-for="incr in [indi.increment(year)]"
+              @mousemove="caption.show($event, crea_html_caption(indi,year,incr))"
+              @mouseout="caption.hide()"
+            >
+              <div>
                 <!--valor cru indicador-->
                 <span>{{obj.valor.toFixed(0)}}</span>
 
@@ -175,7 +198,6 @@
   </details><hr>
 </div>
 
-
 <script>
   class Bloc{
     constructor(nom, pes_percent, indicadors){
@@ -199,21 +221,26 @@
       this.unit        = unit;             //String
       this.pes_percent = pes_percent || 0; //number
 
-      this.base_year   = "2023";           //String
-
-      this.funcio_calculadora = funcio_calculadora; //String
-
       objectius = objectius||[]; //array percentatges
 
-      //objectius
+      this.base_year   = "2023";           //String
+
+      //funció que calcula l'indicador per un determinat any. Modifica this.years[year][valor i llista]
+      this.funcio_calculadora = funcio_calculadora; //String
+
+      //Cada indicador té varis anys:
+      //  valor: numero, valor cru de l'indicador en sí per aquell any
+      //  llista: array des d'on es calcula el valor. El genera la funció calculadora
+      //  objectiu: numero (percentatge que cal assolir)
+      //  excloure: per l'any basal no mostrar indicadors
       this.years={
-        "2023":{valor:0, objectiu:0, excloure:true},
-        "2024":{valor:0, objectiu:0},
-        "2025":{valor:0, objectiu:objectius[1]||0},
-        "2026":{valor:0, objectiu:objectius[2]||0},
-        "2027":{valor:0, objectiu:objectius[3]||0},
-        "2028":{valor:0, objectiu:objectius[4]||0},
-        "2029":{valor:0, objectiu:objectius[5]||0},
+        "2023":{valor:0, llista:null, objectiu:0, excloure:true},
+        "2024":{valor:0, llista:null, objectiu:objectius[0]||0},
+        "2025":{valor:0, llista:null, objectiu:objectius[1]||0},
+        "2026":{valor:0, llista:null, objectiu:objectius[2]||0},
+        "2027":{valor:0, llista:null, objectiu:objectius[3]||0},
+        "2028":{valor:0, llista:null, objectiu:objectius[4]||0},
+        "2029":{valor:0, llista:null, objectiu:objectius[5]||0},
       };
     }
 
@@ -321,6 +348,26 @@
     });
   });
 
+  //finestra mobil
+  let caption={
+    visible:false,
+    text:"caption text",
+
+    show(ev, new_text){
+      ev.stopPropagation(); //prevent parent elements triggering show()
+      if(new_text){
+        caption.text=new_text;
+      }
+      this.visible=true;
+      let el=document.querySelector("#caption");
+      el.style.left=(ev.clientX-10)+"px";
+      el.style.top=(ev.clientY+15)+"px";
+    },
+    hide(){
+      this.visible=false;
+    },
+  };
+
   let app = Vue.createApp({
     data(){return{
       years:[2023,2024,2025,2026,2027,2028,2029],
@@ -336,6 +383,9 @@
       filtres_projectes:{
         //columna:valor
       },
+
+      //finestra mòbil
+      caption,
     }},
 
     methods:{
@@ -368,9 +418,14 @@
           );
         });
 
-        let total = proj_Horizon.length;
-
-        indicador.years[year].valor = total;
+        indicador.years[year].valor  = proj_Horizon.length;
+        indicador.years[year].llista = proj_Horizon.map(row=>{
+          let new_row = {};
+          this.get_columnes_projectes.forEach(([key,_])=>{
+            new_row[key] = row[key];
+          });
+          return new_row;
+        });
 
         console.log({year,proj_Horizon});
       },
@@ -385,7 +440,7 @@
 
         year = year || "2023";
 
-        //calcula nombre de projectes horizon
+        //calcula nombre de projectes ERC
         let proj_ERC = this.projectes.filter(proj=>{
           let year_final = proj.DataFiReal.split("-")[0];
           return(
@@ -407,9 +462,69 @@
 
         let total = proj_ERC.length;
 
-        indicador.years[year].valor = total;
+        indicador.years[year].valor  = proj_ERC.length;
+        indicador.years[year].llista = proj_ERC.map(row=>{
+          let new_row = {};
+          this.get_columnes_projectes.forEach(([key,_])=>{
+            new_row[key] = row[key];
+          });
+          return new_row;
+        });
 
         console.log({year,proj_ERC});
+      },
+
+      crea_html_caption(indi,year,incr){
+        let header = `
+          <table border=1 small>
+            <tr>
+              <td>Canvi respecte ${indi.base_year}</td>
+              <td>${incr.delta} ${indi.unit} (${incr.perc.toFixed(0)}%)</td>
+            </tr>
+            <tr>
+              <td>Objectiu</td>
+              <td>+${incr.objectiu}%</td>
+            </tr>
+            <tr>
+              <td>Compleix</td>
+              <td>${incr.compleix?'Sí':'No'}</td>
+            </tr>
+          </table>
+        `;
+        let llista="";
+        let arr = indi.years[year].llista;
+        if(arr){
+          llista+="<hr>";
+          llista+=`Nombre d'elements: ${arr.length}`;
+          llista+="<table border=1>";
+          arr.forEach((row,i)=>{
+            if(i==0){
+              llista+="<tr>";
+              Object.entries(row).forEach(([key,_])=>{
+                llista+=`
+                  <th>
+                    ${key}
+                  </th>
+                `;
+              });
+              llista+="</tr>";
+            }
+            llista+="<tr>";
+            Object.entries(row).forEach(([_,val])=>{
+              llista+=`
+                <td>
+                  ${val}
+                </td>
+              `;
+            });
+            llista+="</tr>";
+          });
+          llista+="</table>";
+        }
+        return [
+          header,
+          llista,
+        ].join("");
       },
     },
 
