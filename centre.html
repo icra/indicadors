@@ -99,10 +99,10 @@
   <details>
     <summary large bold>
       Taula indicadors
-      <span v-if="projectes">
-        &mdash; Puntuació total: 0 (pendent implementar fórmula. Puntuació = pes_bloc*pes_indicador*increment/objectiu)
-      </span>
     </summary>
+    <p v-if="projectes">
+      Puntuació total: 0 (pendent implementar fórmula. Puntuació = pes_bloc*pes_indicador*increment/objectiu)
+    </p>
     <p>
       <label>
         <input type=checkbox v-model="caption.actiu">
@@ -221,29 +221,59 @@
     <summary large bold>
       Taula RRHH
       <span v-if="personal">
-        &mdash; {{personal.length}} persones
+        &mdash; {{personal.length}} contractes
       </span>
     </summary>
-    <div v-if="!personal">carregant personal (SQL)...</div>
 
-    <div>
-      <table border=1 v-if="personal && personal.length" small>
-        <tr>
-          <th v-for="val,key in personal[0]">
-            <button @click="personal.sort((a,b)=>a[key]>b[key]?1:-1)">&darr;{{key}}</button>
-          </th>
-        </tr>
-        <tr v-for="persona in personal">
-          <td v-for="val,key in persona">
-            {{val}}
-          </td>
-        </tr>
-      </table>
-    </div>
+    <!--status consulta personal-->
+    <div v-if="!personal">carregant personal (SQL)...</div>
+    <div v-if="!personal && !carregant">error consulta SQL Server ICRA</div>
+
+    <!--taula personal-->
+    <table border=1 v-if="personal && personal.length" small>
+      <tr>
+        <th v-for="val,key in personal[0]">
+          <button @click="personal.sort((a,b)=>a[key]>b[key]?1:-1)">&darr;{{key}}</button>
+        </th>
+      </tr>
+      <tr v-for="persona in personal">
+        <td v-for="val,key in persona">
+          {{val}}
+        </td>
+      </tr>
+    </table>
+  </details><hr>
+
+  <!--secció esdeveniments-->
+  <details open>
+    <summary large bold>
+      Taula esdeveniments
+      <span v-if="esdeveniments">
+        &mdash; {{esdeveniments.length}} accions (participacions)
+      </span>
+    </summary>
+
+    <!--status consulta esdeveniments-->
+    <div v-if="!personal">carregant esdeveniments (SQL)...</div>
+    <div v-if="!personal && !carregant">error consulta SQL Server ICRA</div>
+
+    <!--taula personal-->
+    <table border=1 v-if="esdeveniments && esdeveniments.length" small>
+      <tr>
+        <th v-for="val,key in esdeveniments[0]">
+          <button @click="esdeveniments.sort((a,b)=>a[key]>b[key]?1:-1)">&darr;{{key}}</button>
+        </th>
+      </tr>
+      <tr v-for="esd in esdeveniments">
+        <td v-for="val,key in esd">
+          {{val}}
+        </td>
+      </tr>
+    </table>
   </details><hr>
 </div>
 
-<script>
+<script>//estructura dades
   class Bloc{
     constructor(nom, pes_percent, indicadors){
       this.nom         = nom;
@@ -416,15 +446,18 @@
       this.visible=false;
     },
   };
+</script>
 
+<script>//vue app
   let app = Vue.createApp({
     data(){return{
       years:[2023,2024,2025,2026,2027,2028,2029],
       blocs,
       carregant:true,
 
-      projectes:null, //fetch_taula_undarius()
-      personal:null,  //fetch_taula_undarius()
+      projectes:null,     //fetch_taula_undarius()
+      personal:null,      //fetch_taula_undarius()
+      esdeveniments:null, //fetch_taula_undarius()
 
       columnes_projectes:{
         "Estat":true,
@@ -604,13 +637,6 @@
   //consulta client -> cluster -> sql server (icranet)
   async function fetch_taula_undarius(nom_taula){
     //nom_taula: String
-    if(![
-      "projectes",
-      "personal",
-    ].includes(nom_taula)){
-      throw("nom taula incorrecte");
-    }
-
     try{
       console.log("consulta: client -> undarius -> sql server icra ");
       let url=`https://undarius.icra.local:50000/${nom_taula}`;
@@ -629,4 +655,5 @@
   }
   fetch_taula_undarius("projectes");
   fetch_taula_undarius("personal");
+  fetch_taula_undarius("esdeveniments");
 </script>
