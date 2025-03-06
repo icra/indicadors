@@ -218,34 +218,21 @@
                             </a>
                           </div>
                           <div>
-                            <div v-if="fwci[entry['prism:doi']]">
-                              <details><pre>{{
-                                JSON.stringify(
-                                  fwci[entry['prism:doi']],
-                                  null,
-                                  '  ',
-                                )
-                              }}</pre></details>
+                            <div v-if="abstract[entry['prism:doi']]">
+                              <details open>
+                                <summary>Detalls</summary>
+                                <pre>{{
+                                  JSON.stringify(
+                                    abstract[entry['prism:doi']],
+                                    null,
+                                    '  ',
+                                  )
+                                }}</pre>
+                              </details>
                             </div>
-                            <button v-if="!fwci[entry['prism:doi']]"
-                              @click="check_fwci(entry['prism:doi'])"
-                            >check fwci
-                            </button>
-                          </div>
-
-                          <div>
-                            <div v-if="plumx[entry['prism:doi']]">
-                              <pre>{{
-                                JSON.stringify(
-                                  plumx[entry['prism:doi']],
-                                  null,
-                                  '  ',
-                                )
-                              }}</pre>
-                            </div>
-                            <button v-if="!plumx[entry['prism:doi']]"
-                              @click="get_plumx(entry['prism:doi'])"
-                            >get plumx
+                            <button v-if="!abstract[entry['prism:doi']]"
+                              @click="request_abstract(entry)"
+                            >request publication details
                             </button>
                           </div>
 
@@ -577,11 +564,8 @@
       ],
 
       //cache for journal metrics
-      fwci:{
-        //"doi":"fwci number",
-      },
-      plumx:{
-        //"doi":{plumx_data},
+      abstract:{
+        //"doi":abstract_object
       },
 
       scimagocsv:null,
@@ -603,7 +587,8 @@
         let API_KEY       = this.scopus.API_KEY;
         let query         = this.scopus.query;
         let encoded_query = encodeURIComponent(query);
-        let url           =`https://api.elsevier.com/content/search/scopus?query=${encoded_query}&apiKey=${API_KEY}`;
+        //let url          =`https://api.elsevier.com/content/search/scopus?query=${encoded_query}&apiKey=${API_KEY}`;
+        let url            =`https://api.elsevier.com/content/search/scopus?query=${encoded_query}`;
 
         //reset results
         this.scopus.response               = null;
@@ -624,12 +609,21 @@
           return;
         }
 
-        //prepare http request to scopus api
-        let options={
+        //prepare http request fetch
+        let options2={
           headers:{
             "Accept":"application/json",
           },
         };
+
+        let options={
+          method:"GET",
+          headers:{
+            "X-ELS-APIKey":API_KEY,
+            "Accept":"application/json",
+          },
+        };
+
         let response = await fetch(url,options);
         if(!response.ok){
           this.scopus.result = `error ${response.status} ${this.errors[response.status]}`;
@@ -746,58 +740,29 @@
       },
 
       //scopus api call: fetch FWCI for a publication using DOI
-      async check_fwci(doi){
-        if(this.fwci[doi]){
-          return this.fwci[doi];
+      async request_abstract(entry){
+        let doi       = entry["prism:doi"];
+        let scopus_id = entry["dc:identifier"].replace("SCOPUS_ID:","");
+
+        if(this.abstract[doi]){
+          return this.abstract[doi];
         }
 
-        const API_KEY=this.scopus.API_KEY;
-        const url=`https://api.elsevier.com/content/abstract/doi/${encodeURIComponent(doi)}?apiKey=${API_KEY}`;
+        const url=`https://api.elsevier.com/content/abstract/scopus_id/${scopus_id}?view=FULL`;
 
-        let options={headers:{Accept:"application/json"}};
-        const response = await fetch(url,options);
-        if(!response.ok) throw new Error("Error fetching Scopus data");
-        const data     = await response.json();
-        console.log(data);
-        //save to cache
-        this.fwci[doi]=data;
-      },
-
-      async get_plumx(doi){
-        if(this.plumx[doi]){
-          return this.plumx[doi];
-        }
-
-        const API_KEY=this.scopus.API_KEY;
-        const url=`https://api.elsevier.com/analytics/plumx/doi/${encodeURIComponent(doi)}?apiKey=${API_KEY}`;
-
-        let options={headers:{Accept:"application/json"}};
-        const response = await fetch(url,options);
-        if(!response.ok) throw new Error("Error fetching PlumX data");
-        const data     = await response.json();
-        console.log(data);
-        this.plumx[doi]=data;
-      },
-
-      async check_scival(publication_id){
-        let baseUrl = "https://api.elsevier.com/analytics/scival/publication-metrics";
-        let url     = `${baseUrl}?publicationIds=${publication_id}&metricTypes=FWCI`;
-        let apiKey  = this.scopus.API_KEY;
-
-        let response = await fetch(url,{
+        let options={
           method:"GET",
           headers:{
-            "X-ELS-APIKey": this.scopus.API_KEY,
-            "Accept": "application/json"
+            "X-ELS-APIKey":this.scopus.API_KEY,
+            "Accept":"application/json",
           },
-        });
-
-        if(!response.ok){
-          throw new Error(`Error: ${response.status} - ${response.statusText}`);
-        }
-
-        let data = await response.json();
+        };
+        const response = await fetch(url,options);
+        if(!response.ok) throw new Error("Error fetching scopus data");
+        const data = await response.json();
         console.log(data);
+        //save to cache
+        this.abstract[doi]=data;
       },
 
       //TODO no funciona
