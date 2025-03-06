@@ -743,20 +743,21 @@
       async request_abstract(entry){
         let doi       = entry["prism:doi"];
         let scopus_id = entry["dc:identifier"].replace("SCOPUS_ID:","");
+        let API_KEY   = this.scopus.API_KEY;
 
         if(this.abstract[doi]){
           return this.abstract[doi];
         }
 
-        const url=`https://api.elsevier.com/content/abstract/scopus_id/${scopus_id}?view=FULL`;
-
+        let url=`https://api.elsevier.com/content/abstract/scopus_id/${scopus_id}?apiKey=${API_KEY}&view=FULL`;
         let options={
           method:"GET",
           headers:{
-            "X-ELS-APIKey":this.scopus.API_KEY,
+            "X-ELS-APIKey":API_KEY,
             "Accept":"application/json",
           },
         };
+
         const response = await fetch(url,options);
         if(!response.ok) throw new Error("Error fetching scopus data");
         const data = await response.json();
