@@ -749,7 +749,7 @@
           return this.abstract[doi];
         }
 
-        let url=`https://api.elsevier.com/content/abstract/scopus_id/${scopus_id}?view=FULL`;
+        let url=`https://api.elsevier.com/content/abstract/scopus_id/${scopus_id}`;
         let options={
           method:"GET",
           headers:{
