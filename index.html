@@ -230,9 +230,11 @@
                                 }}</pre>
                               </details>
                             </div>
-                            <button v-if="!abstract[entry['prism:doi']]"
-                              @click="request_abstract(entry)"
-                            >request publication details
+                            <button
+                              v-if="!abstract[entry['prism:doi']]"
+                              @click="request_abstract(entry,0)"
+                            >
+                              request publication details
                             </button>
                           </div>
 
@@ -369,7 +371,7 @@
               }}</pre>
             </details>
             <div v-if="!journal_metrics[key]">
-              <button small v-if="val.issn||val.eIssn" @click="check_journal(val.issn||val.eIssn,key)">
+              <button small v-if="val.issn||val.eIssn" @click="request_journal(val.issn||val.eIssn,key)">
                 request journal info (SCOPUS)
               </button>
             </div>
@@ -405,11 +407,8 @@
     </details>
   </fieldset>
 
-  <fieldset v-if="false">
-    <legend>ICRA affiliation impact metrics</legend>
-    <span>
-      (workinprogress: new api key needed, paid access)
-    </span>
+  <fieldset v-if="true">
+    <legend>ICRA affiliation metrics</legend>
     <div v-if="institution">
       <pre>{{
         JSON.stringify(
@@ -419,8 +418,10 @@
         )
       }}</pre>
     </div>
-    <div v-else>
-      <button @click="get_institution_impact" disabled>check (disabled)</button>
+    <div v-if="!institution">
+      <button @click="get_institution()">
+        request affiliation data
+      </button>
     </div>
   </fieldset>
 
@@ -582,6 +583,24 @@
     }},
 
     methods:{
+      async get_auth(){
+        let API_KEY = this.scopus.API_KEY;
+        let url     = `https://api.elsevier.com/authenticate/?apiKey=${API_KEY}`;
+        let options={
+          method:"GET",
+          headers:{
+            "X-ELS-APIKey":API_KEY,
+            "Accept":"application/json",
+          },
+        };
+        let response = await fetch(url,options);
+        if(!response.ok){
+          throw new Error("Error authenticating to scopus");
+        }
+        const data = await response.json();
+        console.log(data);
+      },
+
       //scopus api call: get publications based on scopus query
       async get_publications(){
         let API_KEY       = this.scopus.API_KEY;
@@ -589,8 +608,7 @@
         let encoded_query = encodeURIComponent(query);
 
         //let url          =`https://api.elsevier.com/content/search/scopus?query=${encoded_query}&apiKey=${API_KEY}`;
-        //let url          =`https://api.elsevier.com/content/search/scopus?query=${encoded_query}`;
-        let url            =`https://api.elsevier.com/content/metadata/article?query=${encoded_query}`;
+        let url          =`https://api.elsevier.com/content/search/scopus?query=${encoded_query}`;
 
         //reset results
         this.scopus.response               = null;
@@ -699,7 +717,7 @@
       },
 
       //scopus api call: check journal quartile based on ISSN
-      async check_journal(issn,journal_name){
+      async request_journal(issn,journal_name){
         if(this.journal_metrics[journal_name]){
           return this.journal_metrics[journal_name];
         }
@@ -730,7 +748,7 @@
           let nom_revista = revistes[index][0];
           let issn        = revistes[index][1].issn || revistes[index][1].eIssn;
 
-          await app.check_journal(issn,nom_revista);
+          await app.request_journal(issn,nom_revista);
 
           if(index < revistes.length-1){
             await get_next_journal(index+1);
@@ -741,18 +759,17 @@
         await get_next_journal();
       },
 
-      //scopus api call: fetch FWCI for a publication using DOI
+      //scopus api call: fetch publication metadata
       async request_abstract(entry){
         let doi       = entry["prism:doi"];
         let scopus_id = entry["dc:identifier"].replace("SCOPUS_ID:","");
         let API_KEY   = this.scopus.API_KEY;
 
         //return cached value
-        if(this.abstract[doi]){
-          return this.abstract[doi];
-        }
+        if(this.abstract[doi]) return this.abstract[doi];
 
         let url=`https://api.elsevier.com/content/abstract/scopus_id/${scopus_id}`;
+
         let options={
           method:"GET",
           headers:{
@@ -766,30 +783,31 @@
           throw new Error("Error in fetch(): response.ok==false");
         }
         const data = await response.json();
-        console.log(data);
+
         //cache result
         this.abstract[doi]=data;
       },
 
       //TODO no funciona
-      async get_institution_impact(){
+      async get_institution(){
         let API_KEY = this.scopus.API_KEY;
         let afid    = 60110375; //icra affiliation id
-        let url     = `https://api.elsevier.com/content/affiliation/affiliation_id/${afid}`;
+        let url     = `https://api.elsevier.com/content/affiliation/affiliation_id/${afid}?apiKey=${API_KEY}`;
 
-        let options={headers:{"Accept":"application/json"}};
+        let options={
+          method:"GET",
+          headers:{
+            "Accept":"application/json",
+          },
+        };
+
         let response = await fetch(url,options);
-
         if(!response.ok){
-          console.error(response);
           throw(`error ${response.status} '${this.errors[response.status]}' fetching "${url}"`);
           return;
         }
-
         let data = await response.json();
-        console.log(data);
         this.institution=data;
-        return data;
       },
 
       /*parse journal metrics from scopus api*/
