@@ -749,7 +749,7 @@
           return this.abstract[doi];
         }
 
-        let url=`https://api.elsevier.com/content/abstract/scopus_id/${scopus_id}?apiKey=${API_KEY}&view=FULL`;
+        let url=`https://api.elsevier.com/content/abstract/scopus_id/${scopus_id}?apiKey=${API_KEY}&view=COMPLETE`;
         let options={
           method:"GET",
           headers:{
@@ -759,7 +759,9 @@
         };
 
         const response = await fetch(url,options);
-        if(!response.ok) throw new Error("Error fetching scopus data");
+        if(!response.ok){
+          throw new Error("Error in fetch(): response.ok==false");
+        }
         const data = await response.json();
         console.log(data);
         //save to cache
