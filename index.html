@@ -749,7 +749,7 @@
           return this.abstract[doi];
         }
 
-        let url=`https://api.elsevier.com/content/abstract/scopus_id/${scopus_id}?apiKey=${API_KEY}&view=COMPLETE`;
+        let url=`https://api.elsevier.com/content/abstract/scopus_id/${scopus_id}?view=FULL`;
         let options={
           method:"GET",
           headers:{
