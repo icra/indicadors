@@ -220,7 +220,7 @@
                           <div>
                             <div v-if="abstract[entry['prism:doi']]">
                               <details open>
-                                <summary>Detalls</summary>
+                                <summary>Detalls ("abstract") en construcció</summary>
                                 <pre>{{
                                   JSON.stringify(
                                     abstract[entry['prism:doi']],
@@ -587,8 +587,10 @@
         let API_KEY       = this.scopus.API_KEY;
         let query         = this.scopus.query;
         let encoded_query = encodeURIComponent(query);
+
         //let url          =`https://api.elsevier.com/content/search/scopus?query=${encoded_query}&apiKey=${API_KEY}`;
-        let url            =`https://api.elsevier.com/content/search/scopus?query=${encoded_query}`;
+        //let url          =`https://api.elsevier.com/content/search/scopus?query=${encoded_query}`;
+        let url            =`https://api.elsevier.com/content/metadata/article?query=${encoded_query}`;
 
         //reset results
         this.scopus.response               = null;
@@ -745,6 +747,7 @@
         let scopus_id = entry["dc:identifier"].replace("SCOPUS_ID:","");
         let API_KEY   = this.scopus.API_KEY;
 
+        //return cached value
         if(this.abstract[doi]){
           return this.abstract[doi];
         }
@@ -764,7 +767,7 @@
         }
         const data = await response.json();
         console.log(data);
-        //save to cache
+        //cache result
         this.abstract[doi]=data;
       },
 
