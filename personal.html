@@ -1,0 +1,131 @@
+<!doctype html><html><head>
+  <meta charset=utf8>
+  <title>personal</title>
+  <!--lib vue-->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <style>
+    [smaller]{
+      font-size:smaller;
+    }
+    label:hover{
+      background:lightyellow;
+    }
+  </style>
+</head><body>
+
+<b>en construcció</b><hr>
+
+<nav>
+  <a href="index.html">scopus</a>      |
+  <a href="centre.html">centre</a>     |
+  <a href="ips.html">IPs</a>           |
+  <b href="personal.html">personal</b> |
+</nav><hr>
+<h2>Personal ICRA</h2>
+
+<div id=app>
+  <p>
+    <label v-for="y in years">
+      <input type=radio v-model=year :value="y">{{y}}
+    </label>
+  </p>
+
+  <div v-if="get_persones">
+    <b>Taula RRHH ({{get_persones.length}} persones)</b>
+    <table border=1 smaller>
+      <tr>
+        <th>nom
+        <th>mail
+        <th>gènere
+        <th>línies
+        <th>tipus
+        <th>nacionalitat?
+      </tr>
+      <tr v-for="[nom,obj] in get_persones">
+        <td>{{nom}}</td>
+        <td>{{obj.mail}}</td>
+        <td>{{obj.genere}}</td>
+        <td>
+          <div v-for="linia in obj.linia">
+            {{linia}}
+          </div>
+        </td>
+        <td>
+          <div v-for="tipus in obj.tipus">
+            {{tipus}}
+          </div>
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<script>
+  let app = Vue.createApp({
+    data(){return{
+      personal:null, //fetch
+      year:2024,
+      years:[
+        2023,
+        2024,
+        2025,
+        2026,
+        2027,
+        2028,
+        2029,
+      ],
+    }},
+
+    computed:{
+      get_persones(){
+        if(!this.personal) return false;
+        let persones={};
+        let year_str = String(this.year);
+        this.personal.filter(p=>{
+          let any_inici = p["Datainicicontracte"].split("-")[0]; //string
+          return (
+            p["DataFiContracte"] > year_str
+            &&
+            any_inici <= year_str
+            &&
+            !p.Nom.startsWith("TBA ")
+          );
+        }).forEach(per=>{
+          if(!persones[per.Nom]){
+            persones[per.Nom]={
+              nom:    per.Nom,
+              mail:   per.Email,
+              genere: per.Descripcio,
+              linia:  [],
+              tipus:  [],
+            };
+          }
+          persones[per.Nom].linia.push(per.Linia);
+          persones[per.Nom].tipus.push(per.Contracte);
+        });
+        return Object.entries(persones).sort((a,b)=>{return a[0]<b[0]?-1:1});
+      },
+    },
+  }).mount("#app");
+</script>
+
+<script>
+  //consulta client -> cluster -> sql server (icranet)
+  async function fetch_taula_undarius(nom_taula){
+    //nom_taula: String
+    try{
+      console.log("consulta: client -> undarius -> sql server icra ");
+      let url=`https://undarius.icra.local:50000/${nom_taula}`;
+      let options={};
+      let response = await fetch(url,options);
+      if(!response.ok) throw(`error fetching sql (taula '${nom_taula}')`);
+      let data = await response.json();
+      app[nom_taula] = data;
+      console.log({taula:nom_taula, data});
+    }catch(err){
+      console.error('Error fetching data:', err);
+      app.carregant = false;
+    }
+  }
+  fetch_taula_undarius("personal");
+</script>

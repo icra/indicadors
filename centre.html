@@ -67,9 +67,10 @@
 <b>en construcció</b><hr>
 
 <nav>
-  <a href="index.html">scopus</a>  |
-  <b href="centre.html">centre</b> |
-  <a href="ips.html">IPs</a>       |
+  <a href="index.html">scopus</a>      |
+  <b href="centre.html">centre</b>     |
+  <a href="ips.html">IPs</a>           |
+  <a href="personal.html">personal</a> |
 </nav><hr>
 
 <h2>Indicadors de centre</h2>
@@ -628,6 +629,27 @@
           let bool = false;
           return filtres.every(([key,val])=>row[key]==val);
         });
+      },
+
+      get_ips(){
+        if(!this.projectes) return false;
+        if(!this.personal)  return false;
+
+        let set = new Set();
+        this.projectes.forEach(row=>{
+          let estat = row["Estat"];
+          let area  = row["Departament Àrea"];
+          let nom   = row["IP Projecte"];
+          if(area=="10. RECERCA" && nom){
+            set.add(nom);
+          }
+        });
+        let noms = Array.from(set).sort();
+        let ips={};//retval dict
+        noms.forEach(nom=>{
+          ips[nom] = this.personal.filter(per=>per.Nom==nom);
+        });
+        return ips;
       },
     },
   }).mount("#app");
