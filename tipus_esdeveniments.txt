@@ -1,0 +1,17 @@
+==tipus esdeveniments======
+  Acte de disseminació participat o organitzat per ICRA
+  Acte/activitat organitzada pel DREU/CERCA en l'àmbit de "Dones i Ciència","Ciència a les escoles" o similar
+  Aparició en mitjà de comunicació escrit o audiovisual internacional
+  Aparició en mitjà de comunicació escrit o audiovisual regional/estatal
+  Comitè d'experts en l'àmbit legislatiu i de gestió de l'aigua
+  Comitè internacional (i.e. SAB/panell d'avaluació/expert group etc) participat per ICRA
+  Conferència convidada (plenària, keynote).
+  Congrés/taller/escola d'estiu o altra activitat internacional de recerca organitzada per ICRA
+  Estada de recercaire (predoc/postdoc/visiting scientist) acollit en estada de recerca (>3 mesos)
+  Estada de recercaire ICRA (predoc/postdoc/senior) en centre internacional
+  Formació/taller per empreses/administracions organitzat per ICRA
+  Premi/reconeixement a nivell internacional
+  Premi/reconeixement a nivell regional/estatal
+  Sessió especial en congrés organitzat per ICRA
+  Taller UdG/ICRA per enfortir col·laboració en marc de l'aigua
+  Treball editorial (com a Editor en Cap o Editor Associat) en revista de Q1
