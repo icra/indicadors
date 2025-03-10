@@ -208,7 +208,7 @@
                   </tr>
                   <tbody v-for="entry,i in get_publications_array">
                     <tr>
-                      <td style="font-size:smaller">{{i}}</td>
+                      <td style="font-size:smaller">{{i+1}}</td>
                       <td style="font-size:smaller" center>{{entry["citedby-count"]}}</td>
                       <td>
                         <details>
@@ -1080,7 +1080,15 @@
         //ordena per cites o data de publicació
         let camp = this.scopus.sort_publications_by;
         arr.sort((a,b)=>{
-          return b[camp]>a[camp]?1:-1;
+          let aa = a[camp];
+          let bb = b[camp];
+          let naa = parseFloat(aa);
+          let nbb = parseFloat(bb);
+          if(isNaN(naa) || isNaN(nbb)){
+            return bb>aa?1:-1;
+          }else{
+            return nbb-naa;
+          }
         });
 
         return arr;
