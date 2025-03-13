@@ -1,0 +1,9 @@
+tipus persona
+  - administració
+  - research technician
+  - predoc
+  - postdoc
+  - research fellow
+  - research scientist
+  - research professor
+  - serveis de suport a la recerca (SCT + unitat de suport a la recerca)

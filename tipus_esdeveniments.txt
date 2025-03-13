@@ -1,17 +1,18 @@
-==tipus esdeveniments======
-  1.  Acte de disseminació participat o organitzat per ICRA
-  2.  Acte/activitat organitzada pel DREU/CERCA en l'àmbit de "Dones i Ciència","Ciència a les escoles" o similar
+<<<<<<< HEAD
+==TIPUS ESDEVENIMENT======
+  1.  Participació o organització d'un acte de disseminació
+  2.  Participació o organització d'un acte/activitat en l'àmbit de "Dones i Ciència","Ciència a les escoles" o similar (JEDI)
   3.  Aparició en mitjà de comunicació escrit o audiovisual internacional
   4.  Aparició en mitjà de comunicació escrit o audiovisual regional/estatal
-  5.  Comitè d'experts en l'àmbit legislatiu i de gestió de l'aigua
-  6.  Comitè internacional (i.e. SAB/panell d'avaluació/expert group etc) participat per ICRA
-  7.  Conferència convidada (plenària, keynote).
-  8.  Congrés/taller/escola d'estiu o altra activitat internacional de recerca organitzada per ICRA
-  9.  Estada de recercaire (predoc/postdoc/visiting scientist) acollit en estada de recerca (>3 mesos)
-  10. Estada de recercaire ICRA (predoc/postdoc/senior) en centre internacional
+  5.  Participació en comitè d'experts en l'àmbit legislatiu i de gestió de l'aigua
+  6.  Participació en comitè internacional (i.e. comitè científic centre de recerca/panell d'avaluació de recerca) participat per ICRA
+  7.  Participació en conferència convidada (plenària, keynote).
+  8.  Organització de congrés/taller/escola d'estiu o altra activitat internacional de recerca
+  9.  Estada de recercaire (predoc/postdoc/visiting scientist) acollit a ICRA (>=3 mesos)
+  10. Estada de recercaire ICRA (predoc/postdoc/senior) en centre internacional (>=3 mesos)
   11. Formació/taller per empreses/administracions organitzat per ICRA
   12. Premi/reconeixement a nivell internacional
   13. Premi/reconeixement a nivell regional/estatal
-  14. Sessió especial en congrés organitzat per ICRA
-  15. Taller UdG/ICRA per enfortir col·laboració en marc de l'aigua
+  14. Organització d'una sessió especial en un congrés internacional
+  15. Organització o participació en un taller/seminari UdG/ICRA
   16. Treball editorial (com a Editor en Cap o Editor Associat) en revista de Q1
