@@ -63,9 +63,7 @@
     }
   </style>
 <head></head><body>
-
 <b>en construcció</b><hr>
-
 <nav>
   <a href="index.html">scopus</a>      |
   <b href="centre.html">centre</b>     |
@@ -275,6 +273,7 @@
 </div>
 
 <script>//estructura dades
+  /*conjunt d'indicadors*/
   class Bloc{
     constructor(nom, pes_percent, indicadors){
       this.nom         = nom;
@@ -346,85 +345,142 @@
     }
   }
 
-  let blocs=[
-    new Bloc("Excel·lència en recerca",30,[                                                                                                   /* 24, 25, 26, 27, 28, 29*/
-      new Indicador("Aportació econòmica total a través de projectes o contractes de recerca",                                       "k€",   10, [0,  2,  4,  6,  8, 10]),
-      new Indicador("Aportació econòmica a través de projectes de recerca competitius Europeus (Horizon)",                           "k€",    5, [0,  1,  2,  3,  4,  5]),
-      new Indicador("Aportació econòmica a través de projectes de recerca competitius Europeus (ERC-EIC)",                           "k€",    5, [0,  0,  5, 50, 50, 50]),
-      new Indicador("Aportació econòmica a través de projectes de recerca competitius estatals (AEI-ERANETs)",                       "k€",    5, [0,  1,  2,  3,  4,  5]),
-      new Indicador("Aportació econòmica a través de projectes de recerca competitius regionals (ACA-AGAUR)" ,                       "k€",    5, [0,  1,  2,  3,  4,  5]),
-      new Indicador("Nombre de projectes de recerca competitius vigents tipus Horizon coordinats",                                     "",   10, [0,  1,  1,  2,  2,  2], "calcula_nombre_projectes_Horizon"),
-      new Indicador("Nombre de projectes de recerca competitius vigents tipus ERC o EIC",                                              "", 12.5, [0,  1,  2,  2,  2,  2], "calcula_nombre_projectes_ERC"),
-      new Indicador("Nombre de congressos/tallers/escoles d'estiu i altres activitats internacionals de recerca organitzats per ICRA", "",    5, [0,  5, 10, 10, 10, 15]),
-      new Indicador("Nombre de sessions especials en congressos organitzades per ICRA ",                                               "",    5, [0,  1,  2,  3,  4,  5]),
-      new Indicador("Nombre de comitès internacionals participats per ICRA ",                                                          "",  2.5, [0,  5, 10, 10, 10, 15]),
-      new Indicador("Nombre d'articles científics al Q1 (segons Scopus) ",                                                             "",   10, [0,  1,  2,  3,  4,  4]),
-      new Indicador("Nombre de cites anuals (segons Scopus) ",                                                                         "",   10, [0,  1,  2,  3,  4,  4]),
-      new Indicador("Índex d'impacte (Impact factor) de la institució (segons Scopus) en el moment de l'anàlisi ",                     "",    5, [0,  1,  2,  3,  4,  4]),
-      new Indicador("Nombre d'estades de recercaires (predocs, postdocs, seniors) internacionals a ICRA ",                             "",  2.5, [0,  1,  2,  3,  4,  4]),
-      new Indicador("Nombre d'estades de recercaires ICRA (predocs, postdocs, seniors) en centres internacionals ",                    "",  2.5, [0,  1,  2,  3,  4,  4]),
-      new Indicador("Rati d'èxit de les propostes de recerca competitives Europees (Horizon, ERC, EIC) ",                              "",    5, [0,  1,  2,  3,  4,  4]),
+  let blocs=[                                                                                                   /* objectius dels anys:  */
+    new Bloc("Excel·lència en recerca",30,[                                                                     /* 24, 25, 26, 27, 28, 29*/
+      new Indicador(`Aportació econòmica total a través de projectes o contractes de recerca`,        "k€",   10, [0,  2,  4,  6,  8, 10]),
+      new Indicador(`Aportació econòmica de projectes de recerca competitius Europeus (Horizon)`,     "k€",    5, [0,  1,  2,  3,  4,  5]),
+      new Indicador(`Aportació econòmica de projectes de recerca competitius Europeus (ERC-EIC)`,     "k€",    5, [0,  0,  5, 50, 50, 50]),
+      new Indicador(`Aportació econòmica de projectes de recerca competitius estatals (AEI-ERANETs)`, "k€",    5, [0,  1,  2,  3,  4,  5]),
+      new Indicador(`Aportació econòmica de projectes de recerca competitius regionals (ACA-AGAUR)` , "k€",    5, [0,  1,  2,  3,  4,  5]),
+      new Indicador(`Projectes de recerca competitius vigents tipus Horizon coordinats`,              "",     10, [0,  1,  1,  2,  2,  2], "calcula_nombre_projectes_Horizon"),
+      new Indicador(`Projectes de recerca competitius vigents tipus ERC o EIC`,                       "",   12.5, [0,  1,  2,  2,  2,  2], "calcula_nombre_projectes_ERC"),
+      new Indicador(`Congressos/tallers/escoles d'estiu i altres activitats
+        internacionals de recerca organitzats per ICRA`,                                              "",      5, [0,  5, 10, 10, 10, 15]),
+      new Indicador(`Nombre de sessions especials en congressos organitzades per ICRA `,              "",      5, [0,  1,  2,  3,  4,  5]),
+      new Indicador(`Nombre de comitès internacionals participats per ICRA `,                         "",    2.5, [0,  5, 10, 10, 10, 15]),
+      new Indicador(`Nombre d'articles científics al Q1 (segons Scopus) `,                            "",     10, [0,  1,  2,  3,  4,  4]),
+      new Indicador(`Nombre de cites anuals (segons Scopus) `,                                        "",     10, [0,  1,  2,  3,  4,  4]),
+      new Indicador(`Índex d'impacte (Impact factor) de la institució (segons
+        Scopus) en el moment de l'anàlisi `,                                                          "",      5, [0,  1,  2,  3,  4,  4]),
+      new Indicador(`Nombre d'estades de recercaires (predocs, postdocs,
+        seniors) internacionals a ICRA `,                                                             "",    2.5, [0,  1,  2,  3,  4,  4]),
+      new Indicador(`Nombre d'estades de recercaires ICRA (predocs, postdocs,
+        seniors) en centres internacionals `,                                                         "",    2.5, [0,  1,  2,  3,  4,  4]),
+      new Indicador(`Rati d'èxit de les propostes de recerca competitives
+        Europees (Horizon, ERC, EIC) `,                                                               "",      5, [0,  1,  2,  3,  4,  4]),
     ]),
     new Bloc("Promoure línies de recerca estratègiques",5,[
-      new Indicador("Aportació econòmica total a través de projectes o contractes de recerca a les noves línies L17 i L18", "k€",  50, [ 0,30,30,60,60,60]),
-      new Indicador("Nombre d'articles científics al Q1 (segons Scopus) associats a la L17 i la L18",                       "k€",  50, [ 0, 0, 5, 5,10,10]),
+      new Indicador(`Aportació econòmica total a través de projectes o
+        contractes de recerca a les noves línies L17 i L18`,                                          "k€",   50, [0, 30, 30, 60, 60, 60]),
+      new Indicador(`Nombre d'articles científics al Q1 (segons Scopus)
+        associats a la L17 i la L18`,                                                                 "k€",   50, [0,  0,  5,  5, 10, 10]),
     ]),
     new Bloc("Promoure transferència",20,[
-      new Indicador("Percentatge de les aportacions de projectes/contractes de recerca tipus KTT respecte el total de les aportacions per recerca (competitius + KTT + mecenatge)", "", 10, [0, 13, 14, 16, 18, 18]),
-      new Indicador("Aportació econòmica a través de projectes/contractes tipus KTT ",                                                                                              "", 30, [0, 20, 30, 40, 50, 60]),
-      new Indicador("Nombre de projectes / contractes tipus KTT en curs ",                                                                                                          "", 15, [0,  5,  5, 10, 15, 20]),
-      new Indicador("Nombre de formacions / tallers per empreses / administracions organitzats per ICRA ",                                                                          "", 15, [0,  5, 10, 20, 25, 50]),
-      new Indicador("Nombre de projectes en l'àmbit de la indústria de coneixement (Llavor, Producte, Innovadors, EIC, o equivalents)",                                             "", 15, [0,  1,  2,  2,  2,  2]),
-      new Indicador("Nombre de doctorats industrials en curs",                                                                                                                      "", 15, [0,  1,  2,  2,  3,  3]),
+      new Indicador(`Percentatge d'aportacions de projectes/contractes de
+        recerca tipus KTT respecte el total de les aportacions per recerca
+        (competitius+KTT+mecenatge)`,                                                                 "", 10, [0, 13, 14, 16, 18, 18]),
+      new Indicador(`Aportació econòmica a través de projectes/contractes tipus KTT `,                "", 30, [0, 20, 30, 40, 50, 60]),
+      new Indicador(`Nombre de projectes / contractes tipus KTT en curs `,                            "", 15, [0,  5,  5, 10, 15, 20]),
+      new Indicador(`Nombre de formacions/tallers per empreses/administracions
+        organitzats per ICRA `,                                                                       "", 15, [0,  5, 10, 20, 25, 50]),
+      new Indicador(`Nombre de projectes en l'àmbit de la indústria de
+        coneixement (Llavor, Producte, Innovadors, EIC, o equivalents)`,                              "", 15, [0,  1,  2,  2,  2,  2]),
+      new Indicador(`Nombre de doctorats industrials en curs`,                                        "", 15, [0,  1,  2,  2,  3,  3]),
     ]),
     new Bloc("Promoure mecenatge",5,[
-      new Indicador("Aportació econòmica a través de projectes de recerca per mecenatge", "k€", 70, [0, 20, 30, 40, 50, 60]),
-      new Indicador("Nombre de projectes de recerca per mecenatge",                        "",  30, [0,  2,  3,  4,  4,  5]),
+      new Indicador(`Aportació econòmica a través de projectes de recerca per mecenatge`,             "k€", 70, [0, 20, 30, 40, 50, 60]),
+      new Indicador(`Nombre de projectes de recerca per mecenatge`,                                   "",  30, [0,  2,  3,  4,  4,  5]),
     ]),
     new Bloc("Generació PI, spin-offs, start-ups",5,[
-      new Indicador("Nombre de patents/secrets industrials en tramitació o vigents",                           "", 20, [0, 1, 1,  2,  2,  2]),
-      new Indicador("Nombre d'spin-offs o start-ups amb participació d'ICRA en curs",                          "", 40, [0, 1, 1,  1,  1,  2]),
-      new Indicador("Percentatge d'articles científics amb socis industrials (no acadèmics) com a co-autors ", "", 40, [0, 5, 5, 10, 10, 15]),
+      new Indicador(`Nombre de patents/secrets industrials en tramitació o vigents`,                  "", 20, [0, 1, 1,  2,  2,  2]),
+      new Indicador(`Nombre d'spin-offs o start-ups amb participació d'ICRA en curs`,                 "", 40, [0, 1, 1,  1,  1,  2]),
+      new Indicador(`Articles científics amb socis industrials (no acadèmics) com a co-autors `,      "%", 40, [0, 5, 5, 10, 10, 15]),
     ]),
     new Bloc("Promoure impacte",20,[
-      new Indicador("Nombre d'estudiants d'ESO o Batxillerat acollits o mentoritzats des d'ICRA",                                              "", 10, [0, 10, 15, 20, 25, 30]),
-      new Indicador("Nombre de cites en legislació",                                                                                           "", 15, [0, 10, 15, 20, 25, 30]),
-      new Indicador("Nombre de participacions en comites d'experts en l'àmbit legislatiu i de gestió de l'aigua",                              "", 20, [0, 10, 15, 20, 25, 30]),
-      new Indicador("Nombre de premis/reconeixements a nivell regional/estatal",                                                               "",  5, [0, 10, 15, 20, 25, 30]),
-      new Indicador("Nombre de premis/reconeixements a nivell internacional",                                                                  "",  5, [0, 10, 15, 20, 25, 30]),
-      new Indicador("Nombre de narratives d'impacte sotmeses a CERCA i avaluades amb un excel·lent o outstanding",                             "", 15, [0,  1,  1,  2,  2,  3]),
-      new Indicador("Contribucions a canvis en la gestió de l'aigua a les conques internes de Catalunya",                                      "", 10, [0,  0,  1,  1,  2,  2]),
-      new Indicador("Nombre de llocs de treball generats mitjançant llicències amb participació d'ICRA",                                       "",  5, [0,  0,  1,  2,  2,  3]),
-      new Indicador("Nombre d'aliances sòlides amb entitats que tinguin una finalitat social (ambientals, esportives, culturals, educatives)", "", 15, [0,  1,  2,  2,  3,  3]),
+      new Indicador(`Nombre d'estudiants d'ESO o Batxillerat acollits o mentoritzats des d'ICRA`,     "", 10, [0, 10, 15, 20, 25, 30]),
+      new Indicador(`Nombre de cites en legislació`,                                                  "", 15, [0, 10, 15, 20, 25, 30]),
+      new Indicador(`Nombre de participacions en comites d'experts en l'àmbit
+        legislatiu i de gestió de l'aigua`,                                                           "", 20, [0, 10, 15, 20, 25, 30]),
+      new Indicador(`Nombre de premis/reconeixements a nivell regional/estatal`,                      "",  5, [0, 10, 15, 20, 25, 30]),
+      new Indicador(`Nombre de premis/reconeixements a nivell internacional`,                         "",  5, [0, 10, 15, 20, 25, 30]),
+      new Indicador(`Nombre de narratives d'impacte sotmeses a CERCA i
+        avaluades amb un excel·lent o outstanding`,                                                   "", 15, [0,  1,  1,  2,  2, 3]),
+      new Indicador(`Contribucions a canvis en la gestió de l'aigua a les
+        conques internes de Catalunya`,                                                               "", 10, [0,  0,  1,  1,  2, 2]),
+      new Indicador(`Nombre de llocs de treball generats mitjançant llicències
+        amb participació d'ICRA`,                                                                     "",  5, [0,  0,  1,  2,  2,  3]),
+      new Indicador(`Aliances sòlides amb entitats que tinguin una finalitat
+        social (ambientals, esportives, culturals, educatives)`,                                      "", 15, [0,  1,  2,  2,  3,  3]),
     ]),
     new Bloc("Promoure comunicació",10,[
-      new Indicador("Nombre de seguidors/subscriptors a les xarxes socials d'ICRA",                                  "", 25, [0,  10,  15,  20,  25,  30]),
-      new Indicador("Nombre de comparticions (shares, retweets) a les xarxes socials d'ICRA",                        "",  5, [0,  10,  15,  20,  25,  30]),
-      new Indicador("Nombre de visualitzacions de sessions de streaming realitzades a les xarxes socials d'ICRA",    "", 10, [0, 100, 200, 300, 500, 800]),
-      new Indicador("Nombre d'actes de disseminació participats o organitzats per ICRA",                             "", 15, [0,   5,  10,  15,  20,  20]),
-      new Indicador("Nombre d'aparicions en els mitjans de comunicació escrits i audiovisuals regionals o estatals", "", 25, [0,  10,  15,  20,  25,  30]),
-      new Indicador("Nombre d'aparicions en els mitjans de comunicació escrits i audiovisuals internacionals",       "", 20, [0,  10,  15,  20,  25,  30]),
+      new Indicador(`Nombre de seguidors/subscriptors a les xarxes socials d'ICRA`,                   "", 25, [0,  10,  15,  20,  25,  30]),
+      new Indicador(`Nombre de comparticions (shares, retweets) a les xarxes socials d'ICRA`,         "",  5, [0,  10,  15,  20,  25,  30]),
+      new Indicador(`Nombre de visualitzacions de sessions de streaming
+        realitzades a les xarxes socials d'ICRA`,                                                     "", 10, [0, 100, 200, 300, 500, 800]),
+      new Indicador(`Nombre d'actes de disseminació participats o organitzats per ICRA`,              "", 15, [0,   5,  10,  15,  20,  20]),
+      new Indicador(`Nombre d'aparicions en els mitjans de comunicació escrits
+        i audiovisuals regionals o estatals`,                                                         "", 25, [0,  10,  15,  20,  25, 30]),
+      new Indicador(`Nombre d'aparicions en els mitjans de comunicació escrits
+        i audiovisuals internacionals`,                                                               "", 20, [0,  10,  15,  20,  25, 30]),
     ]),
     new Bloc("Relació amb patrons",5,[
-      new Indicador("Reunions de la Taula de l'Aigua amb l'ACA",                                                                                  "",  5, [0,  9,  9,  9,  9,  9]),
-      new Indicador("Hores computades per IPs a tasques associades a la taula de l'Aigua",                                                        "",  5, [0,300,400,500,550,600]),
-      new Indicador("Aportacions de projectes o contractes de KTT amb l'ACA, via contracte programa o licitació",                                 "", 25, [0, 10, 20, 30, 40, 45]),
-      new Indicador("Organització i participació en tallers UdG-ICRA per enfortir col·laboració en marc de l'aigua",                              "", 15, [0,  1,  1,  2,  2,  2]),
-      new Indicador("Iniciatives de recerca conjuntes UdG-ICRA",                                                                                  "", 15, [0,  1,  1,  2,  2,  2]),
-      new Indicador("Pressupost aconseguit en projectes de recerca competitiva i contractes de KTT conjuntament amb UdG",                         "", 25, [0,  0,  5,  5, 10, 10]),
-      new Indicador("Participació en actes/activitats organitzades per CERCA en l'àmbit de 'Dones i Ciència'/'Ciència a les escoles' o similars", "", 10, [0,  5, 10, 12, 15, 15]),
+      new Indicador(`Reunions de la Taula de l'Aigua amb l'ACA`,                                      "",  5, [0,  9,  9,  9,  9,  9]),
+      new Indicador(`Hores computades per IPs a tasques associades a la taula de l'Aigua`,            "",  5, [0,300,400,500,550,600]),
+      new Indicador(`Aportacions de projectes o contractes de KTT amb l'ACA,
+        via contracte programa o licitació`,                                                          "", 25, [0, 10, 20, 30, 40, 45]),
+      new Indicador(`Organització i participació en tallers UdG-ICRA per
+        enfortir col·laboració en marc de l'aigua`,                                                   "", 15, [0,  1,  1,  2,  2,  2]),
+      new Indicador(`Iniciatives de recerca conjuntes UdG-ICRA`,                                      "", 15, [0,  1,  1,  2,  2,  2]),
+      new Indicador(`Pressupost aconseguit en projectes de recerca competitiva i contractes
+        de KTT conjuntament amb UdG`,                                                                 "", 25, [0,  0,  5,  5, 10, 10]),
+      new Indicador(`Participació en actes/activitats organitzades per CERCA en l'àmbit de
+        'Dones i Ciència'/'Ciència a les escoles' o similars`,                                        "", 10, [0,  5, 10, 12, 15, 15]),
+    ]),
+
+    new Bloc("Pla Acció",0,[
+      //new Indicador(text, unit, pes_percent, objectius, funcio_calculadora),
+      new Indicador(`Eficiència articles amb socis industrials o de
+        l'administració pública respecte ingressos`,                                                  "k€/article", 0,[30, 29, 27, 25],null),
+      new Indicador(`Objectius del pla de formació anual assolits`,                                   "%",          0,[ 0, 20, 70, 80],null),
+      new Indicador(`Participants en actes de disseminació participats per ICRA`,                     "",           0,[ 0,100,250,500],null),
+      new Indicador(`Projectes singulars competitius per desenvolupar activitats d'outreach`,         "",           0,[ 0,  0,  1,  2],null),
+      new Indicador(`Aportació econòmica (k€ executats) en projectes
+        competitius per activitats d'outreach`,                                                       "k€",         0,[ 0,  0, 10, 20],null),
+      new Indicador(`Aliances sòlides amb empreses i administració pública`,                          "",           0,[ 5,  5, 10, 15],null),
+      new Indicador(`Projectes/encàrrecs directes de l'ACA`,                                          "",           0,[ 5,  5,  7, 10],null),
+      new Indicador(`Accions de suport tècnic ofertes a l'ACA en temes de química analítica`,         "", 	        0,[ 0,  1,  3,  5],null),
+      new Indicador(`Participants en tallers/seminaris UdG-ICRA`,                                     "",           0,[ 0,120,180,240],null),
+      new Indicador(`Nombre d'IPs`,                                                                   "",           0,[16, 16, 18, 20],null),
+      new Indicador(`Posicions de Research Fellow creades`,                                           "",	          0,[ 0,  0,  2,  3],null),
+      new Indicador(`Noves posicions de Research Scientist per estabilització de Research Fellows`,   "",           0,[ 0,  0,  0,  1],null),
+      new Indicador(`Canvis de tram dins d'una mateixa categoria de Research
+      Scientist o Research Professor`,                                                                "",           0,[ 0,  0,  0,  8],null),
+      new Indicador(`Sessions de formació interna per personal ICRA per fomentar valors JEDI`,        "",           0,[ 0,  2,  4,  4],null),
+      new Indicador(`Proporció del personal que participa les formacions del JEDI anualment`,	        "",           0,[ 5, 50, 80, 80],null),
+      new Indicador(`Organització d'activitats per fomentar valors JEDI en la recerca`,	              "",           0,[ 0,  2,  5,  5],null),
+      new Indicador(`Dones en categories laborals superiors o amb càrrecs de gestió i
+        lideratge (IPs i caps de departament)`,                                                       "%",          0,[37.5,37.5,40,42],null),
+      new Indicador(`Projectes/contractes/comitès amb participació d'ICRA i de
+        l'administració central de l'estat`,                                                          "",           0,[ 0,  2,  5,  5],null),
+      new Indicador(`Aportació econòmica (k€ executats) en contractes de recerca amb
+        l'administració central de l'estat`,                                                          "k€",         0,[ 0,  5, 15, 30],null),
     ]),
   ];
 
   //valors basals 2023
-  let basals=[2995,1248,38,1189,518,1,1,3,4,3,105,14215,11.75,5,1,20,0,0,12,395,21,3,0,0,0,0,3,1,13,1,87,3,1,0,0,0,0,1,1164,505,0,0,197,11,0,0,0,0,0,0,0];
+  let basals=[2995,1248,38,1189,518,1,1,3,4,3,105,14215,11.75,5,1,20,0,0,12,395,21,3,0,0,0,0,3,1,13,1,87,3,1,0,0,0,0,1,1164,505,0,0,197,11,0,0,0,0,0,0,0,
+    //pla accio
+    30, 0, 0, 0, 0, 5, 5, 0, 0, 16, 0, 0, 0, 0, 5, 0, 37.5, 0, 0,
+  ];
   blocs.forEach(bloc=>{
     bloc.indicadors.forEach(indi=>{
       indi.years["2023"].valor = basals.shift();
     });
   });
+</script>
 
-  //finestra mobil
+<script>
+  /*finestra mobil*/
   let caption={
     visible:false,
     text:"caption text",
@@ -456,10 +512,19 @@
       blocs,
       carregant:true,
 
+      //organisme on es reporten els indicadors
+      conjunts:[
+        "Patronat",
+        "Contracte Programa",
+        "Pla Acció",
+        "IPs",
+      ],
+
       projectes:null,     //fetch_taula_undarius()
       personal:null,      //fetch_taula_undarius()
       esdeveniments:null, //fetch_taula_undarius()
 
+      /*configuració taules projectes, personal i esdeveniments*/
       columnes_projectes:{
         "Estat":true,
         "Acronim":true,
@@ -471,13 +536,12 @@
         //columna:valor
       },
 
-      //finestra mòbil
+      /*finestra mòbil*/
       caption,
     }},
 
     methods:{
-      //processsa dades llegides del ICRA SQL Server
-      //funció pels indicadors 1.6 i 1.7
+      /*<funcions_calculadores_indicadors>*/
       calcula_nombre_projectes_Horizon(year, indicador){
         if(!this.projectes){
           let msg = "impossible calcular indicador";
@@ -516,7 +580,6 @@
 
         console.log({year,proj_Horizon});
       },
-
       calcula_nombre_projectes_ERC(year, indicador){
         if(!this.projectes){
           let msg = "impossible calcular indicador";
@@ -559,6 +622,7 @@
 
         console.log({year,proj_ERC});
       },
+      /*</funcions_calculadores_indicadors>*/
 
       crea_html_caption(indi,year,incr){
         let header = `

@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 ==TIPUS ESDEVENIMENT======
   1.  Participació o organització d'un acte de disseminació
   2.  Participació o organització d'un acte/activitat en l'àmbit de "Dones i Ciència","Ciència a les escoles" o similar (JEDI)
