@@ -22,7 +22,14 @@
     <tr v-for="user in users">
       <td>{{user.id}}</td>
       <td>{{user.nom}}</td>
-      <td>{{user.response?.data?.metadata}}</td>
+      <td>
+        <details>
+          <summary>{{user.response?.data?.metadata}}
+          <div>
+            {{user.response?.data
+          </div>
+        </details>
+      </td>
     </tr>
   </table>
 </div>
@@ -49,7 +56,7 @@
     let url=`policyprofiles.sagepub.com/spa/public/citation-data/for-user/${id_user}`;
     let furl=`https://cors-anywhere.herokuapp.com/${url}`;
     let options={};
-    fetch(furl,options).then(r=>r.json()).then(obj=>{
+    fetch(url,options).then(r=>r.json()).then(obj=>{
       app.users.push({
         nom,
         id:id_user,
