@@ -7,8 +7,8 @@ const config={
   server:   'srv-apps-03.icra.local', //'localhost' or 'yourserver.database.windows.net'
   database: 'ICRA',
   options:{
-    encrypt: false,          //default:true, //required for Azure SQL
-    trustServerCertificate: false, //default:true // Change to false in production
+    encrypt: false,                //default:true | required for Azure SQL
+    trustServerCertificate: false, //default:true | change to false in production
   },
 };
 

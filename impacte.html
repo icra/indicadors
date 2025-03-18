@@ -1,0 +1,60 @@
+<!doctype html><html><head>
+  <title>ICRA indicadors</title>
+  <meta charset="utf8">
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <style>
+    body{
+      font-family: Eczar, IM Fell English, Georgia, serif;
+    }
+  </style>
+<head></head><body>
+
+<b>en construcció</b><hr>
+
+<!--nav dinàmic-->
+<div id=nav></div><hr>
+<script src="nav.js"></script>
+
+<h2>Indicadors impacte ICRA (SAGE/OVERTON)</h2>
+
+<div id=app>
+  <table border=1>
+    <tr v-for="user in users">
+      <td>{{user.id}}</td>
+      <td>{{user.nom}}</td>
+      <td>{{user.response?.data?.metadata}}</td>
+    </tr>
+  </table>
+</div>
+
+<script>
+  let app = Vue.createApp({
+    data(){return{
+      users:[],
+    }},
+  }).mount("#app");
+
+  fetch("sage_profiles.txt").then(r=>r.text()).then(txt=>{
+    let linies = txt.split("\n").filter(e=>e);
+    linies.forEach(linia=>{
+      let tokens = linia.split("/");
+      let id_user = tokens[4];
+      let nom     = tokens[5];
+      fetch_sage_user(id_user,nom);
+    });
+  })
+
+  //sagepub api call
+  function fetch_sage_user(id_user,nom){
+    let url=`policyprofiles.sagepub.com/spa/public/citation-data/for-user/${id_user}`;
+    let furl=`https://cors-anywhere.herokuapp.com/${url}`;
+    let options={};
+    fetch(furl,options).then(r=>r.json()).then(obj=>{
+      app.users.push({
+        nom,
+        id:id_user,
+        response:obj,
+      });
+    });
+  }
+</script>

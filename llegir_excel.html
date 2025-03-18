@@ -1,0 +1,84 @@
+<!doctype html><html><head>
+  <meta charset=utf8>
+  <title>onedrive-excel-json</title>
+  <!--
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  -->
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"
+    integrity="sha512-dlPw+ytv/6JyepmelABrgeYgHI0O+frEwgfnPdXDTOIZz+eDgfW07QXG02/O8COfivBdGNINy+Vex+lYmJ5rxw=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  ></script>
+
+  <!--Microsoft Authentication Library (MSAL.js)-->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/msal/2.29.0/msal-browser.min.js"></script>
+	<script>
+		//import MSAL for authentication
+		const msalConfig = {
+			auth:{
+				clientId:    "087cc5d5-dcf8-4945-9cf6-53113ad0bb91",
+				authority:   "https://login.microsoftonline.com/common",
+				redirectUri: "http://localhost", // Change to your redirect URI
+			}
+		};
+
+		const msalInstance = new msal.PublicClientApplication(msalConfig);
+		const graphAPIEndpoint = "https://graph.microsoft.com/v1.0/me/drive/root:/test.xlsx:/content";
+
+		// Function to get an access token
+		async function getAccessToken() {
+      const request = { scopes: ["Files.Read"] };
+      try {
+        const authResult = await msalInstance.loginPopup(request);
+        return authResult.accessToken;
+      } catch (error) {
+        console.error("Authentication error:", error);
+      }
+		}
+
+		// Fetch Excel file from OneDrive
+		async function fetchExcelFile() {
+				const token = await getAccessToken();
+				if (!token) return;
+
+				try {
+						const response = await fetch(graphAPIEndpoint, {
+								method: "GET",
+								headers: {
+										"Authorization": `Bearer ${token}`
+								}
+						});
+
+						if (!response.ok) throw new Error("Failed to fetch file");
+
+						const blob = await response.blob();
+						readExcelFile(blob);
+				} catch (error) {
+						console.error("Error fetching file:", error);
+				}
+		}
+
+		// Read Excel file content using SheetJS
+		function readExcelFile(fileBlob) {
+				const reader = new FileReader();
+				reader.readAsArrayBuffer(fileBlob);
+
+				reader.onload = (e) => {
+						const data = new Uint8Array(e.target.result);
+						const workbook = XLSX.read(data, { type: "array" });
+
+						// Get first sheet
+						const sheetName = workbook.SheetNames[0];
+						const sheet = workbook.Sheets[sheetName];
+
+						// Convert sheet to JSON
+						const jsonData = XLSX.utils.sheet_to_json(sheet);
+						console.log("Excel Data:", jsonData);
+				};
+		}
+
+		// Call the function
+		fetchExcelFile();
+	</script>
+</head><body>

@@ -1,4 +1,4 @@
-==TIPUS ESDEVENIMENT======
+==TIPUS ESDEVENIMENT==
   1.  Participació o organització d'un acte de disseminació
   2.  Participació o organització d'un acte/activitat en l'àmbit de "Dones i Ciència","Ciència a les escoles" o similar (JEDI)
   3.  Aparició en mitjà de comunicació escrit o audiovisual internacional
@@ -15,3 +15,72 @@
   14. Organització d'una sessió especial en un congrés internacional
   15. Organització o participació en un taller/seminari UdG/ICRA
   16. Treball editorial (com a Editor en Cap o Editor Associat) en revista de Q1
+  17. Narrativa d'impacte sotmesa a CERCA i avaluades amb un excel·lent o outstanding
+  18. Contribució a canvis en la gestió de l'aigua a les conques internes de Catalunya
+  19. Lloc de treball generat mitjançant llicència amb participació d'ICRA
+  20. Aliança sòlida amb entitat que tingui finalitat social (ambiental, esportiva, cultural, educativa...)
+
+
+==OBSERVACIONS (de cada tipus d'esdeveniment)==
+1. Actes de disseminació participats/organitzats per ICRA
+  Aquest indicador recull cada acte de divulgació ( outreach) participat o
+  organitzat per ICRA dirigit a un públic no especialitzat. S'inclouen accions
+  com organització i participació de tallers, jornades de sensibilització,
+  participació en fires i exposicions,  activitats de ciència ciutadana,
+  xerrades i activitats educatives o qualsevol altra iniciativa que fomenti la
+  interacció directa  amb els participants i la promoció de la recerca. S’ha
+  d’especificar la data, el lloc, el tipus d'activitat de cada acte, el perfil
+  del públic destinatari ( estudiants, famílies, població en general...) i el
+  recompte del numero de participants de cada acció. En el cas que es vagi
+  representant un projecte de recerca general s’afegirà una acció per cada
+  projecte participant. Si es té, es recomana adjuntar certificat d’assistència
+  de l’esdeveniment.
+
+2. activitats per fomentar valors JEDI en la recerca Aquest indicador recull les
+activitats organitzades amb l'objectiu de promoure els valors de Justícia,
+Equitat, Diversitat i Inclusió (JEDI) en l'àmbit de la recerca. S'inclouen
+accions com organització de tallers, seminaris, jornades de sensibilització,
+formacions específiques o qualsevol altra iniciativa que contribueixi a
+fomentar una recerca més inclusiva i equitativa dins i fora el centre de
+recerca . Es recomana especificar la data, lloc, el tipus d'activitat i el
+públic destinatari.
+
+5. Participació en comitè d'experts en l'àmbit legislatiu i de gestió de l'aigua:
+  Aquest indicador fa referència a la participació activa en comitès d'experts
+  en l'àmbit legislatiu i en l'àmbit de gestió de l'aigua. Caldrà entrar una
+  acció per cada investigador que participa en un mateix comitè expert. A
+  observacions indicar quin és el rol de l'investigador dins el comitè. La
+  durada inclou el període que engloba la participació en el comitè. No cal
+  entrar una per una les diferents reunions o interaccions amb el comitè.
+
+11. Formacions / tallers per empreses / administracions organitzats:
+  Aquest indicador recull la participació dels investigadors en l'organització
+  de formacions o tallers per empreses i administracions. No comptabilitza la
+  mera participació en la formació/taller amb una ponència en un d'aquests
+  tallers. Es valora el caire organitzatiu de la formació en el seu global. Els
+  participants de l'acció serà el nombre de persones que han gaudit d'una
+  formació específica.
+
+19. Llocs de treball generats mitjançant llicències amb participació d'ICRA:
+  Aquest indicador fa referència al nombre de llocs de treball generats a
+  partir de l'explotació de llicències amb participació dels investigadors. Un
+  exemple seria el nombre de treballadors que té una spin-off amb participació
+  d'ICRA. S'afegirà una acció per cada any, de manera que es podrà realitzar un
+  seguiment de l'evolució del nombre de llocs de treball generats. Els
+  participants de l'acció seran el nombre de treballadors de l'Spin-off.
+
+18. Canvis en la gestió de l'aigua a les conques internes de Catalunya:
+  Aquest indicador recull casos concrets d'éxit en promoure canvis en la gestió
+  de l'aigua a les conques internes de Catalunya. Un indicador d'impacte és
+  influir en un canvi en la gestió. A observacions indicar quin és el canvi en
+  la gestió que s'ha promogut, i de quin projecte o coneixement prové. Cada
+  acció inclourà un investigador que hagi participat en la promoció d'aquest
+  canvi de forma significativa.
+
+20. Aliances sòlides amb entitats que tinguin una finalitat social (ambientals, esportives, culturals, educatives):
+  Aquest indicador captura les aliances sòlides amb entitats que tinguin una
+  finalitat social. A observacions indicar quina és l'entitat, i quina és la
+  forma legal que plasma aquesta aliança (per exemple, un conveni de
+  col·laboració). També indicar quina és la finalitat de l'aliança. Cada acció
+  inclourà un investigador que hagi participat en la concreció d'aquesta
+  aliança.

@@ -1,0 +1,2 @@
+default:
+	bash deploy.sh
