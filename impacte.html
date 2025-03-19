@@ -31,7 +31,11 @@
   <b v-if="!loading">Perfils Sage ({{users.length}})</b>
   <table border=1>
     <tr v-for="user in users">
-      <td>{{user.id}}</td>
+      <td>
+        <a :href="`https://policyprofiles.sagepub.com/profile/${user.id}/${user.nom}`" target=_blank>
+          {{user.id}}
+        </a>
+      </td>
       <td>{{user.nom}}</td>
       <td>
         <details xsmall>
