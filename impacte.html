@@ -27,7 +27,8 @@
 <h2>Indicadors impacte ICRA (SAGE/OVERTON)</h2>
 
 <div id=app>
-  <div v-if="loading">Consultant perfils sagepub... ( {{users.length}} / {{n_users_expected}} )</div>
+  <div v-if="loading">Consultant perfils a API Sage... ( {{users.length}} / {{n_users_expected}} )</div>
+  <b v-if="!loading">Perfils Sage ({{users.length}})</b>
   <table border=1>
     <tr v-for="user in users">
       <td>{{user.id}}</td>
