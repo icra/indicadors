@@ -6,6 +6,17 @@
     body{
       font-family: Eczar, IM Fell English, Georgia, serif;
     }
+    td,th{
+      vertical-align:top;
+    }
+    summary:hover{
+      cursor:pointer;
+      text-decoration:underline;
+      background:#ccc;
+    }
+    [xsmall]{
+      font-size:x-small;
+    }
   </style>
 <head></head><body>
 
@@ -13,21 +24,28 @@
 
 <!--nav dinàmic-->
 <div id=nav></div><hr>
-<script src="nav.js"></script>
+<script src="../nav.js"></script>
 
 <h2>Indicadors impacte ICRA (SAGE/OVERTON)</h2>
 
 <div id=app>
+  <div v-if="loading">consultant perfils sagepub ({{users.length}}/{{n_users_expected}})...</div>
   <table border=1>
     <tr v-for="user in users">
       <td>{{user.id}}</td>
       <td>{{user.nom}}</td>
       <td>
-        <details>
-          <summary>{{user.response?.data?.metadata}}
-          <div>
-            {{user.response?.data
-          </div>
+        <details xsmall>
+          <summary>{{user.response?.data?.metadata}}</summary>
+          <table v-for="docs in [user.response?.data?.documents]">
+            <tbody v-if="docs">
+              <tr v-for="doc in docs">
+                <td>
+                  <code><pre>{{JSON.stringify(doc,null,"  ")}}</pre></code>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </details>
       </td>
     </tr>
@@ -38,11 +56,14 @@
   let app = Vue.createApp({
     data(){return{
       users:[],
+      loading:true,
+      n_users_expected:0,
     }},
   }).mount("#app");
 
   fetch("sage_profiles.txt").then(r=>r.text()).then(txt=>{
     let linies = txt.split("\n").filter(e=>e);
+    app.n_users_expected = linies.length;
     linies.forEach(linia=>{
       let tokens = linia.split("/");
       let id_user = tokens[4];
@@ -51,10 +72,9 @@
     });
   })
 
-  //sagepub api call
-  function fetch_sage_user(id_user,nom){
-    let url=`policyprofiles.sagepub.com/spa/public/citation-data/for-user/${id_user}`;
-    let furl=`https://cors-anywhere.herokuapp.com/${url}`;
+  //sagepub api call (evitar CORS)
+  function fetch_sage_user(id_user, nom){
+    let url=`curl_sagepub_user.php?id_user=${id_user}`;
     let options={};
     fetch(url,options).then(r=>r.json()).then(obj=>{
       app.users.push({
@@ -62,6 +82,10 @@
         id:id_user,
         response:obj,
       });
+
+      if(app.users.length>=app.n_users_expected){
+        app.loading=false;
+      }
     });
   }
 </script>

@@ -23,7 +23,9 @@ function genera_nav(div_container_id){
     }else{
       item = document.createElement("a");
     }
+
     item.setAttribute("href",li.href);
+
     item.innerHTML=li.nom;
     nav.appendChild(item);
     nav.appendChild((function(){
