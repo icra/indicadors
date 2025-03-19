@@ -24,12 +24,12 @@
 
 <!--nav dinàmic-->
 <div id=nav></div><hr>
-<script src="../nav.js"></script>
+<script src="nav.js"></script>
 
 <h2>Indicadors impacte ICRA (SAGE/OVERTON)</h2>
 
 <div id=app>
-  <div v-if="loading">consultant perfils sagepub ({{users.length}}/{{n_users_expected}})...</div>
+  <div v-if="loading">Consultant perfils sagepub... ( {{users.length}} / {{n_users_expected}} )</div>
   <table border=1>
     <tr v-for="user in users">
       <td>{{user.id}}</td>
