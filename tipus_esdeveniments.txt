@@ -1,6 +1,6 @@
 ==TIPUS ESDEVENIMENT==
   1.  Participació o organització d'un acte de disseminació
-  2.  Participació o organització d'un acte/activitat en l'àmbit de "Dones i Ciència","Ciència a les escoles" o similar (JEDI)
+  2.  Participació d'un acte/activitat organitzat pel DREU en l'àmbit de "Dones i Ciència","Ciència a les escoles" o similar (JEDI)
   3.  Aparició en mitjà de comunicació escrit o audiovisual internacional
   4.  Aparició en mitjà de comunicació escrit o audiovisual regional/estatal
   5.  Participació en comitè d'experts en l'àmbit legislatiu i de gestió de l'aigua
@@ -20,6 +20,17 @@
   19. Lloc de treball generat mitjançant llicència amb participació d'ICRA
   20. Aliança sòlida amb entitat que tingui finalitat social (ambiental, esportiva, cultural, educativa...)
 
+  //CANVIS DE TEXT
+  2.  Participació d'un acte/activitat organitzat pel DREU en l'àmbit de "Dones
+      i Ciència","Ciència a les escoles" o similar (JEDI)
+
+  //NOUS TIPUS
+  21. Aliança sòlida amb empresa/administració pública
+  22. Participació o organització de formació interna per personal ICRA per fomentar valors JEDI
+
+  //CAS ESPECIAL
+  - [x] (checkbox) "Participa l'administració central de l'estat?"
+    tipus: 5,6,7,8,11
 
 ==OBSERVACIONS (de cada tipus d'esdeveniment)==
 1. Actes de disseminació participats/organitzats per ICRA
@@ -36,14 +47,14 @@
   projecte participant. Si es té, es recomana adjuntar certificat d’assistència
   de l’esdeveniment.
 
-2. activitats per fomentar valors JEDI en la recerca Aquest indicador recull les
-activitats organitzades amb l'objectiu de promoure els valors de Justícia,
-Equitat, Diversitat i Inclusió (JEDI) en l'àmbit de la recerca. S'inclouen
-accions com organització de tallers, seminaris, jornades de sensibilització,
-formacions específiques o qualsevol altra iniciativa que contribueixi a
-fomentar una recerca més inclusiva i equitativa dins i fora el centre de
-recerca . Es recomana especificar la data, lloc, el tipus d'activitat i el
-públic destinatari.
+2. Activitats per fomentar valors JEDI en la recerca
+  Aquest indicador recull les activitats organitzades amb l'objectiu de
+  promoure els valors de Justícia, Equitat, Diversitat i Inclusió (JEDI) en
+  l'àmbit de la recerca. S'inclouen accions com organització de tallers,
+  seminaris, jornades de sensibilització, formacions específiques o qualsevol
+  altra iniciativa que contribueixi a fomentar una recerca més inclusiva i
+  equitativa dins i fora el centre de recerca . Es recomana especificar la
+  data, lloc, el tipus d'activitat i el públic destinatari.
 
 5. Participació en comitè d'experts en l'àmbit legislatiu i de gestió de l'aigua:
   Aquest indicador fa referència a la participació activa en comitès d'experts
@@ -61,14 +72,6 @@ públic destinatari.
   participants de l'acció serà el nombre de persones que han gaudit d'una
   formació específica.
 
-19. Llocs de treball generats mitjançant llicències amb participació d'ICRA:
-  Aquest indicador fa referència al nombre de llocs de treball generats a
-  partir de l'explotació de llicències amb participació dels investigadors. Un
-  exemple seria el nombre de treballadors que té una spin-off amb participació
-  d'ICRA. S'afegirà una acció per cada any, de manera que es podrà realitzar un
-  seguiment de l'evolució del nombre de llocs de treball generats. Els
-  participants de l'acció seran el nombre de treballadors de l'Spin-off.
-
 18. Canvis en la gestió de l'aigua a les conques internes de Catalunya:
   Aquest indicador recull casos concrets d'éxit en promoure canvis en la gestió
   de l'aigua a les conques internes de Catalunya. Un indicador d'impacte és
@@ -76,6 +79,14 @@ públic destinatari.
   la gestió que s'ha promogut, i de quin projecte o coneixement prové. Cada
   acció inclourà un investigador que hagi participat en la promoció d'aquest
   canvi de forma significativa.
+
+19. Llocs de treball generats mitjançant llicències amb participació d'ICRA:
+  Aquest indicador fa referència al nombre de llocs de treball generats a
+  partir de l'explotació de llicències amb participació dels investigadors. Un
+  exemple seria el nombre de treballadors que té una spin-off amb participació
+  d'ICRA. S'afegirà una acció per cada any, de manera que es podrà realitzar un
+  seguiment de l'evolució del nombre de llocs de treball generats. Els
+  participants de l'acció seran el nombre de treballadors de l'Spin-off.
 
 20. Aliances sòlides amb entitats que tinguin una finalitat social (ambientals, esportives, culturals, educatives):
   Aquest indicador captura les aliances sòlides amb entitats que tinguin una

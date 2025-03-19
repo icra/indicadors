@@ -1,5 +1,7 @@
 <?php
 
+header('Content-Type: application/json; charset=utf-8');
+
 $id_user = isset($_GET["id_user"]) ? $_GET["id_user"] : false;
 
 if(!$id_user){
