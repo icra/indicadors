@@ -2,8 +2,10 @@
   <title>ICRA indicadors</title>
   <meta charset="utf8">
 
-  <!--lib vue-->
+  <!--lib vue
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
   <style>
     body{
@@ -78,7 +80,7 @@
   ></div>
 
   <!--avís certificat-->
-  <div v-if="!projectes">
+  <div v-if="!tot_carregat">
     Perquè tot funcioni cal:<ol>
       <li>
         Estar dins la xarxa de l'ICRA (o a la VPN)
@@ -95,7 +97,7 @@
     <summary large bold>
       Taula indicadors
     </summary>
-    <p v-if="projectes">
+    <p v-if="tot_carregat">
       Puntuació total: 0 (pendent implementar fórmula. Puntuació = pes_bloc*pes_indicador*increment/objectiu)
     </p>
     <p>
@@ -164,7 +166,7 @@
             </div>
           </td>
           <td center>
-            <button v-if="indi.funcio_calculadora" @click="indi.calcula()" xsmall :disabled="!projectes">obtenir dades</button>
+            <button v-if="indi.funcio_calculadora" @click="indi.calcula()" xsmall :disabled="!tot_carregat">obtenir dades</button>
             <span v-else xsmall style="color:#bbb">pendent</span>
           </td>
         </tr>
@@ -172,100 +174,48 @@
     </table>
   </details><hr>
 
-  <!--secció projectes-->
-  <details>
-    <summary large bold>
-      Taula projectes
-      <span v-if="projectes">
-        &mdash; Resultats: {{get_files_projectes.length}}/{{projectes.length}}
-      </span>
-    </summary>
+  <!--indicador debug-->
+  <p>Taules de desenvolupament (estaran ocultes en la versió final)</p>
 
-    <div v-if="!projectes">carregant projectes (SQL)...</div>
+  <!--bucle taules development-->
+  <div v-for="taula in Object.keys(taules)">
+    <details>
+      <summary large bold>
+        Taula {{taula}}
+        <span v-if="taules[taula].taula" small>
+          ({{taules[taula].files_filtrades.length}}/{{taules[taula].taula.length}} items)
+        </span>
+      </summary>
 
-    <div v-if="!projectes && !carregant">error consulta SQL Server ICRA</div>
+      <div v-if="!taules[taula].taula">carregant "{{taula}}" (SQL)...</div>
+      <div v-if="!taules[taula].taula && !carregant">error consulta SQL Server ICRA</div>
 
-    <!--checkboxes per veure columnes-->
-    <p v-if="projectes && projectes.length" small>
-      <label v-for="val,key in projectes[0]">
-        <input type=checkbox v-model="columnes_projectes[key]">
-        <span :style="{color:filtres_projectes[key]!=undefined?'blue':''}">{{key}}</span>
-      </label>
-    </p>
+      <!--checkboxes per veure columnes-->
+      <p v-if="taules[taula].taula?.length" small>
+        <label v-for="val,key in taules[taula].taula[0]">
+          <input type=checkbox v-model="taules[taula].columnes[key]">
+          <span :style="{color:taules[taula].filtres[key]!=undefined?'blue':''}">{{key}}</span>
+        </label>
+      </p>
 
-    <table border=1 v-if="projectes && projectes.length" small>
-      <tr>
-        <th v-for="[key,_] in get_columnes_projectes">
-          {{key}}
-          <button v-if="filtres_projectes[key]!=undefined" @click="delete filtres_projectes[key]">
-            ="{{filtres_projectes[key]}}"
-          </button>
-          <button @click="columnes_projectes[key]=false">X</button>
-        </th>
-      </tr>
-      <tr v-for="pro in get_files_projectes">
-        <td v-for="[key,_] in get_columnes_projectes">
-          <span @click="filtres_projectes[key]=pro[key]">{{pro[key]}}</span>
-        </td>
-      </tr>
-    </table>
-  </details><hr>
-
-  <!--secció personal rrhh-->
-  <details>
-    <summary large bold>
-      Taula RRHH
-      <span v-if="personal">
-        &mdash; {{personal.length}} contractes
-      </span>
-    </summary>
-
-    <!--status consulta personal-->
-    <div v-if="!personal">carregant personal (SQL)...</div>
-    <div v-if="!personal && !carregant">error consulta SQL Server ICRA</div>
-
-    <!--taula personal-->
-    <table border=1 v-if="personal && personal.length" small>
-      <tr>
-        <th v-for="val,key in personal[0]">
-          <button @click="personal.sort((a,b)=>a[key]>b[key]?1:-1)">&darr;{{key}}</button>
-        </th>
-      </tr>
-      <tr v-for="persona in personal">
-        <td v-for="val,key in persona">
-          {{val}}
-        </td>
-      </tr>
-    </table>
-  </details><hr>
-
-  <!--secció esdeveniments-->
-  <details>
-    <summary large bold>
-      Taula esdeveniments
-      <span v-if="esdeveniments">
-        &mdash; {{esdeveniments.length}} accions (participacions)
-      </span>
-    </summary>
-
-    <!--status consulta esdeveniments-->
-    <div v-if="!personal">carregant esdeveniments (SQL)...</div>
-    <div v-if="!personal && !carregant">error consulta SQL Server ICRA</div>
-
-    <!--taula personal-->
-    <table border=1 v-if="esdeveniments && esdeveniments.length" small>
-      <tr>
-        <th v-for="val,key in esdeveniments[0]">
-          <button @click="esdeveniments.sort((a,b)=>a[key]>b[key]?1:-1)">&darr;{{key}}</button>
-        </th>
-      </tr>
-      <tr v-for="esd in esdeveniments">
-        <td v-for="val,key in esd">
-          {{val}}
-        </td>
-      </tr>
-    </table>
-  </details><hr>
+      <table border=1 v-if="taules[taula].taula?.length" small>
+        <tr>
+          <th v-for="[key,_] in taules[taula].columnes_actives">
+            <button @click="taules[taula].taula.sort((a,b)=>a[key]>b[key]?1:-1)">&darr;{{key}}</button>
+            <button v-if="taules[taula].filtres[key]!=undefined" @click="delete taules[taula].filtres[key]">
+              ="{{taules[taula].filtres[key]}}"
+            </button>
+            <button @click="taules[taula].columnes[key]=false">X</button>
+          </th>
+        </tr>
+        <tr v-for="row in taules[taula].files_filtrades">
+          <td v-for="[key,_] in taules[taula].columnes_actives">
+            <span @click="taules[taula].filtres[key]=row[key]">{{row[key]}}</span>
+          </td>
+        </tr>
+      </table>
+    </details><hr>
+  </div>
 </div>
 
 <script>//estructura dades
@@ -499,6 +449,32 @@
       this.visible=false;
     },
   };
+
+  //configuracio columnes visibles i filtres per taules debug
+  class Conf_Taula{
+    constructor(){
+      this.taula    = null; //fetch_taula_undarius(nom_taula)
+      this.columnes = {};   //sintaxi: "nom_columna" => true/false
+      this.filtres  = {};   //sintaxi: "nom_columna" => valor (string o number) a filtrar
+    }
+
+    get columnes_actives(){
+      //retorna els noms de les columnes actives
+      return Object.entries(this.columnes).filter(en=>en[1]);
+    }
+    get files_filtrades(){
+      //retorna les files de la taula que compleixen tots els filtres
+      if(!this.taula) return [];
+
+      let filtres = Object.entries(this.filtres);
+      if(filtres.length==0) return this.taula;
+
+      return this.taula.filter(row=>{
+        let bool = false;
+        return filtres.every(([key,val])=>row[key]==val);
+      });
+    }
+  }
 </script>
 
 <script>//vue app
@@ -508,32 +484,23 @@
       blocs,
       carregant:true,
 
-      //organisme on es reporten els indicadors
+      //TODO organisme on es reporten els indicadors
       conjunts:[
         "Patronat",
         "Contracte Programa",
         "Pla Acció",
         "IPs",
+        "UdG professors",
       ],
 
-      projectes:null,     //fetch_taula_undarius()
-      personal:null,      //fetch_taula_undarius()
-      esdeveniments:null, //fetch_taula_undarius()
-
-      /*configuració taules projectes, personal i esdeveniments*/
-      columnes_projectes:{
-        "Estat":true,
-        "Acronim":true,
-        "Departament Àrea":true,
-        "Tipus de finançament":true,
-        "Programa de finançament":true,
+      taules:{
+        projectes:           new Conf_Taula(),
+        personal:            new Conf_Taula(),
+        esdeveniments:       new Conf_Taula(),
+        tipus_esdeveniments: new Conf_Taula(),
+        ingressos:           new Conf_Taula(),
       },
-      filtres_projectes:{
-        //columna:valor
-      },
-
-      /*finestra mòbil*/
-      caption,
+      caption,/*element <div id=caption> (finestreta detalls)*/
     }},
 
     methods:{
@@ -568,7 +535,7 @@
         indicador.years[year].valor  = proj_Horizon.length;
         indicador.years[year].llista = proj_Horizon.map(row=>{
           let new_row = {};
-          this.get_columnes_projectes.forEach(([key,_])=>{
+          this.projectes.columnes_actives.forEach(([key,_])=>{
             new_row[key] = row[key];
           });
           return new_row;
@@ -610,7 +577,7 @@
         indicador.years[year].valor  = proj_ERC.length;
         indicador.years[year].llista = proj_ERC.map(row=>{
           let new_row = {};
-          this.get_columnes_projectes.forEach(([key,_])=>{
+          this.projectes.columnes_actives.forEach(([key,_])=>{
             new_row[key] = row[key];
           });
           return new_row;
@@ -676,21 +643,6 @@
     },
 
     computed:{
-      get_columnes_projectes(){
-        return Object.entries(this.columnes_projectes).filter(en=>en[1]);
-      },
-      get_files_projectes(){
-        if(!this.projectes) return [];
-
-        let filtres = Object.entries(this.filtres_projectes);
-        if(filtres.length==0) return this.projectes;
-
-        return this.projectes.filter(row=>{
-          let bool = false;
-          return filtres.every(([key,val])=>row[key]==val);
-        });
-      },
-
       get_ips(){
         if(!this.projectes) return false;
         if(!this.personal)  return false;
@@ -711,8 +663,30 @@
         });
         return ips;
       },
+
+      tot_carregat(){
+        return Object.values(this.taules).every(obj=>obj.taula);
+      },
     },
   }).mount("#app");
+
+  //columnes activades per defecte
+  app.taules.projectes.columnes={
+    "Estat":true,
+    "Acronim":true,
+  };
+  app.taules.personal.columnes={
+    "Nom":true,
+    "Contracte":true,
+  };
+  app.taules.esdeveniments.columnes={
+    "Esdeveniment":true,
+    "Persona":true,
+  };
+  app.taules.tipus_esdeveniments.columnes={
+    "Descripcio":true,
+    "Observacions":true,
+  };
 </script>
 
 <script>
@@ -728,7 +702,7 @@
       if(!response.ok) throw(`error fetching sql icranet (taula '${nom_taula}')`);
 
       let data = await response.json();
-      app[nom_taula] = data;
+      app.taules[nom_taula].taula = data;
       console.log({taula:nom_taula, data});
     }catch(err){
       console.error('Error fetching data:', err);
@@ -738,4 +712,6 @@
   fetch_taula_undarius("projectes");
   fetch_taula_undarius("personal");
   fetch_taula_undarius("esdeveniments");
+  fetch_taula_undarius("tipus_esdeveniments");
+  fetch_taula_undarius("ingressos");
 </script>

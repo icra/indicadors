@@ -62,8 +62,31 @@
       loading:true,
       n_users_expected:0,
     }},
+
+    computed:{
+      resum_impacte(){
+        let users = this.users;
+        let documents={
+          //"identificador":"objecte",
+        };
+
+        //continuar aqui TODO
+        //continuar aqui TODO
+        //continuar aqui TODO
+        //continuar aqui TODO
+        //continuar aqui TODO
+        //continuar aqui TODO
+        //continuar aqui TODO
+        //continuar aqui TODO
+        //continuar aqui TODO
+        users.forEach(usr=>{
+        });
+
+      },
+    },
   }).mount("#app");
 
+  //llista de tots els perfils
   fetch("sage_profiles.txt").then(r=>r.text()).then(txt=>{
     let linies = txt.split("\n").filter(e=>e);
     app.n_users_expected = linies.length;
