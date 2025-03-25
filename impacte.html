@@ -17,6 +17,9 @@
     [xsmall]{
       font-size:x-small;
     }
+    fieldset{
+      margin-bottom:20px;
+    }
   </style>
 <head></head><body>
 
@@ -27,32 +30,55 @@
 <h2>Indicadors impacte ICRA (SAGE/OVERTON)</h2>
 
 <div id=app>
+  <fieldset>
+    <legend>Select year</legend>
+    <label v-for="year in years">
+      <input type=radio v-model="selected_year" :value="year"> {{year}}
+    </label>
+  </fieldset>
+
   <div v-if="loading">Consultant perfils a API Sage... ( {{users.length}} / {{n_users_expected}} )</div>
-  <b v-if="!loading">Perfils Sage ({{users.length}})</b>
-  <table border=1>
-    <tr v-for="user in users">
-      <td>
-        <a :href="`https://policyprofiles.sagepub.com/profile/${user.id}/${user.nom}`" target=_blank>
-          {{user.id}}
-        </a>
-      </td>
-      <td>{{user.nom}}</td>
-      <td>
-        <details xsmall>
-          <summary>{{user.response?.data?.metadata}}</summary>
-          <table v-for="docs in [user.response?.data?.documents]">
-            <tbody v-if="docs">
-              <tr v-for="doc in docs">
-                <td>
-                  <code><pre>{{JSON.stringify(doc,null,"  ")}}</pre></code>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </details>
-      </td>
-    </tr>
-  </table>
+
+  <fieldset v-if="resum_impacte">
+    <legend><b>ICRA IPs Summary</b></legend>
+    <details v-if="resum_impacte">
+      <summary>
+        <b>{{resum_impacte.n_citations}} citations</b>
+        in
+        {{resum_impacte.n_documents}} policy documents
+      </summary>
+      <table border=1 xsmall>
+        <tr v-for="dois,id in resum_impacte.citations">
+          <td>{{id}}</td>
+          <td>{{Array.from(new Set(dois))}}</td>
+        </tr>
+      </table>
+    </details>
+  </fieldset>
+
+  <div>
+    <b v-if="!loading">Profiles Sage ({{users.length}})</b>
+    <table border=1 v-if="users.length">
+      <tr v-for="user in users">
+        <td>
+          <a :href="`https://policyprofiles.sagepub.com/profile/${user.id}/${user.nom}`" target=_blank>
+            {{user.id}}
+          </a>
+        </td>
+        <td>{{user.nom}}</td>
+        <td>
+          <b>{{user.summary.n_citations}} citations</b>
+          in {{user.summary.n_documents}} policy documents
+        </td>
+        <td>
+          <details xsmall>
+            <summary>{{user.response?.data?.metadata}}</summary>
+            <code><pre>{{JSON.stringify(user,null,"  ")}}</pre></code>
+          </details>
+        </td>
+      </tr>
+    </table>
+  </div>
 </div>
 
 <script>
@@ -61,27 +87,49 @@
       users:[],
       loading:true,
       n_users_expected:0,
+
+      selected_year:"All time",
+      years:[
+        "All time",
+        2023,
+        2024,
+        2025,
+        2026,
+        2027,
+        2028,
+        2029,
+      ],
     }},
 
     computed:{
       resum_impacte(){
-        let users = this.users;
-        let documents={
-          //"identificador":"objecte",
+        if(this.users.length != this.n_users_expected) return false;
+
+        let citations={
+          //"policy_document_id":["doi",...]
         };
 
-        //continuar aqui TODO
-        //continuar aqui TODO
-        //continuar aqui TODO
-        //continuar aqui TODO
-        //continuar aqui TODO
-        //continuar aqui TODO
-        //continuar aqui TODO
-        //continuar aqui TODO
-        //continuar aqui TODO
-        users.forEach(usr=>{
-        });
+        try{
+          this.users.forEach(usr=>{
+            Object.entries(usr.response.data.citations).forEach(([doi,list])=>{
+              list.forEach(doc=>{
+                let id = doc.policy_document_id;
+                if(citations[id]==undefined){
+                  citations[id]=[];
+                }
+                citations[id].push(doi);
+              });
+            });
+          });
+        }catch(err){
+          console.log(err);
+          return false;
+        }
 
+        let n_citations = Object.values(citations).map(arr=>(new Set(arr)).size).reduce((p,c)=>p+c,0);
+        let n_documents = Object.keys(citations).length;
+
+        return {n_citations, n_documents, citations};
       },
     },
   }).mount("#app");
@@ -103,14 +151,41 @@
     let url=`curl_sagepub_user.php?id_user=${id_user}`;
     let options={};
     fetch(url,options).then(r=>r.json()).then(obj=>{
-      app.users.push({
+      let user = {
         nom,
         id:id_user,
         response:obj,
+      };
+      app.users.push(user);
+
+      //calcula nombre de cites i nombre de documents
+      let citations={};
+      Object.entries(obj.data.citations).forEach(([doi,list])=>{
+        list.forEach(doc=>{
+          let id = doc.policy_document_id;
+          if(citations[id]==undefined){
+            citations[id]=[];
+          }
+          citations[id].push(doi);
+        });
       });
+      let n_citations = Object.values(citations).map(arr=>(new Set(arr)).size).reduce((p,c)=>p+c,0);
+      let n_documents = Object.keys(citations).length;
+      let summary = {
+        n_citations,
+        n_documents,
+        citations,
+      };
+      user.summary = summary;
 
       if(app.users.length>=app.n_users_expected){
         app.loading=false;
+
+        app.users.sort((a,b)=>{
+          let aa = a.summary.n_citations;
+          let bb = b.summary.n_citations;
+          return bb-aa;
+        });
       }
     });
   }
