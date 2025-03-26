@@ -12,6 +12,7 @@ function genera_nav(div_container_id){
     {href:"ips.html",      nom:"IPs"},
     {href:"personal.html", nom:"personal"},
     {href:"impacte.html",  nom:"impacte"},
+    {href:"esdeveniments.html", nom:"esdeveniments"},
   ];
 
   let nav = document.createElement("nav");

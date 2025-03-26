@@ -1,0 +1,77 @@
+<!doctype html><html><head>
+  <title>Taula tipus esdeveniments</title>
+  <meta charset="utf8">
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <style>
+    body{
+      font-family: Eczar, IM Fell English, Georgia, serif;
+    }
+    table{
+      border-collapse:collapse;
+    }
+  </style>
+</head><body>
+
+<!--nav--><div id=nav></div><hr><script src="nav.js"></script>
+
+<h1>ICRA Indicadors &mdash; Tipus Esdeveniments</h1>
+
+<div id=app>
+  <code>Wed 26 Mar 2025 12:59:05 PM CET</code>
+
+  <table id=taula border=1>
+    <tr>
+      <td>
+        <b>Tipus d'esdeveniments</b>
+      </td>
+    </tr>
+    <tr v-for="row,i in taula">
+      <td>{{row.Descripcio}}</td>
+    </tr>
+  </table>
+
+  <h2>Detalls de cada tipus d'esdeveniment</h2>
+  <table border=1>
+    <tbody v-for="row,i in taula">
+      <tr>
+        <td><b>{{row.Descripcio}}</b></td>
+      </tr>
+      <tr>
+        <td>{{row.Observacions || row.Descripcio}}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+  let taula=[
+    {"Descripcio":"01.  Participació o organització d'un acte de disseminació","Observacions":"Aquest indicador recull cada acte de divulgació ( outreach) participat o organitzat per ICRA dirigit a un públic no especialitzat. S'inclouen accions com organització i participació de tallers, jornades de sensibilització, participació en fires i exposicions,  activitats de ciència ciutadana, xerrades i activitats educatives o qualsevol altra iniciativa que fomenti la interacció directa  amb els participants i la promoció de la recerca. S’ha d’especificar la data, el lloc, el tipus d'activitat de cada acte, el perfil del públic destinatari ( estudiants, famílies, població en general...) i el recompte del numero de participants de cada acció. En el cas que es vagi representant un projecte de recerca general s’afegirà una acció per cada projecte participant. Si es té, es recomana adjuntar certificat d’assistència de l’esdeveniment. ","Participants":true,"AdministracioCentral":false,"Periodista":false},
+    {"Descripcio":"02.  Participació d'un acte/activitat organitzat pel DREU en l'àmbit de \"Dones i Ciència\", \"Ciència a les escoles\" o similar (JEDI)","Observacions":"Aquest indicador recull les activitats organitzades pel DREU amb l'objectiu de promoure els valors de Justícia, Equitat, Diversitat i Inclusió (JEDI) en l'àmbit de la recerca. S'inclouen accions com organització de tallers, seminaris, jornades de sensibilització, formacions específiques o qualsevol altra iniciativa que contribueixi a fomentar una recerca més inclusiva i equitativa dins i fora el centre de recerca . Es recomana especificar la data, lloc, el tipus d'activitat i el públic destinatari. ","Participants":false,"AdministracioCentral":false,"Periodista":false},
+    {"Descripcio":"03.  Aparició en mitjà de comunicació escrit o audiovisual internacional","Observacions":"Aquest indicador fa referència a la participació en mitjans de comunicació escrits o audiovisuals d’abast internacional. S’hi inclouen entrevistes, mencions en articles, reportatges i altres formats de difusió. Cada acció ha de registrar-se de manera individual, indicant el mitjà, la data, nom i correu del o la periodista, una breu descripció del contingut de la notícia i l’enllaç corresponent.","Participants":false,"AdministracioCentral":false,"Periodista":true},
+    {"Descripcio":"04.  Aparició en mitjà de comunicació escrit o audiovisual regional/estatal","Observacions":"Aquest indicador fa referència a la participació en mitjans de comunicació escrits o audiovisuals d’abast regional/estatal. S’hi inclouen entrevistes, mencions en articles, reportatges i altres formats de difusió. Cada acció ha de registrar-se de manera individual, indicant el mitjà, la data, nom i correu del o la periodista, una breu descripció del contingut de la notícia i l’enllaç corresponent.","Participants":false,"AdministracioCentral":false,"Periodista":true},
+    {"Descripcio":"05.  Participació en comitè d'experts en l'àmbit legislatiu i de gestió de l'aigua","Observacions":"Aquest indicador fa referència a la participació activa en comitès d'experts en l'àmbit legislatiu i en l'àmbit de gestió de l'aigua. Caldrà entrar una acció per cada investigador que participa en un mateix comitè expert. A observacions indicar quin és el rol de l'investigador dins el comitè. La durada inclou el període que engloba la participació en el comitè. No cal entrar una per una les diferents reunions o interaccions amb el comitè.","Participants":false,"AdministracioCentral":true,"Periodista":false},
+    {"Descripcio":"06.  Participació en comitè internacional (i.e. comitè científic centre de recerca/panell d'avaluació de recerca) participat per ICRA","Observacions":"Participació en comitès científics (Scientific Advisory Boards - SAB) de centres de recerca internacionals. Membre de panells d'avaluació internacionals (no es refereix a l'avaluació de projectes, sinó a la participació com a membre en un panell)","Participants":false,"AdministracioCentral":true,"Periodista":false},
+    {"Descripcio":"07.  Participació en conferència convidada (plenària, keynote).","Observacions":"Participació com a ponent en una conferència convidada (plenària o keynote) en el marc d’un congrés o esdeveniment científic internacional","Participants":false,"AdministracioCentral":true,"Periodista":false},
+    {"Descripcio":"08.  Organització de congrés/taller/escola d'estiu o altra activitat internacional de recerca","Observacions":"Organització de congressos, tallers, escoles d'estiu o altres activitats internacionals de recerca, incloent la definició del programa científic, la coordinació de ponents i participants, la gestió logística i la promoció de l'esdeveniment per fomentar la interacció i la col·laboració entre investigadors de diferents institucions internacionales.","Participants":true,"AdministracioCentral":true,"Periodista":false},
+    //{"Descripcio":"09.  Estada de recercaire (predoc/postdoc/visiting scientist) acollit a ICRA (>=3 mesos)","Observacions":"Estada de recerca d’un investigador (predoctoral, postdoctoral o científic visitant) acollit a l’ICRA amb una durada igual o superior a tres mesos, procedent d’un centre de recerca internacional","Participants":false,"AdministracioCentral":false,"Periodista":false},
+    {"Descripcio":"10. Estada de recercaire ICRA (predoc/postdoc/senior) en centre internacional (>=3 mesos)","Observacions":"Estada de recerca d’un investigador de l’ICRA (predoctoral, postdoctoral o sènior) en un centre internacional amb una durada igual o superior a tres mesos. L’investigador/a principal (IP) també pot assignar estades de recerca per a membres predoctorals i postdoctorals del seu grup en centres internacionals, fomentant la mobilitat i la internacionalització,","Participants":false,"AdministracioCentral":false,"Periodista":false},
+    {"Descripcio":"11. Formació/taller per empreses/administracions organitzat per ICRA","Observacions":"Aquest indicador recull la participació dels investigadors en l'organització de formacions o tallers per empreses i administracions. No comptabilitza la mera participació en la formació/taller amb una ponència en un d'aquests tallers. Es valora el caire organitzatiu de la formació en el seu global. Els participants de l'acció serà el nombre de persones que han gaudit d'una formació específica.","Participants":true,"AdministracioCentral":true,"Periodista":false},
+    {"Descripcio":"12. Premi/reconeixement a nivell internacional","Observacions":"Premi o reconeixement a nivell internacional, rebut per aconseguiments destacats en el camp de la recerca. Aquests premis són de caràcter personal i reconeixen l'excel·lència científica, la contribució innovadora o la influència en l'àmbit de la recerca ","Participants":false,"AdministracioCentral":false,"Periodista":false},
+    {"Descripcio":"13. Premi/reconeixement a nivell regional/estatal","Observacions":"Premi o reconeixement a nivell nacional i regional, rebut per aconseguiments destacats en el camp de la recerca. Aquests premis són de caràcter personal i reconeixen l'excel·lència científica, la contribució innovadora o la influència en l'àmbit de la recerca.","Participants":false,"AdministracioCentral":false,"Periodista":false},
+    {"Descripcio":"14. Organització d'una sessió especial en un congrés internacional","Observacions":"Organització d’una sessió especial en un congrés internacional, incloent la selecció i coordinació dels ponents, la definició dels temes centrals de la sessió, la gestió logística i la promoció de la sessió per garantir la participació activa de la comunitat científica.","Participants":true,"AdministracioCentral":false,"Periodista":false},
+    {"Descripcio":"15. Organització o participació en un taller/seminari UdG/ICRA","Observacions":"Organització o participació en un esdeveniment tipus taller o seminari entre la UdG i l'ICRA per fomentar la col·laboració entre les dues institucions.","Participants":true,"AdministracioCentral":false,"Periodista":false},
+    {"Descripcio":"16. Treball editorial (com a Editor en Cap o Editor Associat) en revista de Q1","Observacions":"Treball editorial com a Editor en Cap o Editor Associat en una revista científica de Q1. ","Participants":false,"AdministracioCentral":false,"Periodista":false},
+    {"Descripcio":"17. Narrativa d'impacte sotmesa a CERCA i avaluades amb un excel·lent o outstanding","Observacions":"","Participants":false,"AdministracioCentral":false,"Periodista":false},
+    {"Descripcio":"18. Contribució a canvis en la gestió de l'aigua a les conques internes de Catalunya","Observacions":"Aquest indicador recull casos concrets d'éxit en promoure canvis en la gestió de l'aigua a les conques internes de Catalunya. Un indicador d'impacte és influir en un canvi en la gestió. A observacions indicar quin és el canvi en la gestió que s'ha promogut, i de quin projecte o coneixement prové. Cada acció inclourà un investigador que hagi participat en la promoció d'aquest canvi de forma significativa.","Participants":false,"AdministracioCentral":false,"Periodista":false},
+    {"Descripcio":"19. Lloc de treball generat mitjançant llicència amb participació d'ICRA","Observacions":"Aquest indicador fa referència al nombre de llocs de treball generats a partir de l'explotació de llicències amb participació dels investigadors. Un exemple seria el nombre de treballadors que té una spin-off amb participació d'ICRA. S'afegirà una acció per cada any, de manera que es podrà realitzar un seguiment de l'evolució del nombre de llocs de treball generats. Els participants de l'acció seran el nombre de treballadors de l'Spin-off.","Participants":true,"AdministracioCentral":false,"Periodista":false},
+    {"Descripcio":"20. Aliança sòlida amb entitat que tingui finalitat social (ambiental, esportiva, cultural, educativa...)","Observacions":"Aquest indicador captura les aliances sòlides amb entitats que tinguin una finalitat social. A observacions indicar quina és l'entitat, i quina és la forma legal que plasma aquesta aliança (per exemple, un conveni de col·laboració). També indicar quina és la finalitat de l'aliança. Cada acció inclourà un investigador que hagi participat en la concreció d'aquesta aliança.","Participants":false,"AdministracioCentral":false,"Periodista":false},
+    {"Descripcio":"21. Aliança sòlida amb empresa/administració pública","Observacions":"Aquest indicador captura les aliances sòlides amb empresa o administració. A observacions indicar quina és l'empresa o administració, i quina és la forma legal que plasma aquesta aliança (per exemple, un conveni de col·laboració). També indicar quina és la finalitat de l'aliança. Cada acció inclourà un investigador que hagi participat en la concreció d'aquesta aliança.","Participants":false,"AdministracioCentral":false,"Periodista":false},
+    {"Descripcio":"22. Participació o organització de formació interna per personal ICRA per fomentar valors JEDI","Observacions":"Aquest indicador recull les activitats organitzades amb l'objectiu de promoure els valors de Justícia, Equitat, Diversitat i Inclusió (JEDI) en l'àmbit de la recerca. S'inclouen accions com organització de tallers, seminaris, jornades de sensibilització, formacions específiques o qualsevol altra iniciativa que contribueixi a fomentar una recerca més inclusiva i equitativa dins i fora el centre de recerca . Es recomana especificar la data, lloc, el tipus d'activitat i el públic destinatari. ","Participants":false,"AdministracioCentral":false,"Periodista":false}
+  ];
+
+  let app = Vue.createApp({
+    data(){return{
+      taula,
+    }},
+  }).mount("#app");
+</script>
