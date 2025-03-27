@@ -249,7 +249,7 @@
           <th v-for="key in taules[taula].columnes_actives">
             <button @click="taules[taula].taula.sort((a,b)=>a[key]>b[key]?1:-1)">&darr;{{key}}</button>
             <button v-if="taules[taula].filtres[key]!=undefined" @click="delete taules[taula].filtres[key]">
-              ="{{taules[taula].filtres[key]}}"
+              ="{{taules[taula].filtres[key].substring(0,50)}}"
             </button>
             <button @click="taules[taula].columnes[key]=false">X</button>
           </th>
@@ -377,6 +377,9 @@
     "sessions_especials_organitzades"                       : `Nombre de sessions especials en congressos organitzades per ICRA`,
     "comites_internacionals_participats"                    : `Nombre de comitès internacionals participats per ICRA`,
     "articles_Q1"                                           : `Nombre d'articles científics al Q1 (segons Scopus)`,
+    "articles_Q1_amb_lideratge"                             : `Nombre d'articles científics al Q1 (segons Scopus) amb lideratge ICRA (primer, darrer, o autor de correspondència)`,
+    "articles_D1"                                           : `Nombre d'articles científics al D1 (segons Scopus)`,
+    "articles_FWCI_10"                                      : `Nombre d'articles científics influents amb un factor d'impacte ponderat per cites (FWCI)>10 (segons Scopus)`,
     "cites_articles"                                        : `Nombre de cites anuals (segons Scopus)`,
     "impact_factor"                                         : `Índex d'impacte (Impact factor) de la institució (segons Scopus) en el moment de l'anàlisi`,
     "estades_recercaires_acollits"                          : `Nombre d'estades de recercaires (predocs, postdocs, seniors) internacionals a ICRA`,
@@ -451,6 +454,9 @@
     "sessions_especials_organitzades"                       : `sessions`,
     "comites_internacionals_participats"                    : `comites`,
     "articles_Q1"                                           : `articles`,
+    "articles_Q1_amb_lideratge"                             : `articles`,
+    "articles_D1"                                           : `articles`,
+    "articles_FWCI_10"                                      : `articles`,
     "cites_articles"                                        : `cites`,
     "impact_factor"                                         : `IF`,
     "estades_recercaires_acollits"                          : `estades`,
@@ -524,7 +530,7 @@
         .filter(p=>p["Departament Àrea"]=="10. RECERCA");
 
       //ajunta les taules en un diccionari per codi projecte
-      let joined = {};
+      let joined={};
 
       ingressos.forEach(ing=>{
         let codi      = ing.Codi;      //codi projecte
@@ -537,10 +543,10 @@
         };
       });
 
-      let llista = Object.values(joined);
-      let keuros = llista.map(obj=>obj.ingressos).reduce((p,c)=>p+c,0)/1000;
+      let llista = Object.values(joined); //array
+      let keuros = llista.map(obj=>obj.ingressos).reduce((p,c)=>p+c,0)/1000; //number
 
-      indicador.years[year].valor  = keuros;
+      indicador.years[year].valor  = keuros; //number
       indicador.years[year].llista = llista.map(row=>{
         let new_row={
           ingressos: row.ingressos,
@@ -552,9 +558,56 @@
       });
     },
 
-    euros_recerca_horizon:null,
+    euros_recerca_horizon(year,indicador){
+      //projectes horizon vigents a l'any "year"
+      let projectes = app.taules.projectes.taula.filter(proj=>{
+        let year_final = proj.DataFiReal.split("-")[0];
+        return(
+          (
+            proj["Estat"]=="410. Finalitzat" ||
+            proj["Estat"]=="220. En execució"
+          ) &&
+          proj["Departament Àrea"]    =="10. RECERCA"             &&
+          proj["Tipus de finançament"]=="020. COMPETITIU EUROPEU" &&
+          proj["Programa de finançament"]!=null                   &&
+          proj["Programa de finançament"].includes("H2020")       &&
+          year_final >= year                                      &&
+          1
+        );
+      });
+      let ingressos = app.taules.ingressos.taula.filter(i=>i.Any==year);
+
+      //ajunta taules per codi projecte
+      let joined={};
+      projectes.forEach(projecte=>{
+        let codi = projecte.Codi; //codi projecte
+        let ing  = ingressos.find(i=>i.Codi==codi); //objecte
+        if(!ing) return;
+        joined[codi]={
+          projecte,
+          ingressos: ing.Ingressos,
+        }
+      });
+
+      let llista = Object.values(joined); //array
+      let keuros = llista.map(obj=>obj.ingressos).reduce((p,c)=>p+c,0)/1000; //number
+
+      indicador.years[year].valor  = keuros; //number
+      indicador.years[year].llista = llista.map(row=>{
+        let new_row={
+          ingressos: row.ingressos,
+        };
+        app.taules.projectes.columnes_actives.forEach(key=>{
+          new_row[key] = row.projecte[key];
+        });
+        return new_row;
+      });
+    },
+
     euros_recerca_erc_eic:null,
+
     euros_recerca_estatal:null,
+
     euros_recerca_regional:null,
 
     projectes_horizon(year, indicador){
@@ -617,7 +670,13 @@
     congressos_tallers_escoles_estiu_organitzats:null,
     sessions_especials_organitzades:null,
     comites_internacionals_participats:null,
+
     articles_Q1:null,
+
+    articles_Q1_amb_lideratge:null,
+    articles_D1:null,
+    articles_FWCI_10:null,
+
     cites_articles:null,
     impact_factor:null,
     estades_recercaires_acollits:null,
@@ -679,6 +738,7 @@
     euros_projectes_amb_administracio_central:null,
   };
 
+  /*DEFINICIÓ INDICADORS*/
   let ambits=[
     new Ambit("Patronat",[
       new Bloc("Excel·lència en recerca",30,[                       /* pes  |24, 25, 26, 27, 28, 29| basal */
@@ -692,7 +752,9 @@
         new Indicador(`congressos_tallers_escoles_estiu_organitzats`,     5, [0,  5, 10, 10, 10, 15],    3 ),
         new Indicador(`sessions_especials_organitzades`,                  5, [0,  1,  2,  3,  4,  5],    4 ),
         new Indicador(`comites_internacionals_participats`,             2.5, [0,  5, 10, 10, 10, 15],    3 ),
-        new Indicador(`articles_Q1`,                                     10, [0,  1,  2,  3,  4,  4],  105 ),
+        new Indicador(`articles_Q1`,                                      5, [0,  1,  2,  3,  4,  4],  105 ),
+        new Indicador(`articles_Q1_amb_lideratge`,                        5, [0, 46, 48, 50, 52, 55],   45 ),
+        new Indicador(`articles_D1`,                                      5, [0,  1,  2,  2,  3,  3],    1 ),
         new Indicador(`cites_articles`,                                  10, [0,  1,  2,  3,  4,  4],14215 ),
         new Indicador(`impact_factor`,                                    5, [0,  1,  2,  3,  4,  4],11.75 ),
         new Indicador(`estades_recercaires_acollits`,                   2.5, [0,  1,  2,  3,  4,  4],    5 ),
@@ -740,8 +802,8 @@
         new Indicador(`aparicions_mitjans_comunicacio_internacionals`, 20, [0,  10,  15,  20,  25,  30],   11 ),
       ]),
       new Bloc("Relació amb patrons",5,[
-        new Indicador(`reunions_taula_aigua_ACA`,                               5, [0,  9,  9,  9,  9,  9], 0),
-        new Indicador(`hores_tasques_taula_aigua_ACA`,                          5, [0,300,400,500,550,600], 0),
+        //new Indicador(`reunions_taula_aigua_ACA`,                             5, [0,  9,  9,  9,  9,  9], 0),
+        new Indicador(`hores_tasques_taula_aigua_ACA`,                         10, [0,300,400,500,550,600], 0),
         new Indicador(`euros_projectes_KTT_ACA`,                               25, [0, 10, 20, 30, 40, 45], 0),
         new Indicador(`tallers_UdG_ICRA`,                                      15, [0,  1,  1,  2,  2,  2], 0),
         new Indicador(`iniciatives_UdG_ICRA`,                                  15, [0,  1,  1,  2,  2,  2], 0),
@@ -750,8 +812,28 @@
       ]),
     ]),
     new Ambit("Contracte Programa",[
-      //TODO
-      new Bloc("TO DO",0,[]),
+      new Bloc("Excel·lència en recerca",30,[                       /* pes  |24, 25, 26, 27, 28, 29| basal */
+        new Indicador(`euros_recerca`,                                   10, [0,  2,  4,  6,  8, 10], 2995 ),
+        new Indicador(`euros_recerca_horizon`,                            5, [0,  1,  2,  3,  4,  5], 1248 ),
+        new Indicador(`euros_recerca_erc_eic`,                            5, [0,  0,  5, 50, 50, 50],   38 ),
+        new Indicador(`euros_recerca_estatal`,                            5, [0,  1,  2,  3,  4,  5], 1189 ),
+        new Indicador(`euros_recerca_regional` ,                          5, [0,  1,  2,  3,  4,  5],  518 ),
+        new Indicador(`projectes_horizon`,                               10, [0,  1,  1,  2,  2,  2],    1 ),
+        new Indicador(`projectes_erc_eic`,                             12.5, [0,  1,  2,  2,  2,  2],    1 ),
+        new Indicador(`congressos_tallers_escoles_estiu_organitzats`,     5, [0,  5, 10, 10, 10, 15],    3 ),
+        new Indicador(`sessions_especials_organitzades`,                  5, [0,  1,  2,  3,  4,  5],    4 ),
+        new Indicador(`comites_internacionals_participats`,             2.5, [0,  5, 10, 10, 10, 15],    3 ),
+
+        new Indicador(`articles_Q1`,                                      5, [0,  1,  2,  3,  4,  4],  105 ),
+        new Indicador(`articles_Q1_amb_lideratge`,                        5, [0, 46, 48, 50, 52, 55],   45 ),
+        new Indicador(`articles_FWCI_10`,                                 5, [0,  1,  2,  2,  3,  3],    1 ),
+
+        new Indicador(`cites_articles`,                                  10, [0,  1,  2,  3,  4,  4],14215 ),
+        new Indicador(`impact_factor`,                                    5, [0,  1,  2,  3,  4,  4],11.75 ),
+        new Indicador(`estades_recercaires_acollits`,                   2.5, [0,  1,  2,  3,  4,  4],    5 ),
+        new Indicador(`estades_recercaires_en_altres_centres`,          2.5, [0,  1,  2,  3,  4,  4],    1 ),
+        new Indicador(`rati_exit_propostes_europa`,                       5, [0,  1,  2,  3,  4,  4],   20 ),
+      ]),
     ]),
     new Ambit("Pla d'Acció",[
       new Bloc("Pla d'Acció",0,[
