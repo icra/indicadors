@@ -31,7 +31,7 @@
 
 <div id=app>
   <fieldset>
-    <legend>Select year (TO DO)</legend>
+    <legend>Select year</legend>
     <label v-for="year in years">
       <input type=radio v-model="selected_year" :value="year"> {{year}}
     </label>
@@ -40,7 +40,7 @@
   <div v-if="loading">Consultant perfils a API Sage... ( {{users.length}} / {{n_users_expected}} )</div>
 
   <fieldset v-if="resum_impacte">
-    <legend><b>ICRA IPs Summary</b></legend>
+    <legend><b>ICRA IPs Summary ({{selected_year}})</b></legend>
     <details v-if="resum_impacte">
       <summary>
         <b>{{resum_impacte.n_citations}} citations</b>

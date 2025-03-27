@@ -2,10 +2,8 @@
   <title>ICRA indicadors</title>
   <meta charset="utf8">
 
-  <!--lib vue
+  <!--lib vue-->
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-  -->
-  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
   <style>
     body{
@@ -20,6 +18,9 @@
     summary:hover{
       cursor:pointer;
       text-decoration:underline;
+    }
+    label:hover{
+      background:lightyellow;
     }
     [bold]{
       font-weight:bold;
@@ -63,13 +64,23 @@
       text-align:left;
       max-width:800px;
     }
+    [vista_detalls_indicador]{
+      border:1px solid #ccc;
+      background:lightyellow;
+      box-shadow:1px 1px 10px #ccc;
+      padding:5px;
+    }
+    button[ambit_actual=true]{
+      background:royalblue;
+      color:white;
+    }
   </style>
 <head></head><body>
 <b>en construcció</b><hr>
 
 <!--nav--><div id=nav></div><hr><script src="nav.js"></script>
 
-<h2>Indicadors de centre</h2>
+<h2>Indicadors de centre</h2><hr>
 
 <div id=app>
   <!--finestra petita mòbil-->
@@ -92,10 +103,34 @@
     </ol><hr>
   </div>
 
+  <!--pestanyes-->
+  <div>
+    <button
+      v-for="ambit in ambits"
+      @click="ambit_actual=ambit"
+      :ambit_actual="ambit==ambit_actual"
+    >
+      {{ambit.nom}}
+    </button>
+  </div><hr>
+
+  <!--finestra detalls indicador-->
+  <div v-if="vista_detalls_indicador" vista_detalls_indicador>
+    <div>
+      <button
+        @click="vista_detalls_indicador=false"
+        title="Tancar finestra detalls"
+        style="padding:0.618em 1em"
+        v-html="'X'"
+      />
+    </div>
+    <div v-html="html_detalls_indicador"></div>
+  </div>
+
   <!--secció indicadors-->
   <details open>
     <summary large bold>
-      Taula indicadors
+      Taula indicadors ({{ambit_actual.blocs.map(b=>b.indicadors.length).reduce((p,c)=>p+c,0)}})
     </summary>
     <p v-if="tot_carregat">
       Puntuació total: 0 (pendent implementar fórmula. Puntuació = pes_bloc*pes_indicador*increment/objectiu)
@@ -103,7 +138,7 @@
     <p>
       <label>
         <input type=checkbox v-model="caption.actiu">
-        Mostrar finestreta amb detalls al passar el ratolí per sobre un indicador
+        Mostrar finestreta flotant detalls indicadors
       </label>
     </p>
     <table border=1>
@@ -112,10 +147,10 @@
         <td><b>Blocs</b></td>
         <th v-for="year in years" center>{{year}}</th>
         <td center>
-          <button disabled>obtenir tots</button>
+          <button @click="calcular_tots_els_indicadors()" :disabled="!tot_carregat">calcular tots</button>
         </td>
       </tr>
-      <tbody v-for="bloc,i in blocs">
+      <tbody v-for="bloc,i in ambit_actual.blocs">
         <tr style="background:#eee">
           <td right><b>{{bloc.pes_percent}}%</b></td>
           <td>
@@ -142,7 +177,7 @@
           </td>
           <td v-for="obj,year in indi.years" center small nowrap monospace>
             <div v-for="incr in [indi.increment(year)]"
-              @mousemove="caption.show($event, crea_html_caption(indi,year,incr))"
+              @mousemove="mousemove_indicador($event,indi,year)"
               @mouseout="caption.hide()"
             >
               <div>
@@ -158,15 +193,26 @@
                       {{Math.abs(incr.perc).toFixed(0)}}%
                     </span>
                   </span>
+                  <!-- veure objectiu?
                   <span>
                     (&uarr;{{incr.objectiu}}%)
                   </span>
+                  -->
+                  <button @click="click_detalls_indicador(indi,year)" style="padding:0;font-size:x-small">detalls</button>
                 </div>
               </div>
             </div>
           </td>
           <td center>
-            <button v-if="indi.funcio_calculadora" @click="indi.calcula()" xsmall :disabled="!tot_carregat">obtenir dades</button>
+            <button
+              v-if="funcions_calculadores[indi.funcio_calculadora]"
+              @click="indi.calcula()"
+              xsmall
+              :disabled="!tot_carregat"
+              style="display:block"
+              >
+              calcular indicador
+            </button>
             <span v-else xsmall style="color:#bbb">pendent</span>
           </td>
         </tr>
@@ -175,7 +221,7 @@
   </details><hr>
 
   <!--indicador debug-->
-  <p>Taules de desenvolupament (estaran ocultes en la versió final)</p>
+  <p>Taules de desenvolupament (no visibles versió final)</p>
 
   <!--bucle taules development-->
   <div v-for="taula in Object.keys(taules)">
@@ -200,7 +246,7 @@
 
       <table border=1 v-if="taules[taula].taula?.length" small>
         <tr>
-          <th v-for="[key,_] in taules[taula].columnes_actives">
+          <th v-for="key in taules[taula].columnes_actives">
             <button @click="taules[taula].taula.sort((a,b)=>a[key]>b[key]?1:-1)">&darr;{{key}}</button>
             <button v-if="taules[taula].filtres[key]!=undefined" @click="delete taules[taula].filtres[key]">
               ="{{taules[taula].filtres[key]}}"
@@ -209,7 +255,7 @@
           </th>
         </tr>
         <tr v-for="row in taules[taula].files_filtrades">
-          <td v-for="[key,_] in taules[taula].columnes_actives">
+          <td v-for="key in taules[taula].columnes_actives">
             <span @click="taules[taula].filtres[key]=row[key]">{{row[key]}}</span>
           </td>
         </tr>
@@ -218,13 +264,21 @@
   </div>
 </div>
 
-<script>//estructura dades
+<script>//classes i dades
+  /*conjunt de blocs*/
+  class Ambit{
+    constructor(nom, blocs){
+      this.nom=nom||"nom àmbit";
+      this.blocs=blocs||[]; //array objectes {Bloc}
+    }
+  }
+
   /*conjunt d'indicadors*/
   class Bloc{
     constructor(nom, pes_percent, indicadors){
       this.nom         = nom;
       this.pes_percent = pes_percent;
-      this.indicadors  = indicadors||[];
+      this.indicadors  = indicadors||[]; //array objectes {Indicador}
 
       //GUI opcions
       this.visible=1;
@@ -237,17 +291,21 @@
   }
 
   class Indicador{
-    constructor(text,unit,pes_percent,objectius,funcio_calculadora){
-      this.text        = text;             //String
-      this.unit        = unit;             //String
+    constructor(id, pes_percent, objectius, valor_basal){
+      objectius   = objectius   ||[]; //array percentatges
+      valor_basal = valor_basal || 0;
+
+      this.text        = textos[id];       //String
+      this.unit        = unitats[id];      //String
       this.pes_percent = pes_percent || 0; //number
 
-      objectius = objectius||[]; //array percentatges
+      if(!this.text) throw(`no text for ${id}`)
+
 
       this.base_year   = "2023";           //String
 
       //funció que calcula l'indicador per un determinat any. Modifica this.years[year][valor i llista]
-      this.funcio_calculadora = funcio_calculadora; //String
+      this.funcio_calculadora = id; //String
 
       //Cada indicador té varis anys:
       //  valor: numero, valor cru de l'indicador en sí per aquell any
@@ -255,7 +313,7 @@
       //  objectiu: numero (percentatge que cal assolir)
       //  excloure: per l'any basal no mostrar indicadors
       this.years={
-        "2023":{valor:0, llista:null, objectiu:0, excloure:true},
+        "2023":{valor:valor_basal, llista:null, objectiu:0, excloure:true},
         "2024":{valor:0, llista:null, objectiu:objectius[0]||0},
         "2025":{valor:0, llista:null, objectiu:objectius[1]||0},
         "2026":{valor:0, llista:null, objectiu:objectius[2]||0},
@@ -283,176 +341,478 @@
       return {delta,perc,objectiu,compleix};
     }
 
-    //calcula indicador per cada any
+    //calcula indicador a tots els anys
     calcula(){
+      if(!app.tot_carregat){
+        let msg="impossible calcular indicador";
+        alert(msg);
+        throw(msg);
+        return 0;
+      };
+      let id = this.funcio_calculadora;
+      if(!app.funcions_calculadores[id]){
+        return false;
+      }
+
       Object.entries(this.years)
         .filter(e=>!e[1].excloure).map(e=>e[0])
         .forEach(year=>{
-          app[this.funcio_calculadora](year, this);
+          app.funcions_calculadores[id](year, this);
         });
     }
   }
 
-  let blocs=[                                                                                                   /* objectius dels anys:  */
-    new Bloc("Excel·lència en recerca",30,[                                                                     /* 24, 25, 26, 27, 28, 29*/
-      new Indicador(`Aportació econòmica total a través de projectes o contractes de recerca`,        "k€",   10, [0,  2,  4,  6,  8, 10], "euros_totals_recerca"),
-      new Indicador(`Aportació econòmica de projectes de recerca competitius Europeus (Horizon)`,     "k€",    5, [0,  1,  2,  3,  4,  5]),
-      new Indicador(`Aportació econòmica de projectes de recerca competitius Europeus (ERC-EIC)`,     "k€",    5, [0,  0,  5, 50, 50, 50]),
-      new Indicador(`Aportació econòmica de projectes de recerca competitius estatals (AEI-ERANETs)`, "k€",    5, [0,  1,  2,  3,  4,  5]),
-      new Indicador(`Aportació econòmica de projectes de recerca competitius regionals (ACA-AGAUR)` , "k€",    5, [0,  1,  2,  3,  4,  5]),
-      new Indicador(`Projectes de recerca competitius vigents tipus Horizon coordinats`,              "",     10, [0,  1,  1,  2,  2,  2], "calcula_nombre_projectes_Horizon"),
-      new Indicador(`Projectes de recerca competitius vigents tipus ERC o EIC`,                       "",   12.5, [0,  1,  2,  2,  2,  2], "calcula_nombre_projectes_ERC"),
-      new Indicador(`Congressos/tallers/escoles d'estiu i altres activitats
-        internacionals de recerca organitzats per ICRA`,                                              "",      5, [0,  5, 10, 10, 10, 15]),
-      new Indicador(`Nombre de sessions especials en congressos organitzades per ICRA `,              "",      5, [0,  1,  2,  3,  4,  5]),
-      new Indicador(`Nombre de comitès internacionals participats per ICRA `,                         "",    2.5, [0,  5, 10, 10, 10, 15]),
-      new Indicador(`Nombre d'articles científics al Q1 (segons Scopus) `,                            "",     10, [0,  1,  2,  3,  4,  4]),
-      new Indicador(`Nombre de cites anuals (segons Scopus) `,                                        "",     10, [0,  1,  2,  3,  4,  4]),
-      new Indicador(`Índex d'impacte (Impact factor) de la institució (segons
-        Scopus) en el moment de l'anàlisi `,                                                          "",      5, [0,  1,  2,  3,  4,  4]),
-      new Indicador(`Nombre d'estades de recercaires (predocs, postdocs,
-        seniors) internacionals a ICRA `,                                                             "",    2.5, [0,  1,  2,  3,  4,  4]),
-      new Indicador(`Nombre d'estades de recercaires ICRA (predocs, postdocs,
-        seniors) en centres internacionals `,                                                         "",    2.5, [0,  1,  2,  3,  4,  4]),
-      new Indicador(`Rati d'èxit de les propostes de recerca competitives
-        Europees (Horizon, ERC, EIC) `,                                                               "",      5, [0,  1,  2,  3,  4,  4]),
-    ]),
-    new Bloc("Promoure línies de recerca estratègiques",5,[
-      new Indicador(`Aportació econòmica total a través de projectes o
-        contractes de recerca a les noves línies L17 i L18`,                                          "k€",   50, [0, 30, 30, 60, 60, 60]),
-      new Indicador(`Nombre d'articles científics al Q1 (segons Scopus)
-        associats a la L17 i la L18`,                                                                 "k€",   50, [0,  0,  5,  5, 10, 10]),
-    ]),
-    new Bloc("Promoure transferència",20,[
-      new Indicador(`Percentatge d'aportacions de projectes/contractes de
-        recerca tipus KTT respecte el total de les aportacions per recerca
-        (competitius+KTT+mecenatge)`,                                                                 "", 10, [0, 13, 14, 16, 18, 18]),
-      new Indicador(`Aportació econòmica a través de projectes/contractes tipus KTT `,                "", 30, [0, 20, 30, 40, 50, 60]),
-      new Indicador(`Nombre de projectes / contractes tipus KTT en curs `,                            "", 15, [0,  5,  5, 10, 15, 20]),
-      new Indicador(`Nombre de formacions/tallers per empreses/administracions
-        organitzats per ICRA `,                                                                       "", 15, [0,  5, 10, 20, 25, 50]),
-      new Indicador(`Nombre de projectes en l'àmbit de la indústria de
-        coneixement (Llavor, Producte, Innovadors, EIC, o equivalents)`,                              "", 15, [0,  1,  2,  2,  2,  2]),
-      new Indicador(`Nombre de doctorats industrials en curs`,                                        "", 15, [0,  1,  2,  2,  3,  3]),
-    ]),
-    new Bloc("Promoure mecenatge",5,[
-      new Indicador(`Aportació econòmica a través de projectes de recerca per mecenatge`,             "k€", 70, [0, 20, 30, 40, 50, 60]),
-      new Indicador(`Nombre de projectes de recerca per mecenatge`,                                   "",  30, [0,  2,  3,  4,  4,  5]),
-    ]),
-    new Bloc("Generació PI, spin-offs, start-ups",5,[
-      new Indicador(`Nombre de patents/secrets industrials en tramitació o vigents`,                  "", 20, [0, 1, 1,  2,  2,  2]),
-      new Indicador(`Nombre d'spin-offs o start-ups amb participació d'ICRA en curs`,                 "", 40, [0, 1, 1,  1,  1,  2]),
-      new Indicador(`Articles científics amb socis industrials (no acadèmics) com a co-autors `,      "%", 40, [0, 5, 5, 10, 10, 15]),
-    ]),
-    new Bloc("Promoure impacte",20,[
-      new Indicador(`Nombre d'estudiants d'ESO o Batxillerat acollits o mentoritzats des d'ICRA`,     "", 10, [0, 10, 15, 20, 25, 30]),
-      new Indicador(`Nombre de cites en legislació`,                                                  "", 15, [0, 10, 15, 20, 25, 30]),
-      new Indicador(`Nombre de participacions en comites d'experts en l'àmbit
-        legislatiu i de gestió de l'aigua`,                                                           "", 20, [0, 10, 15, 20, 25, 30]),
-      new Indicador(`Nombre de premis/reconeixements a nivell regional/estatal`,                      "",  5, [0, 10, 15, 20, 25, 30]),
-      new Indicador(`Nombre de premis/reconeixements a nivell internacional`,                         "",  5, [0, 10, 15, 20, 25, 30]),
-      new Indicador(`Nombre de narratives d'impacte sotmeses a CERCA i
-        avaluades amb un excel·lent o outstanding`,                                                   "", 15, [0,  1,  1,  2,  2, 3]),
-      new Indicador(`Contribucions a canvis en la gestió de l'aigua a les
-        conques internes de Catalunya`,                                                               "", 10, [0,  0,  1,  1,  2, 2]),
-      new Indicador(`Nombre de llocs de treball generats mitjançant llicències
-        amb participació d'ICRA`,                                                                     "",  5, [0,  0,  1,  2,  2,  3]),
-      new Indicador(`Aliances sòlides amb entitats que tinguin una finalitat
-        social (ambientals, esportives, culturals, educatives)`,                                      "", 15, [0,  1,  2,  2,  3,  3]),
-    ]),
-    new Bloc("Promoure comunicació",10,[
-      new Indicador(`Nombre de seguidors/subscriptors a les xarxes socials d'ICRA`,                   "", 25, [0,  10,  15,  20,  25,  30]),
-      new Indicador(`Nombre de comparticions (shares, retweets) a les xarxes socials d'ICRA`,         "",  5, [0,  10,  15,  20,  25,  30]),
-      new Indicador(`Nombre de visualitzacions de sessions de streaming
-        realitzades a les xarxes socials d'ICRA`,                                                     "", 10, [0, 100, 200, 300, 500, 800]),
-      new Indicador(`Nombre d'actes de disseminació participats o organitzats per ICRA`,              "", 15, [0,   5,  10,  15,  20,  20]),
-      new Indicador(`Nombre d'aparicions en els mitjans de comunicació escrits
-        i audiovisuals regionals o estatals`,                                                         "", 25, [0,  10,  15,  20,  25, 30]),
-      new Indicador(`Nombre d'aparicions en els mitjans de comunicació escrits
-        i audiovisuals internacionals`,                                                               "", 20, [0,  10,  15,  20,  25, 30]),
-    ]),
-    new Bloc("Relació amb patrons",5,[
-      new Indicador(`Reunions de la Taula de l'Aigua amb l'ACA`,                                      "",  5, [0,  9,  9,  9,  9,  9]),
-      new Indicador(`Hores computades per IPs a tasques associades a la taula de l'Aigua`,            "",  5, [0,300,400,500,550,600]),
-      new Indicador(`Aportacions de projectes o contractes de KTT amb l'ACA,
-        via contracte programa o licitació`,                                                          "", 25, [0, 10, 20, 30, 40, 45]),
-      new Indicador(`Organització i participació en tallers UdG-ICRA per
-        enfortir col·laboració en marc de l'aigua`,                                                   "", 15, [0,  1,  1,  2,  2,  2]),
-      new Indicador(`Iniciatives de recerca conjuntes UdG-ICRA`,                                      "", 15, [0,  1,  1,  2,  2,  2]),
-      new Indicador(`Pressupost aconseguit en projectes de recerca competitiva i contractes
-        de KTT conjuntament amb UdG`,                                                                 "", 25, [0,  0,  5,  5, 10, 10]),
-      new Indicador(`Participació en actes/activitats organitzades per CERCA en l'àmbit de
-        'Dones i Ciència'/'Ciència a les escoles' o similars`,                                        "", 10, [0,  5, 10, 12, 15, 15]),
-    ]),
+  /*taules helper*/
 
-    new Bloc("Pla Acció",0,[
-      //new Indicador(text, unit, pes_percent, objectius, funcio_calculadora),
-      new Indicador(`Eficiència articles amb socis industrials o de
-        l'administració pública respecte ingressos`,                                                  "k€/article", 0,[30, 29, 27, 25],null),
-      new Indicador(`Objectius del pla de formació anual assolits`,                                   "%",          0,[ 0, 20, 70, 80],null),
-      new Indicador(`Participants en actes de disseminació participats per ICRA`,                     "",           0,[ 0,100,250,500],null),
-      new Indicador(`Projectes singulars competitius per desenvolupar activitats d'outreach`,         "",           0,[ 0,  0,  1,  2],null),
-      new Indicador(`Aportació econòmica (k€ executats) en projectes
-        competitius per activitats d'outreach`,                                                       "k€",         0,[ 0,  0, 10, 20],null),
-      new Indicador(`Aliances sòlides amb empreses i administració pública`,                          "",           0,[ 5,  5, 10, 15],null),
-      new Indicador(`Projectes/encàrrecs directes de l'ACA`,                                          "",           0,[ 5,  5,  7, 10],null),
-      new Indicador(`Accions de suport tècnic ofertes a l'ACA en temes de química analítica`,         "", 	        0,[ 0,  1,  3,  5],null),
-      new Indicador(`Participants en tallers/seminaris UdG-ICRA`,                                     "",           0,[ 0,120,180,240],null),
-      new Indicador(`Nombre d'IPs`,                                                                   "",           0,[16, 16, 18, 20],null),
-      new Indicador(`Posicions de Research Fellow creades`,                                           "",	          0,[ 0,  0,  2,  3],null),
-      new Indicador(`Noves posicions de Research Scientist per estabilització de Research Fellows`,   "",           0,[ 0,  0,  0,  1],null),
-      new Indicador(`Canvis de tram dins d'una mateixa categoria de Research
-      Scientist o Research Professor`,                                                                "",           0,[ 0,  0,  0,  8],null),
-      new Indicador(`Sessions de formació interna per personal ICRA per fomentar valors JEDI`,        "",           0,[ 0,  2,  4,  4],null),
-      new Indicador(`Proporció del personal que participa les formacions del JEDI anualment`,	        "",           0,[ 5, 50, 80, 80],null),
-      new Indicador(`Organització d'activitats per fomentar valors JEDI en la recerca`,	              "",           0,[ 0,  2,  5,  5],null),
-      new Indicador(`Dones en categories laborals superiors o amb càrrecs de gestió i
-        lideratge (IPs i caps de departament)`,                                                       "%",          0,[37.5,37.5,40,42],null),
-      new Indicador(`Projectes/contractes/comitès amb participació d'ICRA i de
-        l'administració central de l'estat`,                                                          "",           0,[ 0,  2,  5,  5],null),
-      new Indicador(`Aportació econòmica (k€ executats) en contractes de recerca amb
-        l'administració central de l'estat`,                                                          "k€",         0,[ 0,  5, 15, 30],null),
+  //taula: "id_indicador"=>"text indicador"
+  let textos={
+    "euros_recerca"                                         : `Aportació econòmica total a través de projectes o contractes de recerca`,
+    "euros_recerca_horizon"                                 : `Aportació econòmica de projectes de recerca competitius Europeus (Horizon)`,
+    "euros_recerca_erc_eic"                                 : `Aportació econòmica de projectes de recerca competitius Europeus (ERC-EIC)`,
+    "euros_recerca_estatal"                                 : `Aportació econòmica de projectes de recerca competitius estatals (AEI-ERANETs)`,
+    "euros_recerca_regional"                                : `Aportació econòmica de projectes de recerca competitius regionals (ACA-AGAUR)`,
+    "projectes_horizon"                                     : `Projectes de recerca competitius vigents tipus Horizon coordinats`,
+    "projectes_erc_eic"                                     : `Projectes de recerca competitius vigents tipus ERC o EIC`,
+    "congressos_tallers_escoles_estiu_organitzats"          : `Congressos/tallers/escoles d'estiu i altres activitats internacionals de recerca organitzats per ICRA`,
+    "sessions_especials_organitzades"                       : `Nombre de sessions especials en congressos organitzades per ICRA`,
+    "comites_internacionals_participats"                    : `Nombre de comitès internacionals participats per ICRA`,
+    "articles_Q1"                                           : `Nombre d'articles científics al Q1 (segons Scopus)`,
+    "cites_articles"                                        : `Nombre de cites anuals (segons Scopus)`,
+    "impact_factor"                                         : `Índex d'impacte (Impact factor) de la institució (segons Scopus) en el moment de l'anàlisi`,
+    "estades_recercaires_acollits"                          : `Nombre d'estades de recercaires (predocs, postdocs, seniors) internacionals a ICRA`,
+    "estades_recercaires_en_altres_centres"                 : `Nombre d'estades de recercaires ICRA (predocs, postdocs, seniors) en centres internacionals`,
+    "rati_exit_propostes_europa"                            : `Rati d'èxit de les propostes de recerca competitives Europees (Horizon, ERC, EIC)`,
+    "euros_recerca_L17_L18"                                 : `Aportació econòmica total a través de projectes o contractes de recerca a les noves línies L17 i L18`,
+    "articles_Q1_L17_L18"                                   : `Nombre d'articles científics al Q1 (segons Scopus) associats a la L17 i la L18`,
+    "euros_projectes_KTT_respecte_total"                    : `Percentatge d'aportacions de projectes/contractes de recerca tipus KTT respecte el total de les aportacions per recerca (competitius+KTT+mecenatge)`,
+    "euros_projectes_KTT"                                   : `Aportació econòmica a través de projectes/contractes tipus KTT`,
+    "projectes_KTT"                                         : `Nombre de projectes/contractes tipus KTT en curs`,
+    "formacions_per_empreses_organitzades"                  : `Nombre de formacions/tallers per empreses/administracions organitzats per ICRA`,
+    "projectes_llavor_producte_innovadors"                  : `Nombre de projectes en l'àmbit de la indústria de coneixement (Llavor, Producte, Innovadors, EIC, o equivalents)`,
+    "doctorats_industrials"                                 : `Nombre de doctorats industrials en curs`,
+    "euros_mecenatge"                                       : `Aportació econòmica a través de projectes de recerca per mecenatge`,
+    "projectes_mecenatge"                                   : `Nombre de projectes de recerca per mecenatge`,
+    "patents_i_secrets_industrials"                         : `Nombre de patents/secrets industrials en tramitació o vigents`,
+    "spinoffs_i_startups"                                   : `Nombre d'spin-offs o start-ups amb participació d'ICRA en curs`,
+    "articles_amb_socis_industrials"                        : `Articles científics amb socis industrials (no acadèmics) com a co-autors`,
+    "estudiants_acollits"                                   : `Nombre d'estudiants d'ESO o Batxillerat acollits o mentoritzats des d'ICRA`,
+    "cites_en_legislacio"                                   : `Nombre de cites en legislació`,
+    "participacions_comites_experts_ambit_legislatiu"       : `Nombre de participacions en comites d'experts en l'àmbit legislatiu i de gestió de l'aigua`,
+    "premis_nacionals"                                      : `Nombre de premis/reconeixements a nivell regional/estatal`,
+    "premis_internacionals"                                 : `Nombre de premis/reconeixements a nivell internacional`,
+    "narratives_impacte_CERCA"                              : `Nombre de narratives d'impacte sotmeses a CERCA i avaluades amb un excel·lent o outstanding`,
+    "contribucions_gestio_aigua"                            : `Contribucions a canvis en la gestió de l'aigua a les conques internes de Catalunya`,
+    "llocs_de_treball_generats_llicencies"                  : `Nombre de llocs de treball generats mitjançant llicències amb participació d'ICRA`,
+    "aliances_solides_entitats_socials"                     : `Aliances sòlides amb entitats que tinguin una finalitat social (ambientals, esportives, culturals, educatives)`,
+    "xxss_seguidors"                                        : `Nombre de seguidors/subscriptors a les xarxes socials d'ICRA`,
+    "xxss_shares"                                           : `Nombre de comparticions (shares, retweets) a les xarxes socials d'ICRA`,
+    "xxss_plays"                                            : `Nombre de visualitzacions de sessions de streaming realitzades a les xarxes socials d'ICRA`,
+    "actes_disseminacio_participats_o_organitzats"          : `Nombre d'actes de disseminació participats o organitzats per ICRA`,
+    "aparicions_mitjans_comunicacio_nacionals"              : `Nombre d'aparicions en els mitjans de comunicació escrits i audiovisuals regionals o estatals`,
+    "aparicions_mitjans_comunicacio_internacionals"         : `Nombre d'aparicions en els mitjans de comunicació escrits i audiovisuals internacionals`,
+    "reunions_taula_aigua_ACA"                              : `Reunions de la Taula de l'Aigua amb l'ACA`,
+    "hores_tasques_taula_aigua_ACA"                         : `Hores computades per IPs a tasques associades a la taula de l'Aigua`,
+    "euros_projectes_KTT_ACA"                               : `Aportacions de projectes o contractes de KTT amb l'ACA, via contracte programa o licitació`,
+    "tallers_UdG_ICRA"                                      : `Organització i participació en tallers UdG-ICRA per enfortir col·laboració en marc de l'aigua`,
+    "iniciatives_UdG_ICRA"                                  : `Iniciatives de recerca conjuntes UdG-ICRA`,
+    "euros_projectes_KTT_UdG"                               : `Pressupost aconseguit en projectes de recerca competitiva i contractes de KTT conjuntament amb UdG`,
+    "participacions_activitats_JEDI_organitzades_per_CERCA" : `Participació en actes/activitats organitzades per CERCA en l'àmbit de 'Dones i Ciència'/'Ciència a les escoles' o similars`,
+    "eficiencia_articles_amb_socis_industrials"             : `Eficiència articles amb socis industrials o de l'administració pública respecte ingressos`,
+    "objectius_assolits_del_pla_formacio"                   : `Objectius del pla de formació anual assolits`,
+    "participants_actes_disseminacio_participats"           : `Participants en actes de disseminació participats per ICRA`,
+    "projectes_competitius_outreach"                        : `Projectes singulars competitius per desenvolupar activitats d'outreach`,
+    "euros_projectes_competitius_outreach"                  : `Aportació econòmica (k€ executats) en projectes competitius per activitats d'outreach`,
+    "aliances_solides_empreses_i_administracio_publica"     : `Aliances sòlides amb empreses i administració pública`,
+    "projectes_i_encarrecs_ACA"                             : `Projectes/encàrrecs directes de l'ACA`,
+    "accions_suport_tecnic_a_ACA_quimica_analitica"         : `Accions de suport tècnic ofertes a l'ACA en temes de química analítica`,
+    "participants_tallers_UdG_ICRA"                         : `Participants en tallers/seminaris UdG-ICRA`,
+    "nombre_IPs"                                            : `Nombre d'IPs`,
+    "posicions_RF_creades"                                  : `Posicions de Research Fellow creades`,
+    "posicions_RS_estabilitzacio_RF"                        : `Noves posicions de Research Scientist per estabilització de Research Fellows`,
+    "canvis_tram_RS_o_RP"                                   : `Canvis de tram dins d'una mateixa categoria de Research Scientist o Research Professor`,
+    "sessions_JEDI_formacio_interna"                        : `Sessions de formació interna per personal ICRA per fomentar valors JEDI`,
+    "participants_sessions_JEDI_formacio_interna"           : `Proporció del personal que participa les formacions del JEDI anualment`,
+    "activitats_JEDI_organitzades"                          : `Organització d'activitats per fomentar valors JEDI en la recerca`,
+    "dones_categories_laborals_superiors"                   : `Dones en categories laborals superiors o amb càrrecs de gestió i lideratge (IPs i caps de departament)`,
+    "projectes_amb_administracio_central"                   : `Projectes/contractes/comitès amb participació d'ICRA i de l'administració central de l'estat`,
+    "euros_projectes_amb_administracio_central"             : `Aportació econòmica (k€ executats) en contractes de recerca amb l'administració central de l'estat`,
+  };
+
+  //taula: "id_indicador"=>"unitat indicador"
+  let unitats={
+    "euros_recerca"                                         : `k€`,
+    "euros_recerca_horizon"                                 : `k€`,
+    "euros_recerca_erc_eic"                                 : `k€`,
+    "euros_recerca_estatal"                                 : `k€`,
+    "euros_recerca_regional"                                : `k€`,
+    "projectes_horizon"                                     : `projectes`,
+    "projectes_erc_eic"                                     : `projectes`,
+    "congressos_tallers_escoles_estiu_organitzats"          : `activitats`,
+    "sessions_especials_organitzades"                       : `sessions`,
+    "comites_internacionals_participats"                    : `comites`,
+    "articles_Q1"                                           : `articles`,
+    "cites_articles"                                        : `cites`,
+    "impact_factor"                                         : `IF`,
+    "estades_recercaires_acollits"                          : `estades`,
+    "estades_recercaires_en_altres_centres"                 : `estades`,
+    "rati_exit_propostes_europa"                            : `rati`,
+    "euros_recerca_L17_L18"                                 : `k€`,
+    "articles_Q1_L17_L18"                                   : `articles`,
+    "euros_projectes_KTT_respecte_total"                    : `%`,
+    "euros_projectes_KTT"                                   : `k€`,
+    "projectes_KTT"                                         : `projectes`,
+    "formacions_per_empreses_organitzades"                  : `formacions`,
+    "projectes_llavor_producte_innovadors"                  : `projectes`,
+    "doctorats_industrials"                                 : `persones`,
+    "euros_mecenatge"                                       : `k€`,
+    "projectes_mecenatge"                                   : `projectes`,
+    "patents_i_secrets_industrials"                         : `#`,
+    "spinoffs_i_startups"                                   : `#`,
+    "articles_amb_socis_industrials"                        : `articles`,
+    "estudiants_acollits"                                   : `persones`,
+    "cites_en_legislacio"                                   : `cites`,
+    "participacions_comites_experts_ambit_legislatiu"       : `persones`,
+    "premis_nacionals"                                      : `premis`,
+    "premis_internacionals"                                 : `premis`,
+    "narratives_impacte_CERCA"                              : `narratives`,
+    "contribucions_gestio_aigua"                            : `contribucions`,
+    "llocs_de_treball_generats_llicencies"                  : `llocs de treball`,
+    "aliances_solides_entitats_socials"                     : `aliances`,
+    "xxss_seguidors"                                        : `seguidors`,
+    "xxss_shares"                                           : `shares`,
+    "xxss_plays"                                            : `views`,
+    "actes_disseminacio_participats_o_organitzats"          : `actes`,
+    "aparicions_mitjans_comunicacio_nacionals"              : `aparicions`,
+    "aparicions_mitjans_comunicacio_internacionals"         : `aparicions`,
+    "reunions_taula_aigua_ACA"                              : `reunions`,
+    "hores_tasques_taula_aigua_ACA"                         : `hores`,
+    "euros_projectes_KTT_ACA"                               : `k€`,
+    "tallers_UdG_ICRA"                                      : `tallers`,
+    "iniciatives_UdG_ICRA"                                  : `iniciatives`,
+    "euros_projectes_KTT_UdG"                               : `k€`,
+    "participacions_activitats_JEDI_organitzades_per_CERCA" : `actes`,
+    "eficiencia_articles_amb_socis_industrials"             : `k€/article`,
+    "objectius_assolits_del_pla_formacio"                   : `%`,
+    "participants_actes_disseminacio_participats"           : `participants`,
+    "projectes_competitius_outreach"                        : `projectes`,
+    "euros_projectes_competitius_outreach"                  : `k€`,
+    "aliances_solides_empreses_i_administracio_publica"     : `aliances`,
+    "projectes_i_encarrecs_ACA"                             : `projectes`,
+    "accions_suport_tecnic_a_ACA_quimica_analitica"         : `accions de suport tècnic`,
+    "participants_tallers_UdG_ICRA"                         : `participants`,
+    "nombre_IPs"                                            : `persones`,
+    "posicions_RF_creades"                                  : `posicions`,
+    "posicions_RS_estabilitzacio_RF"                        : `posicions`,
+    "canvis_tram_RS_o_RP"                                   : `canvis`,
+    "sessions_JEDI_formacio_interna"                        : `sessions`,
+    "participants_sessions_JEDI_formacio_interna"           : `%`,
+    "activitats_JEDI_organitzades"                          : `activitats`,
+    "dones_categories_laborals_superiors"                   : `persones`,
+    "projectes_amb_administracio_central"                   : `projectes`,
+    "euros_projectes_amb_administracio_central"             : `k€`,
+  };
+
+  //taula: "id_indicador"=> function
+  let funcions_calculadores={
+    euros_recerca(year,indicador){
+      //filtra per year
+      let ingressos = app.taules.ingressos.taula
+        .filter(i=>i.Any==year);
+
+      //filtra per "10. RECERCA"
+      let projectes = app.taules.projectes.taula
+        .filter(p=>p["Departament Àrea"]=="10. RECERCA");
+
+      //ajunta les taules en un diccionari per codi projecte
+      let joined = {};
+
+      ingressos.forEach(ing=>{
+        let codi      = ing.Codi;      //codi projecte
+        let ingressos = ing.Ingressos; //euros
+        let projecte  = projectes.find(p=>p.Codi==codi);
+        if(!projecte)   return;
+        joined[codi]={
+          projecte,
+          ingressos,
+        };
+      });
+
+      let llista = Object.values(joined);
+      let keuros = llista.map(obj=>obj.ingressos).reduce((p,c)=>p+c,0)/1000;
+
+      indicador.years[year].valor  = keuros;
+      indicador.years[year].llista = llista.map(row=>{
+        let new_row={
+          ingressos: row.ingressos,
+        };
+        app.taules.projectes.columnes_actives.forEach(key=>{
+          new_row[key] = row.projecte[key];
+        });
+        return new_row;
+      });
+    },
+
+    euros_recerca_horizon:null,
+    euros_recerca_erc_eic:null,
+    euros_recerca_estatal:null,
+    euros_recerca_regional:null,
+
+    projectes_horizon(year, indicador){
+      //calcula nombre de projectes horizon vigents
+      let proj_Horizon = app.taules.projectes.taula.filter(proj=>{
+        let year_final = proj.DataFiReal.split("-")[0];
+        return(
+          (
+            proj["Estat"]=="410. Finalitzat" ||
+            proj["Estat"]=="220. En execució"
+          ) &&
+          proj["Departament Àrea"]    =="10. RECERCA"             &&
+          proj["Tipus de finançament"]=="020. COMPETITIU EUROPEU" &&
+          proj["Programa de finançament"]!=null                   &&
+          proj["Programa de finançament"].includes("H2020")       &&
+          year_final >= year                                      &&
+          1
+        );
+      });
+      indicador.years[year].valor  = proj_Horizon.length;
+      indicador.years[year].llista = proj_Horizon.map(row=>{
+        let new_row={};
+        app.taules.projectes.columnes_actives.forEach(key=>{
+          new_row[key]=row[key];
+        });
+        return new_row;
+      });
+    },
+
+    projectes_erc_eic(year, indicador){
+      //calcula nombre de projectes ERC
+      let proj_ERC = app.taules.projectes.taula.filter(proj=>{
+        let year_final = proj.DataFiReal.split("-")[0];
+        return(
+          (
+            proj["Estat"]=="410. Finalitzat" ||
+            proj["Estat"]=="220. En execució"
+          ) &&
+          proj["Departament Àrea"]    =="10. RECERCA" &&
+          proj["Tipus de finançament"]=="020. COMPETITIU EUROPEU" &&
+          proj["Programa de finançament"]!=null &&
+          (
+            proj["Programa de finançament"].includes("ERC") ||
+            proj["Programa de finançament"].includes("EIC")
+          ) &&
+          year_final >= year
+        );
+      });
+
+      indicador.years[year].valor  = proj_ERC.length;
+      indicador.years[year].llista = proj_ERC.map(row=>{
+        let new_row={};
+        app.taules.projectes.columnes_actives.forEach(key=>{
+          new_row[key]=row[key];
+        });
+        return new_row;
+      });
+    },
+
+    congressos_tallers_escoles_estiu_organitzats:null,
+    sessions_especials_organitzades:null,
+    comites_internacionals_participats:null,
+    articles_Q1:null,
+    cites_articles:null,
+    impact_factor:null,
+    estades_recercaires_acollits:null,
+    estades_recercaires_en_altres_centres:null,
+    rati_exit_propostes_europa:null,
+    euros_recerca_L17_L18:null,
+    articles_Q1_L17_L18:null,
+    euros_projectes_KTT_respecte_total:null,
+    euros_projectes_KTT:null,
+    projectes_KTT:null,
+    formacions_per_empreses_organitzades:null,
+    projectes_llavor_producte_innovadors:null,
+    doctorats_industrials:null,
+    euros_mecenatge:null,
+    projectes_mecenatge:null,
+    patents_i_secrets_industrials:null,
+    spinoffs_i_startups:null,
+    articles_amb_socis_industrials:null,
+    estudiants_acollits:null,
+    cites_en_legislacio:null,
+    participacions_comites_experts_ambit_legislatiu:null,
+    premis_nacionals:null,
+    premis_internacionals:null,
+    narratives_impacte_CERCA:null,
+    contribucions_gestio_aigua:null,
+    llocs_de_treball_generats_llicencies:null,
+    aliances_solides_entitats_socials:null,
+    xxss_seguidors:null,
+    xxss_shares:null,
+    xxss_plays:null,
+    actes_disseminacio_participats_o_organitzats:null,
+    aparicions_mitjans_comunicacio_nacionals:null,
+    aparicions_mitjans_comunicacio_internacionals:null,
+    reunions_taula_aigua_ACA:null,
+    hores_tasques_taula_aigua_ACA:null,
+    euros_projectes_KTT_ACA:null,
+    tallers_UdG_ICRA:null,
+    iniciatives_UdG_ICRA:null,
+    euros_projectes_KTT_UdG:null,
+    participacions_activitats_JEDI_organitzades_per_CERCA:null,
+    eficiencia_articles_amb_socis_industrials:null,
+    objectius_assolits_del_pla_formacio:null,
+    participants_actes_disseminacio_participats:null,
+    projectes_competitius_outreach:null,
+    euros_projectes_competitius_outreach:null,
+    aliances_solides_empreses_i_administracio_publica:null,
+    projectes_i_encarrecs_ACA:null,
+    accions_suport_tecnic_a_ACA_quimica_analitica:null,
+    participants_tallers_UdG_ICRA:null,
+    nombre_IPs:null,
+    posicions_RF_creades:null,
+    posicions_RS_estabilitzacio_RF:null,
+    canvis_tram_RS_o_RP:null,
+    sessions_JEDI_formacio_interna:null,
+    participants_sessions_JEDI_formacio_interna:null,
+    activitats_JEDI_organitzades:null,
+    dones_categories_laborals_superiors:null,
+    projectes_amb_administracio_central:null,
+    euros_projectes_amb_administracio_central:null,
+  };
+
+  let ambits=[
+    new Ambit("Patronat",[
+      new Bloc("Excel·lència en recerca",30,[                       /* pes  |24, 25, 26, 27, 28, 29| basal */
+        new Indicador(`euros_recerca`,                                   10, [0,  2,  4,  6,  8, 10], 2995 ),
+        new Indicador(`euros_recerca_horizon`,                            5, [0,  1,  2,  3,  4,  5], 1248 ),
+        new Indicador(`euros_recerca_erc_eic`,                            5, [0,  0,  5, 50, 50, 50],   38 ),
+        new Indicador(`euros_recerca_estatal`,                            5, [0,  1,  2,  3,  4,  5], 1189 ),
+        new Indicador(`euros_recerca_regional` ,                          5, [0,  1,  2,  3,  4,  5],  518 ),
+        new Indicador(`projectes_horizon`,                               10, [0,  1,  1,  2,  2,  2],    1 ),
+        new Indicador(`projectes_erc_eic`,                             12.5, [0,  1,  2,  2,  2,  2],    1 ),
+        new Indicador(`congressos_tallers_escoles_estiu_organitzats`,     5, [0,  5, 10, 10, 10, 15],    3 ),
+        new Indicador(`sessions_especials_organitzades`,                  5, [0,  1,  2,  3,  4,  5],    4 ),
+        new Indicador(`comites_internacionals_participats`,             2.5, [0,  5, 10, 10, 10, 15],    3 ),
+        new Indicador(`articles_Q1`,                                     10, [0,  1,  2,  3,  4,  4],  105 ),
+        new Indicador(`cites_articles`,                                  10, [0,  1,  2,  3,  4,  4],14215 ),
+        new Indicador(`impact_factor`,                                    5, [0,  1,  2,  3,  4,  4],11.75 ),
+        new Indicador(`estades_recercaires_acollits`,                   2.5, [0,  1,  2,  3,  4,  4],    5 ),
+        new Indicador(`estades_recercaires_en_altres_centres`,          2.5, [0,  1,  2,  3,  4,  4],    1 ),
+        new Indicador(`rati_exit_propostes_europa`,                       5, [0,  1,  2,  3,  4,  4],   20 ),
+      ]),
+      new Bloc("Promoure línies de recerca estratègiques",5,[
+        new Indicador(`euros_recerca_L17_L18`,                           50, [0, 30, 30, 60, 60, 60], 0 ),
+        new Indicador(`articles_Q1_L17_L18`,                             50, [0,  0,  5,  5, 10, 10], 0 ),
+      ]),
+      new Bloc("Promoure transferència",20,[
+        new Indicador(`euros_projectes_KTT_respecte_total`,              10, [0, 13, 14, 16, 18, 18],  12 ),
+        new Indicador(`euros_projectes_KTT`,                             30, [0, 20, 30, 40, 50, 60], 395 ),
+        new Indicador(`projectes_KTT`,                                   15, [0,  5,  5, 10, 15, 20],  21 ),
+        new Indicador(`formacions_per_empreses_organitzades`,            15, [0,  5, 10, 20, 25, 50],   3 ),
+        new Indicador(`projectes_llavor_producte_innovadors`,            15, [0,  1,  2,  2,  2,  2],   0 ),
+        new Indicador(`doctorats_industrials`,                           15, [0,  1,  2,  2,  3,  3],   0 ),
+      ]),
+      new Bloc("Promoure mecenatge",5,[
+        new Indicador(`euros_mecenatge`,                                 70, [0, 20, 30, 40, 50, 60], 0 ),
+        new Indicador(`projectes_mecenatge`,                             30, [0,  2,  3,  4,  4,  5], 0 ),
+      ]),
+      new Bloc("Generació PI, spin-offs, start-ups",5,[
+        new Indicador(`patents_i_secrets_industrials`,                   20, [0, 1, 1,  2,  2,  2],  3 ),
+        new Indicador(`spinoffs_i_startups`,                             40, [0, 1, 1,  1,  1,  2],  1 ),
+        new Indicador(`articles_amb_socis_industrials`,                  40, [0, 5, 5, 10, 10, 15], 13 ),
+      ]),
+      new Bloc("Promoure impacte",20,[
+        new Indicador(`estudiants_acollits`,                             10, [0, 10, 15, 20, 25, 30],  1 ),
+        new Indicador(`cites_en_legislacio`,                             15, [0, 10, 15, 20, 25, 30], 87 ),
+        new Indicador(`participacions_comites_experts_ambit_legislatiu`, 20, [0, 10, 15, 20, 25, 30],  3 ),
+        new Indicador(`premis_nacionals`,                                 5, [0, 10, 15, 20, 25, 30],  1 ),
+        new Indicador(`premis_internacionals`,                            5, [0, 10, 15, 20, 25, 30],  0 ),
+        new Indicador(`narratives_impacte_CERCA`,                        15, [0,  1,  1,  2,  2,  3],  0 ),
+        new Indicador(`contribucions_gestio_aigua`,                      10, [0,  0,  1,  1,  2,  2],  0 ),
+        new Indicador(`llocs_de_treball_generats_llicencies`,             5, [0,  0,  1,  2,  2,  3],  0 ),
+        new Indicador(`aliances_solides_entitats_socials`,               15, [0,  1,  2,  2,  3,  3],  1 ),
+      ]),
+      new Bloc("Promoure comunicació",10,[
+        new Indicador(`xxss_seguidors`,                                25, [0,  10,  15,  20,  25,  30], 1164 ),
+        new Indicador(`xxss_shares`,                                    5, [0,  10,  15,  20,  25,  30],  505 ),
+        new Indicador(`xxss_plays`,                                    10, [0, 100, 200, 300, 500, 800],    0 ),
+        new Indicador(`actes_disseminacio_participats_o_organitzats`,  15, [0,   5,  10,  15,  20,  20],    0 ),
+        new Indicador(`aparicions_mitjans_comunicacio_nacionals`,      25, [0,  10,  15,  20,  25,  30],  197 ),
+        new Indicador(`aparicions_mitjans_comunicacio_internacionals`, 20, [0,  10,  15,  20,  25,  30],   11 ),
+      ]),
+      new Bloc("Relació amb patrons",5,[
+        new Indicador(`reunions_taula_aigua_ACA`,                               5, [0,  9,  9,  9,  9,  9], 0),
+        new Indicador(`hores_tasques_taula_aigua_ACA`,                          5, [0,300,400,500,550,600], 0),
+        new Indicador(`euros_projectes_KTT_ACA`,                               25, [0, 10, 20, 30, 40, 45], 0),
+        new Indicador(`tallers_UdG_ICRA`,                                      15, [0,  1,  1,  2,  2,  2], 0),
+        new Indicador(`iniciatives_UdG_ICRA`,                                  15, [0,  1,  1,  2,  2,  2], 0),
+        new Indicador(`euros_projectes_KTT_UdG`,                               25, [0,  0,  5,  5, 10, 10], 0),
+        new Indicador(`participacions_activitats_JEDI_organitzades_per_CERCA`, 10, [0,  5, 10, 12, 15, 15], 0),
+      ]),
+    ]),
+    new Ambit("Contracte Programa",[
+      //TODO
+      new Bloc("TO DO",0,[]),
+    ]),
+    new Ambit("Pla d'Acció",[
+      new Bloc("Pla d'Acció",0,[
+        new Indicador(`eficiencia_articles_amb_socis_industrials`,         0,[30, 29, 27, 25] , 30   ),
+        new Indicador(`objectius_assolits_del_pla_formacio`,               0,[ 0, 20, 70, 80] ,  0   ),
+        new Indicador(`participants_actes_disseminacio_participats`,       0,[ 0,100,250,500] ,  0   ),
+        new Indicador(`projectes_competitius_outreach`,                    0,[ 0,  0,  1,  2] ,  0   ),
+        new Indicador(`euros_projectes_competitius_outreach`,              0,[ 0,  0, 10, 20] ,  0   ),
+        new Indicador(`aliances_solides_empreses_i_administracio_publica`, 0,[ 5,  5, 10, 15] ,  5   ),
+        new Indicador(`projectes_i_encarrecs_ACA`,                         0,[ 5,  5,  7, 10] ,  5   ),
+        new Indicador(`accions_suport_tecnic_a_ACA_quimica_analitica`,     0,[ 0,  1,  3,  5] ,  0   ),
+        new Indicador(`participants_tallers_UdG_ICRA`,                     0,[ 0,120,180,240] ,  0   ),
+        new Indicador(`nombre_IPs`,                                        0,[16, 16, 18, 20] , 16   ),
+        new Indicador(`posicions_RF_creades`,                              0,[ 0,  0,  2,  3] ,  0   ),
+        new Indicador(`posicions_RS_estabilitzacio_RF`,                    0,[ 0,  0,  0,  1] ,  0   ),
+        new Indicador(`canvis_tram_RS_o_RP`,                               0,[ 0,  0,  0,  8] ,  0   ),
+        new Indicador(`sessions_JEDI_formacio_interna`,                    0,[ 0,  2,  4,  4] ,  0   ),
+        new Indicador(`participants_sessions_JEDI_formacio_interna`,	     0,[ 5, 50, 80, 80] ,  5   ),
+        new Indicador(`activitats_JEDI_organitzades`,	                     0,[ 0,  2,  5,  5] ,  0   ),
+        new Indicador(`dones_categories_laborals_superiors`,               0,[37.5,37.5,40,42], 37.5 ),
+        new Indicador(`projectes_amb_administracio_central`,               0,[ 0,  2,  5,  5] ,  0   ),
+        new Indicador(`euros_projectes_amb_administracio_central`,         0,[ 0,  5, 15, 30] ,  0   ),
+      ]),
+    ]),
+    new Ambit("IPs",[
+      //TODO
+    ]),
+    new Ambit("UdG professors",[
+      //TODO
     ]),
   ];
-
-  //valors basals 2023
-  let basals=[2995,1248,38,1189,518,1,1,3,4,3,105,14215,11.75,5,1,20,0,0,12,395,21,3,0,0,0,0,3,1,13,1,87,3,1,0,0,0,0,1,1164,505,0,0,197,11,0,0,0,0,0,0,0,
-    //pla accio
-    30, 0, 0, 0, 0, 5, 5, 0, 0, 16, 0, 0, 0, 0, 5, 0, 37.5, 0, 0,
-  ];
-  blocs.forEach(bloc=>{
-    bloc.indicadors.forEach(indi=>{
-      indi.years["2023"].valor = basals.shift();
-    });
-  });
 </script>
 
 <script>
-  /*finestra mobil*/
+  /*finestra mobil per veure detalls*/
   let caption={
     visible:false,
     text:"caption text",
-
-    actiu:true,
+    actiu:false,
 
     show(ev, new_text){
-      if(!this.actiu) return;
+      if(!this.actiu) return false;
       ev.stopPropagation(); //prevent parent elements triggering show()
+
+      //new text is HTML
       if(new_text){
         caption.text=new_text;
       }
+
       this.visible=true;
       let el=document.querySelector("#caption");
       el.style.left=(ev.clientX-10)+"px";
       el.style.top=(ev.clientY+15)+"px";
     },
     hide(){
-      if(!this.actiu) return;
+      if(!this.actiu) return false;
       this.visible=false;
     },
   };
 
-  //configuracio columnes visibles i filtres per taules debug
+  //configuracio columnes visibles i filtres per taules origen de dades
   class Conf_Taula{
     constructor(){
       this.taula    = null; //fetch_taula_undarius(nom_taula)
@@ -462,7 +822,7 @@
 
     get columnes_actives(){
       //retorna els noms de les columnes actives
-      return Object.entries(this.columnes).filter(en=>en[1]);
+      return Object.entries(this.columnes).filter(en=>en[1]).map(en=>en[0]);
     }
     get files_filtrades(){
       //retorna les files de la taula que compleixen tots els filtres
@@ -483,17 +843,14 @@
   let app = Vue.createApp({
     data(){return{
       years:[2023,2024,2025,2026,2027,2028,2029],
-      blocs,
+      ambits, //indicadors aqui dins
+      funcions_calculadores,
       carregant:true,
 
-      //TODO organisme on es reporten els indicadors
-      conjunts:[
-        "Patronat",
-        "Contracte Programa",
-        "Pla Acció",
-        "IPs",
-        "UdG professors",
-      ],
+      ambit_actual:ambits[0],
+
+      vista_detalls_indicador:false,
+      html_detalls_indicador:false,
 
       taules:{
         projectes:           new Conf_Taula(),
@@ -506,150 +863,57 @@
     }},
 
     methods:{
-      /*<funcions_calculadores_indicadors>*/
-      euros_totals_recerca(year,indicador){
-        if(!this.tot_carregat){
-          let msg = "impossible calcular indicador";
-          alert(msg);
-          throw(msg);
-          return 0;
-        };
-
-        let ingressos = app.taules.ingressos.taula;
-        let projectes = app.taules.projectes.taula;
-
-        let joined={};
-
-        ingressos.filter(ing=>ing.Any==year).forEach(ing=>{
-          let codi      = ing.Codi;      //codi projecte
-          let ingressos = ing.Ingressos; //euros
-
-          let projecte = projectes.find(p=>p.Codi==codi);
-
-          joined[codi]={
-            projecte,
-            ingressos,
-          };
-        });
-
-        console.log(joined);
-        return false;
-
-        let llista = Object.values(joined);
-        let keuros = llista.map(obj=>obj.ingressos).reduce((p,c)=>p+c,0)/1000;
-
-        indicador.years[year].valor  = keuros;
-        indicador.years[year].llista = llista.map(row=>{
-          let new_row={
-            ingressos: row.ingressos,
-          };
-          this.taules.projectes.columnes_actives.forEach(key=>{
-            new_row[key] = row.projecte[key];
+      calcular_tots_els_indicadors(){
+        this.ambits.forEach(ambit=>{
+          ambit.blocs.forEach(bloc=>{
+            bloc.indicadors.forEach(indi=>{
+              indi.calcula();
+            });
           });
-          return new_row;
         });
-
       },
 
-      //TODO
-      calcula_nombre_projectes_Horizon(year, indicador){
-        if(!this.projectes){
-          let msg = "impossible calcular indicador";
-          alert(msg);
-          throw(msg);
-          return 0;
-        };
-
-        year = year || "2023";
-
-        //calcula nombre de projectes horizon
-        let proj_Horizon = this.projectes.filter(proj=>{
-          let year_final = proj.DataFiReal.split("-")[0];
-          return(
-            (
-              proj["Estat"]=="410. Finalitzat" ||
-              proj["Estat"]=="220. En execució"
-            ) &&
-            proj["Departament Àrea"]    =="10. RECERCA"             &&
-            proj["Tipus de finançament"]=="020. COMPETITIU EUROPEU" &&
-            proj["Programa de finançament"]!=null                   &&
-            proj["Programa de finançament"].includes("H2020")       &&
-            year_final >= year                                      &&
-            1
-          );
-        });
-
-        indicador.years[year].valor  = proj_Horizon.length;
-        indicador.years[year].llista = proj_Horizon.map(row=>{
-          let new_row = {};
-          this.projectes.columnes_actives.forEach(([key,_])=>{
-            new_row[key] = row[key];
-          });
-          return new_row;
-        });
-
-        console.log({year,proj_Horizon});
+      mousemove_indicador(event,indi,year){
+        if(this.caption.actiu){
+          let html = this.crea_html_caption(indi,year);
+          this.caption.show(event, html);
+        }
       },
 
-      //TODO
-      calcula_nombre_projectes_ERC(year, indicador){
-        if(!this.projectes){
-          let msg = "impossible calcular indicador";
-          alert(msg);
-          throw(msg);
-          return 0;
-        };
-
-        year = year || "2023";
-
-        //calcula nombre de projectes ERC
-        let proj_ERC = this.projectes.filter(proj=>{
-          let year_final = proj.DataFiReal.split("-")[0];
-          return(
-            (
-              proj["Estat"]=="410. Finalitzat" ||
-              proj["Estat"]=="220. En execució"
-            ) &&
-            proj["Departament Àrea"]    =="10. RECERCA" &&
-            proj["Tipus de finançament"]=="020. COMPETITIU EUROPEU" &&
-            proj["Programa de finançament"]!=null &&
-            (
-              proj["Programa de finançament"].includes("ERC") ||
-              proj["Programa de finançament"].includes("EIC")
-            ) &&
-            year_final >= year
-          );
-        });
-
-        let total = proj_ERC.length;
-
-        indicador.years[year].valor  = proj_ERC.length;
-        indicador.years[year].llista = proj_ERC.map(row=>{
-          let new_row = {};
-          this.projectes.columnes_actives.forEach(([key,_])=>{
-            new_row[key] = row[key];
-          });
-          return new_row;
-        });
-
-        console.log({year,proj_ERC});
+      click_detalls_indicador(indi,year){
+        this.vista_detalls_indicador=true;
+        let html = this.crea_html_caption(indi,year);
+        this.html_detalls_indicador=html;
       },
-      /*</funcions_calculadores_indicadors>*/
 
-      crea_html_caption(indi,year,incr){
-        let header = `
+      //genera HTML per vista detalls indicador
+      crea_html_caption(indi,year){
+        let incr = indi.increment(year);
+        let header=`
           <b>Detalls indicador</b>
+          <p>
+            <i>${indi.text}</i>
+          </p>
+          <p>Any: ${year}</p>
           <table border=1 small>
             <tr>
-              <td>Canvi respecte ${indi.base_year}</td>
+              <td>Valor (${year})</td>
+              <td>${indi.years[year].valor} ${indi.unit}</td>
+            </tr>
+            <tr>
+              <td>Valor basal (${indi.base_year})</td>
+              <td>${indi.years[indi.base_year].valor} ${indi.unit}</td>
+            </tr>
+            <tr>
+              <td>Canvi respecte valor basal</td>
               <td>${incr.delta} ${indi.unit} (${incr.perc.toFixed(0)}%)</td>
             </tr>
             <tr>
-              <td>Objectiu</td>
+              <td>Objectiu ${year}</td>
               <td>+${incr.objectiu}%</td>
             </tr>
             <tr>
-              <td>Compleix</td>
+              <td>Compleix ${year}</td>
               <td>${incr.compleix?'Sí':'No'}</td>
             </tr>
           </table>
@@ -684,14 +948,19 @@
           });
           llista+="</table>";
         }
-        return [
+
+        let ret=[
           header,
           llista,
         ].join("");
+
+        return ret;
       },
     },
 
     computed:{
+
+      //TODO
       get_ips(){
         if(!this.projectes) return false;
         if(!this.personal)  return false;
@@ -723,6 +992,8 @@
   app.taules.projectes.columnes={
     "Estat":true,
     "Acronim":true,
+    "Departament Àrea":true,
+    "IP Projecte":true,
   };
   app.taules.personal.columnes={
     "Nom":true,
@@ -736,6 +1007,11 @@
     "Descripcio":true,
     "Observacions":true,
   };
+  app.taules.ingressos.columnes={
+    "Any":true,
+    "Codi":true,
+    "Ingressos":true,
+  };
 </script>
 
 <script>
@@ -743,16 +1019,18 @@
   async function fetch_taula_undarius(nom_taula){
     //nom_taula: String
     try{
-      console.log("consulta: client -> undarius -> sql server icra ");
+      console.log(`llegint SQL server /${nom_taula}...`);
+
       let url=`https://undarius.icra.local:50000/${nom_taula}`;
 
-      let options={};
-      let response = await fetch(url,options);
-      if(!response.ok) throw(`error fetching sql icranet (taula '${nom_taula}')`);
+      let response = await fetch(url);
+      if(!response.ok){
+        throw(`error fetching SQL Server (taula '${nom_taula}')`);
+      }
 
       let data = await response.json();
       app.taules[nom_taula].taula = data;
-      console.log({taula:nom_taula, data});
+      console.log(`OK /${nom_taula}`);
     }catch(err){
       console.error('Error fetching data:', err);
       app.carregant = false;
