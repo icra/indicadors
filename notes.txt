@@ -1,4 +1,2 @@
 ==COSES PENDENTS==
   - graph API per llegir
-  - crear identificador "i.e <euros_projectes_eur_h2020>"per cada indicador
-  - crear instruccions per cada indicador per poder justificar com es calculen
