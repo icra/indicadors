@@ -23,7 +23,7 @@
 			}
 		};
 
-		const msalInstance = new msal.PublicClientApplication(msalConfig);
+		const msalInstance     = new msal.PublicClientApplication(msalConfig);
 		const graphAPIEndpoint = "https://graph.microsoft.com/v1.0/me/drive/root:/test.xlsx:/content";
 
 		// Function to get an access token
@@ -59,7 +59,7 @@
 				}
 		}
 
-		// Read Excel file content using SheetJS
+		//read excel file content using SheetJS
 		function readExcelFile(fileBlob) {
 				const reader = new FileReader();
 				reader.readAsArrayBuffer(fileBlob);
@@ -78,7 +78,7 @@
 				};
 		}
 
-		// Call the function
+		//call the function
 		fetchExcelFile();
 	</script>
 </head><body>

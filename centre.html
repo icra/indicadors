@@ -4,6 +4,12 @@
 
   <!--lib vue-->
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"
+    integrity="sha512-dlPw+ytv/6JyepmelABrgeYgHI0O+frEwgfnPdXDTOIZz+eDgfW07QXG02/O8COfivBdGNINy+Vex+lYmJ5rxw=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  ></script>
 
   <style>
     body{
@@ -1162,10 +1168,10 @@
 
   //columnes activades per defecte
   app.taules.projectes.columnes={
-    "Estat":true,
-    "Acronim":true,
-    "Departament Àrea":true,
-    "IP Projecte":true,
+    //"Estat":true,
+    //"Acronim":true,
+    //"Departament Àrea":true,
+    //"IP Projecte":true,
   };
   app.taules.personal.columnes={
     "Nom":true,
@@ -1208,9 +1214,54 @@
       app.carregant = false;
     }
   }
-  fetch_taula_undarius("projectes");
+  //fetch_taula_undarius("projectes");
   fetch_taula_undarius("personal");
   fetch_taula_undarius("esdeveniments");
   fetch_taula_undarius("tipus_esdeveniments");
   fetch_taula_undarius("ingressos");
+</script>
+
+<script>
+  //read excel file content using SheetJS
+  let wbg = null;
+  async function llegir_excel_projectes() {
+    let url    = "csv/projectes.xlsx";
+    let res    = await fetch(url);
+    let blob   = await res.blob();
+    let reader = new FileReader();
+    let wb     = new ExcelJS.Workbook();
+
+    reader.readAsArrayBuffer(blob);
+    reader.onload=async function(){
+      let buffer = reader.result;
+      await wb.xlsx.load(buffer);
+      console.log(wb);
+
+      let taula = converteix_wb_a_taula_json(wb);
+      app.taules.projectes.taula = taula;
+      /*
+        wb.worksheets (array)
+        sheet.columns (array)
+        column.values (array)
+        value._number
+      */
+    };
+  }
+
+  function converteix_wb_a_taula_json(wb){
+    let noms_columnes = wb.worksheets[0]._rows[0].values;
+    let taula=[];//retval
+    wb.worksheets[0]._rows.forEach((row,i)=>{
+      let new_row={};
+      noms_columnes.forEach((key,j)=>{
+        let val = row.values[j];
+        new_row[key]=val;
+      });
+      taula.push(new_row);
+    });
+    console.log(taula);
+    return taula;
+  }
+
+  llegir_excel_projectes();
 </script>
