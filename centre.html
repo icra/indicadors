@@ -227,7 +227,7 @@
   </details><hr>
 
   <!--indicador debug-->
-  <p>Taules de desenvolupament (no visibles versió final)</p>
+  <p>Taules de desenvolupament (no seran visibles a la versió final)</p><hr>
 
   <!--bucle taules development-->
   <div v-for="taula in Object.keys(taules)">
@@ -308,8 +308,7 @@
 
       if(!this.text) throw(`no text for ${id}`)
 
-
-      this.base_year   = "2023";           //String
+      this.base_year = "2023"; //String
 
       //funció que calcula l'indicador per un determinat any. Modifica this.years[year][valor i llista]
       this.funcio_calculadora = id; //String
@@ -322,11 +321,11 @@
       this.years={
         "2023":{valor:valor_basal, llista:null, objectiu:0, excloure:true},
         "2024":{valor:0, llista:null, objectiu:objectius[0]||0},
-        "2025":{valor:0, llista:null, objectiu:objectius[1]||0},
-        "2026":{valor:0, llista:null, objectiu:objectius[2]||0},
-        "2027":{valor:0, llista:null, objectiu:objectius[3]||0},
-        "2028":{valor:0, llista:null, objectiu:objectius[4]||0},
-        "2029":{valor:0, llista:null, objectiu:objectius[5]||0},
+        //"2025":{valor:0, llista:null, objectiu:objectius[1]||0},
+        //"2026":{valor:0, llista:null, objectiu:objectius[2]||0},
+        //"2027":{valor:0, llista:null, objectiu:objectius[3]||0},
+        //"2028":{valor:0, llista:null, objectiu:objectius[4]||0},
+        //"2029":{valor:0, llista:null, objectiu:objectius[5]||0},
       };
     }
 
@@ -529,20 +528,19 @@
   let funcions_calculadores={
     euros_recerca(year,indicador){
       //filtra per year
-      let ingressos = app.taules.ingressos.taula
-        .filter(i=>i.Any==year);
+      let ingressos = app.taules.ingressos.taula.filter(i=>i.Any==year);
 
-      //filtra per "10. RECERCA"
+      //filtra per "RECERCA"
       let projectes = app.taules.projectes.taula
-        .filter(p=>p["Departament Àrea"]=="10. RECERCA");
+        .filter(p=>p["Concurrencia"]=="FONS COMPETITIUS");
 
-      //ajunta les taules en un diccionari per codi projecte
+      //ajunta taules en un diccionari per codi projecte
       let joined={};
 
       ingressos.forEach(ing=>{
         let codi      = ing.Codi;      //codi projecte
         let ingressos = ing.Ingressos; //euros
-        let projecte  = projectes.find(p=>p.Codi==codi);
+        let projecte  = projectes.find(p=>p["Código Identificativo"]==codi);
         if(!projecte)   return;
         joined[codi]={
           projecte,
@@ -563,31 +561,29 @@
         });
         return new_row;
       });
-    },
+    },//OK
 
     euros_recerca_horizon(year,indicador){
-      //projectes horizon vigents a l'any "year"
+      //filtra per year
+      let ingressos = app.taules.ingressos.taula.filter(i=>i.Any==year);
+
+      //filtra projectes
       let projectes = app.taules.projectes.taula.filter(proj=>{
-        let year_final = proj.DataFiReal.split("-")[0];
         return(
+          proj["Concurrencia"]=="FONS COMPETITIUS"&&
+          proj["Naturaleza del Proyecto"]=="EUROPEA"&&
+          proj["Financiador Convocatoria"]!=null&&
           (
-            proj["Estat"]=="410. Finalitzat" ||
-            proj["Estat"]=="220. En execució"
-          ) &&
-          proj["Departament Àrea"]    =="10. RECERCA"             &&
-          proj["Tipus de finançament"]=="020. COMPETITIU EUROPEU" &&
-          proj["Programa de finançament"]!=null                   &&
-          proj["Programa de finançament"].includes("H2020")       &&
-          year_final >= year                                      &&
-          1
+            proj["Financiador Convocatoria"].includes("H2020")||
+            proj["Financiador Convocatoria"].includes("HORIZON")
+          )
         );
       });
-      let ingressos = app.taules.ingressos.taula.filter(i=>i.Any==year);
 
       //ajunta taules per codi projecte
       let joined={};
       projectes.forEach(projecte=>{
-        let codi = projecte.Codi; //codi projecte
+        let codi = projecte["Código Identificativo"]; //codi projecte
         let ing  = ingressos.find(i=>i.Codi==codi); //objecte
         if(!ing) return;
         joined[codi]={
@@ -609,70 +605,98 @@
         });
         return new_row;
       });
-    },
 
-    euros_recerca_erc_eic:null,
+      app.taules.projectes.columnes["Financiador Convocatoria"]=true;
+    },//OK
+
+    euros_recerca_erc_eic(year,indicador){
+      //projectes ERC vigents a l'any "year"
+      let projectes = app.taules.projectes.taula.filter(proj=>{
+        return(
+          proj["Concurrencia"]=="FONS COMPETITIUS"&&
+          proj["Naturaleza del Proyecto"]=="EUROPEA"&&
+          proj["Financiador Convocatoria"]!=null&&
+          proj["Financiador Convocatoria"].includes("ERC")
+        );
+      });
+      let ingressos = app.taules.ingressos.taula.filter(i=>i.Any==year);
+
+      //ajunta taules per codi projecte
+      let joined={};
+      projectes.forEach(projecte=>{
+        let codi = projecte["Código Identificativo"]; //codi projecte
+        let ing  = ingressos.find(i=>i.Codi==codi); //objecte
+        if(!ing) return;
+        joined[codi]={
+          projecte,
+          ingressos: ing.Ingressos,
+        }
+      });
+
+      let llista = Object.values(joined); //array
+      let keuros = llista.map(obj=>obj.ingressos).reduce((p,c)=>p+c,0)/1000; //number
+
+      app.taules.projectes.columnes["Financiador Convocatoria"]=true;
+
+      indicador.years[year].valor  = keuros; //number
+      indicador.years[year].llista = llista.map(row=>{
+        let new_row={
+          ingressos: row.ingressos,
+        };
+        app.taules.projectes.columnes_actives.forEach(key=>{
+          new_row[key] = row.projecte[key];
+        });
+        return new_row;
+      });
+    },//OK
 
     euros_recerca_estatal:null,
-
     euros_recerca_regional:null,
 
     projectes_horizon(year, indicador){
       //calcula nombre de projectes horizon vigents
-      let proj_Horizon = app.taules.projectes.taula.filter(proj=>{
-        let year_final = proj.DataFiReal.split("-")[0];
+      let projectes = app.taules.projectes.taula.filter(pro=>{
         return(
+          pro["Concurrencia"]=="FONS COMPETITIUS"&&
+          pro["Naturaleza del Proyecto"]=="EUROPEA"&&
+          pro["Financiador Convocatoria"]!=null&&
           (
-            proj["Estat"]=="410. Finalitzat" ||
-            proj["Estat"]=="220. En execució"
-          ) &&
-          proj["Departament Àrea"]    =="10. RECERCA"             &&
-          proj["Tipus de finançament"]=="020. COMPETITIU EUROPEU" &&
-          proj["Programa de finançament"]!=null                   &&
-          proj["Programa de finançament"].includes("H2020")       &&
-          year_final >= year                                      &&
-          1
+            pro["Financiador Convocatoria"].includes("H2020")||
+            pro["Financiador Convocatoria"].includes("HORIZON")
+          )
         );
       });
-      indicador.years[year].valor  = proj_Horizon.length;
-      indicador.years[year].llista = proj_Horizon.map(row=>{
+      indicador.years[year].valor  = projectes.length;
+      indicador.years[year].llista = projectes.map(row=>{
         let new_row={};
         app.taules.projectes.columnes_actives.forEach(key=>{
           new_row[key]=row[key];
         });
         return new_row;
       });
-    },
+
+      app.taules.projectes.columnes["Financiador Convocatoria"]=true;
+    },//falta filtrar per data
 
     projectes_erc_eic(year, indicador){
-      //calcula nombre de projectes ERC
-      let proj_ERC = app.taules.projectes.taula.filter(proj=>{
-        let year_final = proj.DataFiReal.split("-")[0];
+      //calcula nombre de projectes horizon vigents
+      let projectes = app.taules.projectes.taula.filter(proj=>{
         return(
-          (
-            proj["Estat"]=="410. Finalitzat" ||
-            proj["Estat"]=="220. En execució"
-          ) &&
-          proj["Departament Àrea"]    =="10. RECERCA" &&
-          proj["Tipus de finançament"]=="020. COMPETITIU EUROPEU" &&
-          proj["Programa de finançament"]!=null &&
-          (
-            proj["Programa de finançament"].includes("ERC") ||
-            proj["Programa de finançament"].includes("EIC")
-          ) &&
-          year_final >= year
+          proj["Concurrencia"]=="FONS COMPETITIUS"&&
+          proj["Naturaleza del Proyecto"]=="EUROPEA"&&
+          proj["Financiador Convocatoria"]!=null&&
+          proj["Financiador Convocatoria"].includes("ERC")
         );
       });
-
-      indicador.years[year].valor  = proj_ERC.length;
-      indicador.years[year].llista = proj_ERC.map(row=>{
+      indicador.years[year].valor  = projectes.length;
+      indicador.years[year].llista = projectes.map(row=>{
         let new_row={};
         app.taules.projectes.columnes_actives.forEach(key=>{
           new_row[key]=row[key];
         });
         return new_row;
       });
-    },
+    },//falta filtrar per data
 
     congressos_tallers_escoles_estiu_organitzats:null,
     sessions_especials_organitzades:null,
@@ -1020,24 +1044,29 @@
 <script>//vue app
   let app = Vue.createApp({
     data(){return{
-      years:[2023,2024,2025,2026,2027,2028,2029],
-      ambits, //indicadors aqui dins
-      funcions_calculadores,
-      carregant:true,
+      years:[2023,2024/*,2025,2026,2027,2028,2029*/],
+      ambits, //indicadors
+      funcions_calculadores, //taula helper funcions dels indicadors
 
-      ambit_actual:ambits[0],
+      carregant:true, //status
 
+      ambit_actual:ambits[0], //"pestanyes"
+
+      //veure detalls d'un sol indicador
       vista_detalls_indicador:false,
       html_detalls_indicador:false,
+      caption,/*element <div id=caption> (finestreta detalls)*/
 
+      //taules des d'on es calculen els indicadors: origens diversos (SQL icra, excels, ...)
       taules:{
         projectes:           new Conf_Taula(),
         personal:            new Conf_Taula(),
         esdeveniments:       new Conf_Taula(),
         tipus_esdeveniments: new Conf_Taula(),
         ingressos:           new Conf_Taula(),
+        taula_aigua:         new Conf_Taula(),
+        projectes_personal:  new Conf_Taula(),
       },
-      caption,/*element <div id=caption> (finestreta detalls)*/
     }},
 
     methods:{
@@ -1051,19 +1080,18 @@
         });
       },
 
+      //veure detalls indicador
       mousemove_indicador(event,indi,year){
         if(this.caption.actiu){
           let html = this.crea_html_caption(indi,year);
           this.caption.show(event, html);
         }
       },
-
       click_detalls_indicador(indi,year){
         this.vista_detalls_indicador=true;
         let html = this.crea_html_caption(indi,year);
         this.html_detalls_indicador=html;
       },
-
       //genera HTML per vista detalls indicador
       crea_html_caption(indi,year){
         let incr = indi.increment(year);
@@ -1137,7 +1165,6 @@
     },
 
     computed:{
-
       //TODO
       get_ips(){
         if(!this.projectes) return false;
@@ -1145,7 +1172,7 @@
 
         let set = new Set();
         this.projectes.forEach(row=>{
-          let estat = row["Estat"];
+          let estat = row["Situación del Proyecto"];
           let area  = row["Departament Àrea"];
           let nom   = row["IP Projecte"];
           if(area=="10. RECERCA" && nom){
@@ -1168,10 +1195,10 @@
 
   //columnes activades per defecte
   app.taules.projectes.columnes={
-    //"Estat":true,
-    //"Acronim":true,
-    //"Departament Àrea":true,
-    //"IP Projecte":true,
+    "Situación del Proyecto":true,
+    "Título Abreviado":true,
+    "Naturaleza del Proyecto":true,
+    "Concurrencia":true,
   };
   app.taules.personal.columnes={
     "Nom":true,
@@ -1193,11 +1220,11 @@
 </script>
 
 <script>
-  //consulta client -> cluster -> sql server (icranet)
+  //consulta SQL SERVER via node express instalat al cluster que consulta el server "srv-apps-03.icra.local"
   async function fetch_taula_undarius(nom_taula){
     //nom_taula: String
     try{
-      console.log(`llegint SQL server /${nom_taula}...`);
+      //console.log(`llegint SQL server /${nom_taula}...`);
 
       let url=`https://undarius.icra.local:50000/${nom_taula}`;
 
@@ -1208,7 +1235,7 @@
 
       let data = await response.json();
       app.taules[nom_taula].taula = data;
-      console.log(`OK /${nom_taula}`);
+      console.log(`OK GET /${nom_taula}`);
     }catch(err){
       console.error('Error fetching data:', err);
       app.carregant = false;
@@ -1219,11 +1246,11 @@
   fetch_taula_undarius("esdeveniments");
   fetch_taula_undarius("tipus_esdeveniments");
   fetch_taula_undarius("ingressos");
+  fetch_taula_undarius("taula_aigua");
 </script>
 
 <script>
-  //read excel file content using SheetJS
-  let wbg = null;
+  //read excel file from url
   async function llegir_excel_projectes() {
     let url    = "csv/projectes.xlsx";
     let res    = await fetch(url);
@@ -1231,14 +1258,39 @@
     let reader = new FileReader();
     let wb     = new ExcelJS.Workbook();
 
+    function converteix_wb_a_taula_json(wb, index_sheet){
+      index_sheet = index_sheet || 0;
+
+      let taula=[];//retval
+
+      //noms columnes: valors primera fila
+      let noms_columnes = wb.worksheets[index_sheet]._rows[0].values;
+
+      //omple la taula
+      wb.worksheets[index_sheet]._rows.forEach((row,i)=>{
+        if(i==0) return; //skip primera fila
+        let new_row={};
+        noms_columnes.forEach((key,j)=>{
+          let val = row.values[j];
+          new_row[key]=val;
+        });
+        taula.push(new_row);
+      });
+
+      return taula;
+    }
+
     reader.readAsArrayBuffer(blob);
     reader.onload=async function(){
       let buffer = reader.result;
       await wb.xlsx.load(buffer);
-      console.log(wb);
 
-      let taula = converteix_wb_a_taula_json(wb);
-      app.taules.projectes.taula = taula;
+      //l'excel "projectes" té 2 sheets:
+      let projectes          = converteix_wb_a_taula_json(wb, 0);
+      let projectes_personal = converteix_wb_a_taula_json(wb, 1);
+
+      app.taules.projectes.taula          = projectes;
+      app.taules.projectes_personal.taula = projectes_personal;
       /*
         wb.worksheets (array)
         sheet.columns (array)
@@ -1247,21 +1299,5 @@
       */
     };
   }
-
-  function converteix_wb_a_taula_json(wb){
-    let noms_columnes = wb.worksheets[0]._rows[0].values;
-    let taula=[];//retval
-    wb.worksheets[0]._rows.forEach((row,i)=>{
-      let new_row={};
-      noms_columnes.forEach((key,j)=>{
-        let val = row.values[j];
-        new_row[key]=val;
-      });
-      taula.push(new_row);
-    });
-    console.log(taula);
-    return taula;
-  }
-
   llegir_excel_projectes();
 </script>
