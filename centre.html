@@ -59,17 +59,6 @@
     [nowrap]{
       white-space:nowrap;
     }
-    #caption{
-      position:fixed;
-      z-index:999;
-      background:white;
-      padding:0.3em 0.5em;
-      box-shadow: 1px 1px 1px 1px rgba(0,0,0,.1);
-      border:1px solid #ccc;
-      color:#666;
-      text-align:left;
-      max-width:800px;
-    }
     [vista_detalls_indicador]{
       border:1px solid #ccc;
       background:lightyellow;
@@ -84,6 +73,12 @@
       background:royalblue;
       color:white;
     }
+    tr[sticky] > th {
+      position:sticky;
+      top:0;
+      background:white;
+      border:1px solid #ccc;
+    }
   </style>
 <head></head><body>
 <b>en construcció</b><hr>
@@ -93,13 +88,6 @@
 <h2>Indicadors de centre</h2><hr>
 
 <div id=app>
-  <!--finestra petita mòbil-->
-  <div
-    id=caption
-    v-html="caption.text"
-    v-show="caption.visible"
-  ></div>
-
   <!--avís certificat-->
   <div v-if="!tot_carregat">
     Perquè tot funcioni cal:<ol>
@@ -147,12 +135,12 @@
     </p>
     <p>
       <label>
-        <input type=checkbox v-model="caption.actiu">
-        Mostrar finestreta flotant detalls indicadors
+        <input type=checkbox v-model="veure_responsable">
+        Veure columna "Responsable"
       </label>
       <label>
-        <input type=checkbox v-model="veure_responsable">
-        Veure departament responsable
+        <input type=checkbox v-model="veure_boto_detalls">
+        Veure botó "detalls"
       </label>
     </p>
     <table border=1>
@@ -214,13 +202,18 @@
             {{indi.responsable}}
           </td>
           <td v-for="obj,year in indi.years" center small nowrap monospace>
-            <div v-for="incr in [indi.increment(year)]"
-              @mousemove="mousemove_indicador($event,indi,year)"
-              @mouseout="caption.hide()"
-            >
-              <div>
-                <!--valor cru indicador-->
-                <span>{{obj.valor.toFixed(0)}}</span>
+            <div v-for="incr in [indi.increment(year)]">
+              <div
+                style="
+                  display:flex;
+                  justify-content:space-between;
+                  align-items:center;
+                "
+              >
+                <!--valor indicador-->
+                <div>{{obj.valor.toFixed(0)}}</div>
+
+                <div>&nbsp;</div>
 
                 <!--increment i objectiu-->
                 <div v-if="!obj.excloure && obj.valor" small>
@@ -231,12 +224,16 @@
                       {{Math.abs(incr.perc).toFixed(0)}}%
                     </span>
                   </span>
-                  <!-- veure objectiu?
-                  <span>
-                    (&uarr;{{incr.objectiu}}%)
-                  </span>
-                  -->
-                  <button @click="click_detalls_indicador(indi,year)" style="padding:0;font-size:x-small">detalls</button>
+                </div>
+
+                <div>&nbsp;</div>
+
+                <!--botó detalls-->
+                <div v-if="!obj.excloure && obj.valor && veure_boto_detalls" small>
+                  <button
+                    @click="click_detalls_indicador(indi,year)"
+                    style="padding:0;font-size:x-small"
+                  >detalls</button>
                 </div>
               </div>
             </div>
@@ -284,7 +281,7 @@
 
       <table border=1 v-if="taules[taula].taula?.length" small>
         <thead>
-          <tr style="position:sticky;top:0;background:white">
+          <tr sticky>
             <th v-for="key in taules[taula].columnes_actives">
               <button @click="taules[taula].taula.sort((a,b)=>a[key]>b[key]?1:-1)">&darr;{{key}}</button>
               <button v-if="taules[taula].filtres[key]!=undefined" @click="delete taules[taula].filtres[key]">
@@ -685,8 +682,85 @@
       });
     },//OK
 
-    euros_recerca_estatal:null,  //concurrencia=="NACIONAL" TODO
-    euros_recerca_regional:null, //concurrencia=="REGIONAL" TODO
+    euros_recerca_estatal(year, indicador){
+      let projectes = app.taules.projectes.taula.filter(proj=>{
+        return(
+          proj["Concurrencia"]=="FONS COMPETITIUS"&&
+          proj["Naturaleza del Proyecto"]=="NACIONAL"
+        );
+      });
+      let ingressos = app.taules.ingressos.taula.filter(i=>i.Any==year);
+
+      //ajunta taules per codi projecte
+      let joined={};
+      projectes.forEach(projecte=>{
+        let codi = projecte["Código Identificativo"]; //codi projecte
+        let ing  = ingressos.find(i=>i.Codi==codi); //objecte
+        if(!ing) return;
+        joined[codi]={
+          projecte,
+          ingressos: ing.Ingressos,
+        }
+      });
+
+      let llista = Object.values(joined); //array
+      let keuros = llista.map(obj=>obj.ingressos).reduce((p,c)=>p+c,0)/1000; //number
+
+      app.taules.projectes.columnes["Concurrencia"]=true;
+      app.taules.projectes.columnes["Naturaleza del Proyecto"]=true;
+      app.taules.projectes.columnes["Director del Proyecto"]=true;
+
+      indicador.years[year].valor  = keuros; //number
+      indicador.years[year].llista = llista.map(row=>{
+        let new_row={
+          ingressos: row.ingressos,
+        };
+        app.taules.projectes.columnes_actives.forEach(key=>{
+          new_row[key] = row.projecte[key];
+        });
+        return new_row;
+      });
+    },
+
+    euros_recerca_regional(year, indicador){
+      let projectes = app.taules.projectes.taula.filter(proj=>{
+        return(
+          proj["Concurrencia"]=="FONS COMPETITIUS"&&
+          proj["Naturaleza del Proyecto"]=="REGIONAL"
+        );
+      });
+      let ingressos = app.taules.ingressos.taula.filter(i=>i.Any==year);
+
+      //ajunta taules per codi projecte
+      let joined={};
+      projectes.forEach(projecte=>{
+        let codi = projecte["Código Identificativo"]; //codi projecte
+        let ing  = ingressos.find(i=>i.Codi==codi); //objecte
+        if(!ing) return;
+        joined[codi]={
+          projecte,
+          ingressos: ing.Ingressos,
+        }
+      });
+
+      let llista = Object.values(joined); //array
+      let keuros = llista.map(obj=>obj.ingressos).reduce((p,c)=>p+c,0)/1000; //number
+
+      app.taules.projectes.columnes["Concurrencia"]=true;
+      app.taules.projectes.columnes["Naturaleza del Proyecto"]=true;
+      app.taules.projectes.columnes["Director del Proyecto"]=true;
+
+      indicador.years[year].valor  = keuros; //number
+      indicador.years[year].llista = llista.map(row=>{
+        let new_row={
+          ingressos: row.ingressos,
+        };
+        app.taules.projectes.columnes_actives.forEach(key=>{
+          new_row[key] = row.projecte[key];
+        });
+        return new_row;
+      });
+    },
 
     projectes_horizon(year, indicador){
       //falta filtrar per any TODO
@@ -1100,32 +1174,6 @@
 </script>
 
 <script>
-  /*finestra mobil per veure detalls*/
-  let caption={
-    visible:false,
-    text:"caption text",
-    actiu:false,
-
-    show(ev, new_text){
-      if(!this.actiu) return false;
-      ev.stopPropagation(); //prevent parent elements triggering show()
-
-      //new text is HTML
-      if(new_text){
-        caption.text=new_text;
-      }
-
-      this.visible=true;
-      let el=document.querySelector("#caption");
-      el.style.left=(ev.clientX-10)+"px";
-      el.style.top=(ev.clientY+15)+"px";
-    },
-    hide(){
-      if(!this.actiu) return false;
-      this.visible=false;
-    },
-  };
-
   //configuracio columnes visibles i filtres per taules origen de dades
   class Conf_Taula{
     constructor(){
@@ -1167,11 +1215,13 @@
       //veure detalls d'un sol indicador
       vista_detalls_indicador:false,
       html_detalls_indicador:false,
-      caption,/*element <div id=caption> (finestreta detalls)*/
 
       //columna responsable indicador
       veure_responsable:true,
       filtre_responsable:false,
+
+      //veure botó detalls
+      veure_boto_detalls:true,
 
       //taules des d'on es calculen els indicadors: origens diversos (SQL icra, excels, ...)
       taules:{
@@ -1197,17 +1247,12 @@
       },
 
       //veure detalls indicador
-      mousemove_indicador(event,indi,year){
-        if(this.caption.actiu){
-          let html = this.crea_html_caption(indi,year);
-          this.caption.show(event, html);
-        }
-      },
       click_detalls_indicador(indi,year){
         this.vista_detalls_indicador=true;
         let html = this.crea_html_caption(indi,year);
         this.html_detalls_indicador=html;
       },
+
       //genera HTML per vista detalls indicador
       crea_html_caption(indi,year){
         let incr = indi.increment(year);
