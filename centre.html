@@ -181,7 +181,7 @@
         </td>
       </tr>
       <tbody v-for="bloc,i in ambit_actual.blocs">
-        <tr style="background:#eee">
+        <tr style="background:#eee;">
           <td right><b>{{bloc.pes_percent}}%</b></td>
           <td>
             <b nom_bloc @click="bloc.visible^=1">
@@ -283,15 +283,17 @@
       </p>
 
       <table border=1 v-if="taules[taula].taula?.length" small>
-        <tr>
-          <th v-for="key in taules[taula].columnes_actives">
-            <button @click="taules[taula].taula.sort((a,b)=>a[key]>b[key]?1:-1)">&darr;{{key}}</button>
-            <button v-if="taules[taula].filtres[key]!=undefined" @click="delete taules[taula].filtres[key]">
-              ="{{taules[taula].filtres[key].substring(0,50)}}"
-            </button>
-            <button @click="taules[taula].columnes[key]=false">X</button>
-          </th>
-        </tr>
+        <thead>
+          <tr style="position:sticky;top:0;background:white">
+            <th v-for="key in taules[taula].columnes_actives">
+              <button @click="taules[taula].taula.sort((a,b)=>a[key]>b[key]?1:-1)">&darr;{{key}}</button>
+              <button v-if="taules[taula].filtres[key]!=undefined" @click="delete taules[taula].filtres[key]">
+                ="{{taules[taula].filtres[key].substring(0,50)}}"
+              </button>
+              <button @click="taules[taula].columnes[key]=false">X</button>
+            </th>
+          </tr>
+        </thead>
         <tr v-for="row in taules[taula].files_filtrades">
           <td v-for="key in taules[taula].columnes_actives">
             <span @click="taules[taula].filtres[key]=row[key]">{{row[key]}}</span>
