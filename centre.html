@@ -80,6 +80,10 @@
       background:royalblue;
       color:white;
     }
+    [filtre_responsable_actual=true]{
+      background:royalblue;
+      color:white;
+    }
   </style>
 <head></head><body>
 <b>en construcció</b><hr>
@@ -146,11 +150,31 @@
         <input type=checkbox v-model="caption.actiu">
         Mostrar finestreta flotant detalls indicadors
       </label>
+      <label>
+        <input type=checkbox v-model="veure_responsable">
+        Veure departament responsable
+      </label>
     </p>
     <table border=1>
       <tr>
         <td center><b>Pes</b></td>
         <td><b>Blocs</b></td>
+        <td title="Departament responsable" small v-if="veure_responsable">
+          <details>
+            <summary><b>Responsable</b></summary>
+            <div v-for="res in get_responsables">
+              <button
+                @click="filtre_responsable=res"
+                :filtre_responsable_actual="filtre_responsable==res"
+                xsmall
+              >{{res}}
+              </button>
+            </div>
+            <button @click="filtre_responsable=false" :disabled="!filtre_responsable">
+              X[eliminar filtre]
+            </button>
+          </details>
+        </td>
         <th v-for="year in years" center>{{year}}</th>
         <td center>
           <button @click="calcular_tots_els_indicadors()" :disabled="!tot_carregat">calcular tots</button>
@@ -161,16 +185,21 @@
           <td right><b>{{bloc.pes_percent}}%</b></td>
           <td>
             <b nom_bloc @click="bloc.visible^=1">
+              <span style="font-family:monospace">
+                <span v-if="bloc.visible">[-] </span>
+                <span v-if="!bloc.visible">[+] </span>
+              </span>
               <span>{{i+1}}. {{bloc.nom}}</span>
               <small> ({{bloc.indicadors.length}} ind.)</small>
             </b>
           </td>
+          <td v-if="veure_responsable"></td>
           <td v-for="year in years" center monospace title="Puntuació" style="color:darkblue">
             <b v-if="false">{{bloc.puntuacio(year).toFixed(1)}}</b>
           </td>
           <td></td>
         </tr>
-        <tr v-for="indi,j in bloc.indicadors" v-if="bloc.visible">
+        <tr v-for="indi,j in bloc.indicadors.filter(i=>!filtre_responsable || i.responsable==filtre_responsable)" v-if="bloc.visible">
           <td small right>{{indi.pes_percent}}%</td>
           <td small>
             <div style="display:flex;justify-content:space-between">
@@ -180,6 +209,9 @@
               </div>
               <div small style="color:#666" v-if="indi.unit">({{indi.unit}})</div>
             </div>
+          </td>
+          <td v-if="veure_responsable" center xsmall>
+            {{indi.responsable}}
           </td>
           <td v-for="obj,year in indi.years" center small nowrap monospace>
             <div v-for="incr in [indi.increment(year)]"
@@ -302,9 +334,10 @@
       objectius   = objectius   ||[]; //array percentatges
       valor_basal = valor_basal || 0;
 
-      this.text        = textos[id];       //String
-      this.unit        = unitats[id];      //String
+      this.text        = textos[id];       //string
+      this.unit        = unitats[id];      //string
       this.pes_percent = pes_percent || 0; //number
+      this.responsable = responsables[id]; //string
 
       if(!this.text) throw(`no text for ${id}`)
 
@@ -770,6 +803,82 @@
     euros_projectes_amb_administracio_central:null,
   };
 
+  let responsables={
+    "euros_recerca"                                         : `ecofin`,
+    "euros_recerca_horizon"                                 : `ecofin`,
+    "euros_recerca_erc_eic"                                 : `ecofin`,
+    "euros_recerca_estatal"                                 : `ecofin`,
+    "euros_recerca_regional"                                : `ecofin`,
+    "projectes_horizon"                                     : `ordi`,
+    "projectes_erc_eic"                                     : `ordi`,
+    "congressos_tallers_escoles_estiu_organitzats"          : `esdeveniments`,
+    "sessions_especials_organitzades"                       : `esdeveniments`,
+    "comites_internacionals_participats"                    : `esdeveniments`,
+    "articles_Q1"                                           : `modul_scopus`,
+    "articles_Q1_amb_lideratge"                             : `modul_scopus`,
+    "articles_D1"                                           : `modul_scopus`,
+    "articles_FWCI_10"                                      : `modul_scopus`,
+    "cites_articles"                                        : `modul_scopus`,
+    "impact_factor"                                         : `modul_scopus`,
+    "estades_recercaires_acollits"                          : `RRHH`,
+    "estades_recercaires_en_altres_centres"                 : `esdeveniments`,
+    "rati_exit_propostes_europa"                            : `ordi`,
+    "euros_recerca_L17_L18"                                 : `ecofin`,
+    "articles_Q1_L17_L18"                                   : `modul_scopus`,
+    "euros_projectes_KTT_respecte_total"                    : `ecofin`,
+    "euros_projectes_KTT"                                   : `ecofin`,
+    "projectes_KTT"                                         : `ordi`,
+    "formacions_per_empreses_organitzades"                  : `esdeveniments`,
+    "projectes_llavor_producte_innovadors"                  : `ordi`,
+    "doctorats_industrials"                                 : `RRHH`,
+    "euros_mecenatge"                                       : `ordi`,
+    "projectes_mecenatge"                                   : `ordi`,
+    "patents_i_secrets_industrials"                         : `ordi`,
+    "spinoffs_i_startups"                                   : `ordi`,
+    "articles_amb_socis_industrials"                        : `modul_scopus`,
+    "estudiants_acollits"                                   : `RRHH`,
+    "cites_en_legislacio"                                   : `modul_sage`,
+    "participacions_comites_experts_ambit_legislatiu"       : `esdeveniments`,
+    "premis_nacionals"                                      : `esdeveniments`,
+    "premis_internacionals"                                 : `esdeveniments`,
+    "narratives_impacte_CERCA"                              : `esdeveniments`,
+    "contribucions_gestio_aigua"                            : `esdeveniments`,
+    "llocs_de_treball_generats_llicencies"                  : `esdeveniments`,
+    "aliances_solides_entitats_socials"                     : `esdeveniments`,
+    "xxss_seguidors"                                        : `comunicacio`,
+    "xxss_shares"                                           : `comunicacio`,
+    "xxss_plays"                                            : `comunicacio`,
+    "actes_disseminacio_participats_o_organitzats"          : `esdeveniments`,
+    "aparicions_mitjans_comunicacio_nacionals"              : `esdeveniments`,
+    "aparicions_mitjans_comunicacio_internacionals"         : `esdeveniments`,
+    "reunions_taula_aigua_ACA"                              : `esdeveniments`,
+    "hores_tasques_taula_aigua_ACA"                         : `SQL_Server`,
+    "euros_projectes_KTT_ACA"                               : `ecofin`,
+    "tallers_UdG_ICRA"                                      : `esdeveniments`,
+    "iniciatives_UdG_ICRA"                                  : `ordi`,
+    "euros_projectes_KTT_UdG"                               : `ecofin`,
+    "participacions_activitats_JEDI_organitzades_per_CERCA" : `esdeveniments`,
+    "eficiencia_articles_amb_socis_industrials"             : `ecofin`,
+    "objectius_assolits_del_pla_formacio"                   : `preguntar vicenç`,
+    "participants_actes_disseminacio_participats"           : `esdeveniments`,
+    "projectes_competitius_outreach"                        : `ordi`,
+    "euros_projectes_competitius_outreach"                  : `ecofin`,
+    "aliances_solides_empreses_i_administracio_publica"     : `esdeveniments`,
+    "projectes_i_encarrecs_ACA"                             : `ordi`,
+    "accions_suport_tecnic_a_ACA_quimica_analitica"         : `preguntar vicenç`,
+    "participants_tallers_UdG_ICRA"                         : `esdeveniments`,
+    "nombre_IPs"                                            : `SQL_Server`,
+    "posicions_RF_creades"                                  : `RRHH`,
+    "posicions_RS_estabilitzacio_RF"                        : `preguntar vicenç`,
+    "canvis_tram_RS_o_RP"                                   : `preguntar vicenç`,
+    "sessions_JEDI_formacio_interna"                        : `esdeveniments`,
+    "participants_sessions_JEDI_formacio_interna"           : `esdeveniments`,
+    "activitats_JEDI_organitzades"                          : `esdeveniments`,
+    "dones_categories_laborals_superiors"                   : `preguntar vicenç`,
+    "projectes_amb_administracio_central"                   : `ordi`,
+    "euros_projectes_amb_administracio_central"             : `ecofin`,
+  };
+
   /*DEFINICIÓ INDICADORS*/
   let ambits=[
     new Ambit("Patronat",[
@@ -1058,6 +1167,10 @@
       html_detalls_indicador:false,
       caption,/*element <div id=caption> (finestreta detalls)*/
 
+      //columna responsable indicador
+      veure_responsable:true,
+      filtre_responsable:false,
+
       //taules des d'on es calculen els indicadors: origens diversos (SQL icra, excels, ...)
       taules:{
         projectes:           new Conf_Taula(),
@@ -1188,6 +1301,12 @@
         return ips;
       },
 
+      //retorna valors únics del camp responsable per poder crear un filtre
+      get_responsables(){
+        return Array.from(new Set(Object.values(responsables)));
+      },
+
+      //boolea per saber si totes les taules auxiliars tenen valors
       tot_carregat(){
         return Object.values(this.taules).every(obj=>obj.taula);
       },
