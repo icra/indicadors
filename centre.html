@@ -650,10 +650,11 @@
       });
     },//OK
 
-    euros_recerca_estatal:null,
-    euros_recerca_regional:null,
+    euros_recerca_estatal:null,  //concurrencia=="NACIONAL" TODO
+    euros_recerca_regional:null, //concurrencia=="REGIONAL" TODO
 
     projectes_horizon(year, indicador){
+      //falta filtrar per any TODO
       //calcula nombre de projectes horizon vigents
       let projectes = app.taules.projectes.taula.filter(pro=>{
         return(
@@ -676,7 +677,7 @@
       });
 
       app.taules.projectes.columnes["Financiador Convocatoria"]=true;
-    },//falta filtrar per data
+    },//falta filtrar per data TODO
 
     projectes_erc_eic(year, indicador){
       //calcula nombre de projectes horizon vigents
@@ -696,7 +697,7 @@
         });
         return new_row;
       });
-    },//falta filtrar per data
+    },//falta filtrar per data TODO
 
     congressos_tallers_escoles_estiu_organitzats:null,
     sessions_especials_organitzades:null,
