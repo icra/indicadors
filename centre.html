@@ -86,7 +86,7 @@
     }
   </script>
 <head></head><body>
-<b>en construcció</b><hr>
+<b>&#9888; en construcció &#9888;</b><hr>
 
 <!--nav--><div id=nav></div><hr><script src="nav.js"></script>
 
@@ -127,7 +127,7 @@
   <!--secció indicadors-->
   <details open>
     <summary large bold>
-      Taula indicadors ({{ambit_actual.blocs.map(b=>b.indicadors.length).reduce((p,c)=>p+c,0)}})
+      Indicadors ({{ambit_actual.blocs.map(b=>b.indicadors.length).reduce((p,c)=>p+c,0)}})
     </summary>
 
     <!--àmbits pestanyes-->
@@ -151,10 +151,6 @@
       </label>
     </p>
 
-    <!--puntuació total de àmbit-->
-    <p v-if="tot_carregat">
-      Puntuació total: 0 (pendent implementar fórmula. Puntuació = pes_bloc*pes_indicador*increment/objectiu)
-    </p>
     <table border=1>
       <tr>
         <td center><b>Pes</b></td>
@@ -282,7 +278,7 @@
   </details>
 
   <div v-if="debug"><hr>
-    <h4>Taules desenvolupament per calcular indicadors</h4><hr>
+    <h4>[MODE DEBUG] Taules desenvolupament per calcular indicadors</h4><hr>
 
     <!--itera taules-->
     <div v-for="taula in Object.keys(taules)">
@@ -381,7 +377,7 @@
       this.years={
         "2023":{valor:valor_basal, llista:null, objectiu:0, excloure:true},
         "2024":{valor:0,           llista:null, objectiu:objectius[0]||0},
-        //"2025":{valor:0, llista:null, objectiu:objectius[1]||0},
+        "2025":{valor:0,           llista:null, objectiu:objectius[1]||0},
         //"2026":{valor:0, llista:null, objectiu:objectius[2]||0},
         //"2027":{valor:0, llista:null, objectiu:objectius[3]||0},
         //"2028":{valor:0, llista:null, objectiu:objectius[4]||0},
@@ -920,12 +916,47 @@
     articles_Q1:null,
 
     articles_Q1_amb_lideratge:null,
+
     articles_D1:null,
+
     articles_FWCI_10:null,
 
     cites_articles:null,
+
     impact_factor:null,
-    estades_recercaires_acollits:null,
+
+    estades_recercaires_acollits(year,indicador){
+      let personal = app.taules.personal.taula.filter(per=>{
+        return(
+          (
+            per["Categoria"]=="110. VISITING SCIENTIST"||
+            (
+              per["Categoria"]=="120. VISITING STUDENT"&&
+              (
+                per["Titulacio"]=="010. DOCTOR"||
+                per["Titulacio"]=="020. MASTER"||
+                per["Titulacio"]=="030. LLICENCIAT"||
+                per["Titulacio"]=="040. DIPLOMAT"||
+                per["Titulacio"]=="050. GRAU"
+              )
+            )
+          )&&
+          new Date(per["Datainicicontracte"]).getFullYear()<=year &&
+          new Date(per["DataFiContracte"   ]).getFullYear()>=year
+        );
+      });
+
+      app.taules.personal.columnes["Nom"]=true;
+      app.taules.personal.columnes["Categoria"]=true;
+      app.taules.personal.columnes["Titulacio"]=true;
+
+      if(indicador){
+        indicador.years[year].valor  = personal.length;
+        indicador.years[year].llista = personal;
+      }
+
+      return personal.length;
+    },
 
     estades_recercaires_en_altres_centres(year,indicador){
       let esdeveniments = app.taules.esdeveniments.taula.filter(esd=>{
@@ -1001,15 +1032,18 @@
     articles_Q1_L17_L18:null,
 
     euros_projectes_KTT_respecte_total(year, indicador){
-      let euros_projectes_KTT = this.euros_projectes_KTT(year);
-      let euros_totals        = this.euros_recerca(year);
+      let keuros_projectes_KTT = this.euros_projectes_KTT(year);
+      let keuros_recerca       = this.euros_recerca(year);
 
-      let percentatge = 100*euros_projectes_KTT/euros_totals;
+      if(keuros_recerca){
+        percentatge = 100*keuros_projectes_KTT/keuros_recerca;
+      }else{
+        percentatge = 0;
+      }
 
       indicador.years[year].valor = percentatge;
       indicador.years[year].llista = [
-        {euros_projectes_KTT},
-        {euros_totals},
+        {keuros_projectes_KTT, keuros_recerca},
       ];
 
       return percentatge;
@@ -1083,7 +1117,26 @@
 
     projectes_llavor_producte_innovadors:null,
 
-    doctorats_industrials:null,
+    doctorats_industrials(year,indicador){
+      let personal = app.taules.personal.taula.filter(per=>{
+        return(
+          per["Categoria"]=="126. DOCTORAT INDUSTRIAL"&&
+          new Date(per["Datainicicontracte"]).getFullYear()<=year &&
+          new Date(per["DataFiContracte"   ]).getFullYear()>=year
+        );
+      });
+
+      app.taules.personal.columnes["Nom"]=true;
+      app.taules.personal.columnes["Categoria"]=true;
+      app.taules.personal.columnes["Titulacio"]=true;
+
+      if(indicador){
+        indicador.years[year].valor  = personal.length;
+        indicador.years[year].llista = personal;
+      }
+
+      return personal.length;
+    },
 
     euros_mecenatge(year,indicador){
       let projectes = app.taules.projectes.taula.filter(pro=>{
@@ -1133,7 +1186,29 @@
     patents_i_secrets_industrials:null,
     spinoffs_i_startups:null,
     articles_amb_socis_industrials:null,
-    estudiants_acollits:null,
+
+    estudiants_acollits(year,indicador){
+      let personal = app.taules.personal.taula.filter(per=>{
+        return(
+          per["Categoria"]=="120. VISITING STUDENT"&&
+          per["Titulacio"]=="070. BATXILLERAT"&&
+          new Date(per["Datainicicontracte"]).getFullYear()<=year &&
+          new Date(per["DataFiContracte"   ]).getFullYear()>=year
+        );
+      });
+
+      app.taules.personal.columnes["Nom"]=true;
+      app.taules.personal.columnes["Categoria"]=true;
+      app.taules.personal.columnes["Titulacio"]=true;
+
+      if(indicador){
+        indicador.years[year].valor  = personal.length;
+        indicador.years[year].llista = personal;
+      }
+
+      return personal.length;
+    },
+
     cites_en_legislacio:null,
 
     participacions_comites_experts_ambit_legislatiu(year,indicador){
@@ -1332,7 +1407,24 @@
 
     reunions_taula_aigua_ACA:null,
 
-    hores_tasques_taula_aigua_ACA:null,
+    hores_tasques_taula_aigua_ACA(year,indicador){
+      let taula_aigua = app.taules.taula_aigua.taula.filter(row=>{
+        return new Date(row["DataAlta"]).getFullYear()==year;
+      });
+
+      app.taules.taula_aigua.columnes["Nom"]=true;
+      app.taules.taula_aigua.columnes["Horas"]=true;
+      app.taules.taula_aigua.columnes["Descripcio"]=true;
+
+      let hores = taula_aigua.map(r=>r.Horas).suma();
+
+      if(indicador){
+        indicador.years[year].valor  = hores;
+        indicador.years[year].llista = taula_aigua;
+      }
+
+      return hores;
+    },
 
     euros_projectes_KTT_ACA(year,indicador){
       //"Aportacions de projectes o contractes de KTT amb l'ACA, via contracte programa o licitació"
@@ -1710,7 +1802,7 @@
     "spinoffs_i_startups"                                   : `ordi`,
     "articles_amb_socis_industrials"                        : `scopus`,
     "estudiants_acollits"                                   : `RRHH`,
-    "cites_en_legislacio"                                   : `modul_sage`,
+    "cites_en_legislacio"                                   : `sage`,
     "participacions_comites_experts_ambit_legislatiu"       : `esdeveniments`,
     "premis_nacionals"                                      : `esdeveniments`,
     "premis_internacionals"                                 : `esdeveniments`,
@@ -2043,7 +2135,7 @@
     data(){return{
       debug:false,
 
-      years:[2023,2024/*,2025,2026,2027,2028,2029*/],
+      years:[2023,2024,2025/*,2026,2027,2028,2029*/],
       ambits, //indicadors
       funcions_calculadores, //taula helper funcions dels indicadors
 
@@ -2057,7 +2149,7 @@
 
       //columna responsable indicador
       veure_responsable:true,
-      filtre_responsable:false,
+      filtre_responsable:false, //"RRHH",
 
       //veure botó detalls
       veure_boto_detalls:true,
@@ -2125,6 +2217,20 @@
             </tr>
           </table>
         `;
+        let funcio="";
+        let fx = funcions_calculadores[indi.funcio_calculadora];
+        if(fx && app.debug){
+          funcio+="<hr>";
+          funcio+="<details>";
+          funcio+="<summary small><b>[MODE DEBUG] Codi que calcula l'indicador (javascript)</b></summary>";
+          funcio+="<p>";
+          fx.toString().split("\n").forEach(linia=>{
+            funcio+=`<code xsmall><pre style='margin:0'>${linia}</pre></code>`;
+          });
+          funcio+="</p>";
+          funcio+="</details>";
+        }
+
         let llista="";
         let arr = indi.years[year].llista;
         if(arr){
@@ -2150,6 +2256,7 @@
 
         let ret=[
           header,
+          funcio,
           llista,
         ].join("");
 
