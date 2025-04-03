@@ -80,13 +80,23 @@
       border:1px solid #ccc;
     }
   </style>
+  <script>
+    Array.prototype.suma=function(){
+      return this.reduce((p,c)=>p+c,0);
+    }
+  </script>
 <head></head><body>
 <b>en construcció</b><hr>
 
 <!--nav--><div id=nav></div><hr><script src="nav.js"></script>
 
 <div id=app>
-  <h2>Indicadors de centre</h2><hr>
+  <h2>
+    <div>
+      Indicadors de centre
+      <button @click="debug=!debug">mode debug {{debug?"ON":"OFF"}}</button>
+    </div>
+  </h2>
 
   <!--avís certificat-->
   <div v-if="!tot_carregat">
@@ -100,17 +110,6 @@
       </li>
     </ol><hr>
   </div>
-
-  <!--pestanyes-->
-  <div>
-    <button
-      v-for="ambit in ambits"
-      @click="ambit_actual=ambit"
-      :ambit_actual="ambit==ambit_actual"
-    >
-      {{ambit.nom}}
-    </button>
-  </div><hr>
 
   <!--finestra detalls indicador-->
   <div v-if="vista_detalls_indicador" vista_detalls_indicador>
@@ -130,9 +129,17 @@
     <summary large bold>
       Taula indicadors ({{ambit_actual.blocs.map(b=>b.indicadors.length).reduce((p,c)=>p+c,0)}})
     </summary>
-    <p v-if="tot_carregat">
-      Puntuació total: 0 (pendent implementar fórmula. Puntuació = pes_bloc*pes_indicador*increment/objectiu)
+
+    <!--àmbits pestanyes-->
+    <p>
+      <button
+        v-for="ambit in ambits"
+        @click="ambit_actual=ambit"
+        :ambit_actual="ambit==ambit_actual"
+      >{{ambit.nom}}</button>
     </p>
+
+    <!--opcions-->
     <p>
       <label>
         <input type=checkbox v-model="veure_responsable">
@@ -143,13 +150,19 @@
         Veure botó "detalls"
       </label>
     </p>
+
+    <!--puntuació total de àmbit-->
+    <p v-if="tot_carregat">
+      Puntuació total: 0 (pendent implementar fórmula. Puntuació = pes_bloc*pes_indicador*increment/objectiu)
+    </p>
     <table border=1>
       <tr>
         <td center><b>Pes</b></td>
         <td><b>Blocs</b></td>
+        <td small center><b>Unitat</b></td>
         <td title="Departament responsable" small v-if="veure_responsable">
           <details>
-            <summary><b>Responsable</b></summary>
+            <summary style="list-style:none"><b>Responsable</b></summary>
             <div v-for="res in get_responsables">
               <button
                 @click="filtre_responsable=res"
@@ -171,6 +184,8 @@
       <tbody v-for="bloc,i in ambit_actual.blocs">
         <tr style="background:#eee;">
           <td right><b>{{bloc.pes_percent}}%</b></td>
+
+          <!--bloc nom-->
           <td>
             <b nom_bloc @click="bloc.visible^=1">
               <span style="font-family:monospace">
@@ -181,42 +196,53 @@
               <small> ({{bloc.indicadors.length}} ind.)</small>
             </b>
           </td>
+
+          <td></td>
+
           <td v-if="veure_responsable"></td>
+
           <td v-for="year in years" center monospace title="Puntuació" style="color:darkblue">
             <b v-if="false">{{bloc.puntuacio(year).toFixed(1)}}</b>
           </td>
           <td></td>
         </tr>
+
         <tr v-for="indi,j in bloc.indicadors.filter(i=>!filtre_responsable || i.responsable==filtre_responsable)" v-if="bloc.visible">
           <td small right>{{indi.pes_percent}}%</td>
+
+          <!--indicador text-->
           <td small>
-            <div style="display:flex;justify-content:space-between">
-              <div>{{i+1}}.{{j+1}}.
-                <span :title="indi.text">{{indi.text.slice(0,100)}}</span>
-                <span v-if="indi.text.length>100">...</span>
-              </div>
-              <div small style="color:#666" v-if="indi.unit">({{indi.unit}})</div>
+            <div>{{i+1}}.{{j+1}}.
+              <span :title="`${indi.text} (${indi.id})`">{{indi.text.slice(0,100)}}</span>
+              <span v-if="indi.text.length>100">...</span>
             </div>
           </td>
+
+          <!--indicador unitat-->
+          <td center>
+            <div xsmall style="color:#666" v-if="indi.unit">{{indi.unit}}</div>
+          </td>
+
+          <!--indicador responsable-->
           <td v-if="veure_responsable" center xsmall>
             <span @click="filtre_responsable=indi.responsable">{{indi.responsable}}</span>
           </td>
+
+          <!--indicador valors de cada anhy-->
           <td v-for="obj,year in indi.years" center small nowrap monospace>
             <div v-for="incr in [indi.increment(year)]">
               <div
                 style="
                   display:flex;
-                  justify-content:space-between;
+                  justify-content:space-around;
                   align-items:center;
                 "
               >
                 <!--valor indicador-->
-                <div>{{obj.valor.toFixed(0)}}</div>
-
-                <div>&nbsp;</div>
+                <div right>{{obj.valor.toFixed(0)}}</div>
 
                 <!--increment i objectiu-->
-                <div v-if="!obj.excloure && obj.valor" small>
+                <div v-if="!obj.excloure && funcions_calculadores[indi.funcio_calculadora]" small right :title="`Variació respecte valor basal (${indi.base_year})`">
                   <span :style="{color:incr.compleix?'green':'red'}">
                     <span v-if="incr.delta>0">&uarr;</span>
                     <span v-if="incr.delta<0">&darr;</span>
@@ -226,10 +252,8 @@
                   </span>
                 </div>
 
-                <div>&nbsp;</div>
-
                 <!--botó detalls-->
-                <div v-if="!obj.excloure && obj.valor && veure_boto_detalls" small>
+                <div v-if="!obj.excloure && funcions_calculadores[indi.funcio_calculadora] && veure_boto_detalls" small right>
                   <button
                     @click="click_detalls_indicador(indi,year)"
                     style="padding:0;font-size:x-small"
@@ -238,6 +262,8 @@
               </div>
             </div>
           </td>
+
+          <!--indicador botó calcular-->
           <td center>
             <button
               v-if="funcions_calculadores[indi.funcio_calculadora]"
@@ -253,51 +279,52 @@
         </tr>
       </tbody>
     </table>
-  </details><hr>
+  </details>
 
-  <!--indicador debug-->
-  <p>Taules de desenvolupament (no seran visibles a la versió final)</p><hr>
+  <div v-if="debug"><hr>
+    <h4>Taules desenvolupament per calcular indicadors</h4><hr>
 
-  <!--bucle taules development-->
-  <div v-for="taula in Object.keys(taules)">
-    <details>
-      <summary large bold>
-        Taula {{taula}}
-        <span v-if="taules[taula].taula" small>
-          ({{taules[taula].files_filtrades.length}}/{{taules[taula].taula.length}} items)
-        </span>
-      </summary>
+    <!--itera taules-->
+    <div v-for="taula in Object.keys(taules)">
+      <details>
+        <summary large bold>
+          Taula {{taula}}
+          <span v-if="taules[taula].taula" small>
+            ({{taules[taula].files_filtrades.length}}/{{taules[taula].taula.length}} items)
+          </span>
+        </summary>
 
-      <div v-if="!taules[taula].taula">carregant "{{taula}}"...</div>
-      <div v-if="!taules[taula].taula && !carregant">error consulta SQL Server ICRA</div>
+        <div v-if="!taules[taula].taula">carregant "{{taula}}"...</div>
+        <div v-if="!taules[taula].taula && !carregant">error consulta SQL Server ICRA</div>
 
-      <!--checkboxes per veure columnes-->
-      <p v-if="taules[taula].taula?.length" small>
-        <label v-for="val,key in taules[taula].taula[0]">
-          <input type=checkbox v-model="taules[taula].columnes[key]">
-          <span :style="{color:taules[taula].filtres[key]!=undefined?'blue':''}">{{key}}</span>
-        </label>
-      </p>
+        <!--checkboxes per veure columnes-->
+        <p v-if="taules[taula].taula?.length" small>
+          <label v-for="val,key in taules[taula].taula[0]">
+            <input type=checkbox v-model="taules[taula].columnes[key]">
+            <span :style="{color:taules[taula].filtres[key]!=undefined?'blue':''}">{{key}}</span>
+          </label>
+        </p>
 
-      <table border=1 v-if="taules[taula].taula?.length" small>
-        <thead>
-          <tr sticky>
-            <th v-for="key in taules[taula].columnes_actives">
-              <button @click="taules[taula].taula.sort((a,b)=>a[key]>b[key]?1:-1)">&darr;{{key}}</button>
-              <button v-if="taules[taula].filtres[key]!=undefined" @click="delete taules[taula].filtres[key]">
-                ="{{taules[taula].filtres[key].substring(0,50)}}"
-              </button>
-              <button @click="taules[taula].columnes[key]=false">X</button>
-            </th>
+        <table border=1 v-if="taules[taula].taula?.length" small>
+          <thead>
+            <tr sticky>
+              <th v-for="key in taules[taula].columnes_actives">
+                <button @click="taules[taula].taula.sort((a,b)=>a[key]>b[key]?1:-1)">&darr;{{key}}</button>
+                <button v-if="taules[taula].filtres[key]!=undefined" @click="delete taules[taula].filtres[key]">
+                  ="{{taules[taula].filtres[key].substring(0,50)}}"
+                </button>
+                <button @click="taules[taula].columnes[key]=false">X</button>
+              </th>
+            </tr>
+          </thead>
+          <tr v-for="row in taules[taula].files_filtrades">
+            <td v-for="key in taules[taula].columnes_actives">
+              <span @click="taules[taula].filtres[key]=row[key]">{{row[key]}}</span>
+            </td>
           </tr>
-        </thead>
-        <tr v-for="row in taules[taula].files_filtrades">
-          <td v-for="key in taules[taula].columnes_actives">
-            <span @click="taules[taula].filtres[key]=row[key]">{{row[key]}}</span>
-          </td>
-        </tr>
-      </table>
-    </details><hr>
+        </table>
+      </details><hr>
+    </div>
   </div>
 </div>
 
@@ -333,6 +360,7 @@
       objectius   = objectius   ||[]; //array percentatges
       valor_basal = valor_basal || 0;
 
+      this.id          = id;               //string
       this.text        = textos[id];       //string
       this.unit        = unitats[id];      //string
       this.pes_percent = pes_percent || 0; //number
@@ -352,7 +380,7 @@
       //  excloure: per l'any basal no mostrar indicadors
       this.years={
         "2023":{valor:valor_basal, llista:null, objectiu:0, excloure:true},
-        "2024":{valor:0, llista:null, objectiu:objectius[0]||0},
+        "2024":{valor:0,           llista:null, objectiu:objectius[0]||0},
         //"2025":{valor:0, llista:null, objectiu:objectius[1]||0},
         //"2026":{valor:0, llista:null, objectiu:objectius[2]||0},
         //"2027":{valor:0, llista:null, objectiu:objectius[3]||0},
@@ -589,17 +617,21 @@
       let llista = Object.values(joined); //array
       let keuros = llista.map(obj=>obj.ingressos).reduce((p,c)=>p+c,0)/1000; //number
 
-      indicador.years[year].valor  = keuros; //number
-      indicador.years[year].llista = llista.map(row=>{
-        let new_row={
-          ingressos: row.ingressos,
-        };
-        app.taules.projectes.columnes_actives.forEach(key=>{
-          new_row[key] = row.projecte[key];
+      if(indicador){
+        indicador.years[year].valor  = keuros; //number
+        indicador.years[year].llista = llista.map(row=>{
+          let new_row={
+            ingressos: row.ingressos,
+          };
+          app.taules.projectes.columnes_actives.forEach(key=>{
+            new_row[key] = row.projecte[key];
+          });
+          return new_row;
         });
-        return new_row;
-      });
-    },//OK
+      }
+
+      return keuros;
+    },
 
     euros_recerca_horizon(year,indicador){
       //filtra per year
@@ -828,9 +860,62 @@
       });
     },//falta filtrar per data TODO
 
-    congressos_tallers_escoles_estiu_organitzats:null,
-    sessions_especials_organitzades:null,
-    comites_internacionals_participats:null,
+    congressos_tallers_escoles_estiu_organitzats(year,indicador){
+      let esdeveniments = app.taules.esdeveniments.taula.filter(esd=>{
+        return(
+          esd["Tipus_Esdeveniment"].startsWith("08")&&
+          new Date(esd["DataInici_Esdeveniment"]).getFullYear()<=year &&
+          new Date(esd["DataFi_Esdeveniment"   ]).getFullYear()>=year
+        );
+      });
+
+      let n_actes = new Set(esdeveniments.map(e=>e["ID_Esdeveniment"])).size;
+
+      if(indicador){
+        indicador.years[year].valor  = n_actes;
+        indicador.years[year].llista = esdeveniments;
+      }
+
+      return n_actes;
+    },
+
+    sessions_especials_organitzades(year,indicador){
+      let esdeveniments = app.taules.esdeveniments.taula.filter(esd=>{
+        return(
+          esd["Tipus_Esdeveniment"].startsWith("14")&&
+          new Date(esd["DataInici_Esdeveniment"]).getFullYear()<=year &&
+          new Date(esd["DataFi_Esdeveniment"   ]).getFullYear()>=year
+        );
+      });
+
+      let n_actes = new Set(esdeveniments.map(e=>e["ID_Esdeveniment"])).size;
+
+      if(indicador){
+        indicador.years[year].valor  = n_actes;
+        indicador.years[year].llista = esdeveniments;
+      }
+
+      return n_actes;
+    },
+
+    comites_internacionals_participats(year,indicador){
+      let esdeveniments = app.taules.esdeveniments.taula.filter(esd=>{
+        return(
+          esd["Tipus_Esdeveniment"].startsWith("06")&&
+          new Date(esd["DataInici_Esdeveniment"]).getFullYear()<=year &&
+          new Date(esd["DataFi_Esdeveniment"   ]).getFullYear()>=year
+        );
+      });
+
+      let n_actes = new Set(esdeveniments.map(e=>e["ID_Esdeveniment"])).size;
+
+      if(indicador){
+        indicador.years[year].valor  = n_actes;
+        indicador.years[year].llista = esdeveniments;
+      }
+
+      return n_actes;
+    },
 
     articles_Q1:null,
 
@@ -841,11 +926,94 @@
     cites_articles:null,
     impact_factor:null,
     estades_recercaires_acollits:null,
-    estades_recercaires_en_altres_centres:null,
+
+    estades_recercaires_en_altres_centres(year,indicador){
+      let esdeveniments = app.taules.esdeveniments.taula.filter(esd=>{
+        return(
+          esd["Tipus_Esdeveniment"].startsWith("10")&&
+          new Date(esd["DataInici_Esdeveniment"]).getFullYear()<=year &&
+          new Date(esd["DataFi_Esdeveniment"   ]).getFullYear()>=year
+        );
+      });
+
+      let n_actes = new Set(esdeveniments.map(e=>e["ID_Esdeveniment"])).size;
+
+      if(indicador){
+        indicador.years[year].valor  = n_actes;
+        indicador.years[year].llista = esdeveniments;
+      }
+
+      return n_actes;
+    },
+
     rati_exit_propostes_europa:null,
-    euros_recerca_L17_L18:null,
+
+    euros_recerca_L17_L18(year,indicador){
+      //filtra per year
+      let ingressos = app.taules.ingressos.taula.filter(i=>i.Any==year);
+
+      //filtra projectes
+      let projectes = app.taules.projectes.taula.filter(proj=>{
+        return(
+          proj["Unidad de Gestión"].includes("L17")||
+          proj["Unidad de Gestión"].includes("L18")
+        );
+      });
+
+      app.taules.projectes.columnes["Concurrencia"]=true;
+      app.taules.projectes.columnes["Naturaleza del Proyecto"]=true;
+      app.taules.projectes.columnes["Financiador Convocatoria"]=true;
+      app.taules.projectes.columnes["Director del Proyecto"]=true;
+      app.taules.projectes.columnes["Unidad de Gestión"]=true;
+
+      //ajunta taules per codi projecte
+      let joined={};
+
+      ingressos.forEach(ing=>{
+        let codi     = ing.Codi;//string
+        let projecte = busca_projecte(codi,projectes);
+        if(!projecte) return;
+        joined[codi]={
+          projecte,
+          ingressos: ing.Ingressos,
+        }
+      });
+
+      let llista = Object.values(joined); //array
+      let keuros = llista.map(obj=>obj.ingressos).reduce((p,c)=>p+c,0)/1000; //number
+
+      if(indicador){
+        indicador.years[year].valor  = keuros; //number
+        indicador.years[year].llista = llista.map(row=>{
+          let new_row={
+            ingressos: row.ingressos,
+          };
+          app.taules.projectes.columnes_actives.forEach(key=>{
+            new_row[key] = row.projecte[key];
+          });
+          return new_row;
+        });
+      }
+
+      return keuros;
+    },
+
     articles_Q1_L17_L18:null,
-    euros_projectes_KTT_respecte_total:null,
+
+    euros_projectes_KTT_respecte_total(year, indicador){
+      let euros_projectes_KTT = this.euros_projectes_KTT(year);
+      let euros_totals        = this.euros_recerca(year);
+
+      let percentatge = 100*euros_projectes_KTT/euros_totals;
+
+      indicador.years[year].valor = percentatge;
+      indicador.years[year].llista = [
+        {euros_projectes_KTT},
+        {euros_totals},
+      ];
+
+      return percentatge;
+    },
 
     euros_projectes_KTT(year, indicador){
       let projectes = app.taules.projectes.taula.filter(pro=>{
@@ -876,68 +1044,636 @@
       app.taules.projectes.columnes["Financiador Convocatoria"]=true;
       app.taules.projectes.columnes["Director del Proyecto"]=true;
 
-      indicador.years[year].valor  = keuros; //number
-      indicador.years[year].llista = llista.map(row=>{
-        let new_row={
-          ingressos: row.ingressos,
-        };
-        app.taules.projectes.columnes_actives.forEach(key=>{
-          new_row[key] = row.projecte[key];
+      if(indicador){
+        indicador.years[year].valor  = keuros; //number
+        indicador.years[year].llista = llista.map(row=>{
+          let new_row={
+            ingressos: row.ingressos,
+          };
+          app.taules.projectes.columnes_actives.forEach(key=>{
+            new_row[key] = row.projecte[key];
+          });
+          return new_row;
         });
-        return new_row;
-      });
+      }
+
+      return keuros;
     },
 
     projectes_KTT:null,
-    formacions_per_empreses_organitzades:null,
+
+    formacions_per_empreses_organitzades(year,indicador){
+      let esdeveniments = app.taules.esdeveniments.taula.filter(esd=>{
+        return(
+          esd["Tipus_Esdeveniment"].startsWith("11")&&
+          new Date(esd["DataInici_Esdeveniment"]).getFullYear()<=year &&
+          new Date(esd["DataFi_Esdeveniment"   ]).getFullYear()>=year
+        );
+      });
+
+      let n_actes = new Set(esdeveniments.map(e=>e["ID_Esdeveniment"])).size;
+
+      if(indicador){
+        indicador.years[year].valor  = n_actes;
+        indicador.years[year].llista = esdeveniments;
+      }
+
+      return n_actes;
+    },
+
     projectes_llavor_producte_innovadors:null,
+
     doctorats_industrials:null,
-    euros_mecenatge:null,
+
+    euros_mecenatge(year,indicador){
+      let projectes = app.taules.projectes.taula.filter(pro=>{
+        return(
+          pro["Concurrencia"]=="MECENATGE"
+        );
+      });
+      let ingressos = app.taules.ingressos.taula.filter(i=>i.Any==year);
+
+      //ajunta taules per codi projecte
+      let joined={};
+      ingressos.forEach(ing=>{
+        let codi     = ing.Codi;//string
+        let projecte = busca_projecte(codi,projectes);//objecte
+        if(!projecte) return;
+        joined[codi]={
+          projecte,
+          ingressos: ing.Ingressos,
+        }
+      });
+
+      let llista = Object.values(joined); //array
+      let keuros = llista.map(obj=>obj.ingressos).reduce((p,c)=>p+c,0)/1000; //number
+
+      app.taules.projectes.columnes["Concurrencia"]=true;
+      app.taules.projectes.columnes["Naturaleza del Proyecto"]=true;
+      app.taules.projectes.columnes["Financiador Convocatoria"]=true;
+      app.taules.projectes.columnes["Director del Proyecto"]=true;
+
+      if(indicador){
+        indicador.years[year].valor  = keuros; //number
+        indicador.years[year].llista = llista.map(row=>{
+          let new_row={
+            ingressos: row.ingressos,
+          };
+          app.taules.projectes.columnes_actives.forEach(key=>{
+            new_row[key] = row.projecte[key];
+          });
+          return new_row;
+        });
+      }
+
+      return keuros;
+    },
+
     projectes_mecenatge:null,
     patents_i_secrets_industrials:null,
     spinoffs_i_startups:null,
     articles_amb_socis_industrials:null,
     estudiants_acollits:null,
     cites_en_legislacio:null,
-    participacions_comites_experts_ambit_legislatiu:null,
-    premis_nacionals:null,
-    premis_internacionals:null,
-    narratives_impacte_CERCA:null,
-    contribucions_gestio_aigua:null,
-    llocs_de_treball_generats_llicencies:null,
-    aliances_solides_entitats_socials:null,
+
+    participacions_comites_experts_ambit_legislatiu(year,indicador){
+      let esdeveniments = app.taules.esdeveniments.taula.filter(esd=>{
+        return(
+          esd["Tipus_Esdeveniment"].startsWith("05")&&
+          new Date(esd["DataInici_Esdeveniment"]).getFullYear()<=year &&
+          new Date(esd["DataFi_Esdeveniment"   ]).getFullYear()>=year
+        );
+      });
+
+      let n_actes = new Set(esdeveniments.map(e=>e["ID_Esdeveniment"])).size;
+
+      if(indicador){
+        indicador.years[year].valor  = n_actes;
+        indicador.years[year].llista = esdeveniments;
+      }
+
+      return n_actes;
+    },
+
+    premis_nacionals(year,indicador){
+      let esdeveniments = app.taules.esdeveniments.taula.filter(esd=>{
+        return(
+          esd["Tipus_Esdeveniment"].startsWith("13")&&
+          new Date(esd["DataInici_Esdeveniment"]).getFullYear()<=year &&
+          new Date(esd["DataFi_Esdeveniment"   ]).getFullYear()>=year
+        );
+      });
+
+      let n_actes = new Set(esdeveniments.map(e=>e["ID_Esdeveniment"])).size;
+
+      if(indicador){
+        indicador.years[year].valor  = n_actes;
+        indicador.years[year].llista = esdeveniments;
+      }
+
+      return n_actes;
+    },
+
+    premis_internacionals(year,indicador){
+      let esdeveniments = app.taules.esdeveniments.taula.filter(esd=>{
+        return(
+          esd["Tipus_Esdeveniment"].startsWith("12")&&
+          new Date(esd["DataInici_Esdeveniment"]).getFullYear()<=year &&
+          new Date(esd["DataFi_Esdeveniment"   ]).getFullYear()>=year
+        );
+      });
+
+      let n_actes = new Set(esdeveniments.map(e=>e["ID_Esdeveniment"])).size;
+
+      if(indicador){
+        indicador.years[year].valor  = n_actes;
+        indicador.years[year].llista = esdeveniments;
+      }
+
+      return n_actes;
+    },
+
+    narratives_impacte_CERCA(year,indicador){
+      let esdeveniments = app.taules.esdeveniments.taula.filter(esd=>{
+        return(
+          esd["Tipus_Esdeveniment"].startsWith("17")&&
+          new Date(esd["DataInici_Esdeveniment"]).getFullYear()<=year &&
+          new Date(esd["DataFi_Esdeveniment"   ]).getFullYear()>=year
+        );
+      });
+
+      let n_actes = new Set(esdeveniments.map(e=>e["ID_Esdeveniment"])).size;
+
+      if(indicador){
+        indicador.years[year].valor  = n_actes;
+        indicador.years[year].llista = esdeveniments;
+      }
+
+      return n_actes;
+    },
+
+    contribucions_gestio_aigua(year,indicador){
+      let esdeveniments = app.taules.esdeveniments.taula.filter(esd=>{
+        return(
+          esd["Tipus_Esdeveniment"].startsWith("18")&&
+          new Date(esd["DataInici_Esdeveniment"]).getFullYear()<=year &&
+          new Date(esd["DataFi_Esdeveniment"   ]).getFullYear()>=year
+        );
+      });
+
+      let n_actes = new Set(esdeveniments.map(e=>e["ID_Esdeveniment"])).size;
+
+      if(indicador){
+        indicador.years[year].valor  = n_actes;
+        indicador.years[year].llista = esdeveniments;
+      }
+
+      return n_actes;
+    },
+
+    llocs_de_treball_generats_llicencies(year,indicador){
+      let esdeveniments = app.taules.esdeveniments.taula.filter(esd=>{
+        return(
+          esd["Tipus_Esdeveniment"].startsWith("19")&&
+          new Date(esd["DataInici_Esdeveniment"]).getFullYear()<=year &&
+          new Date(esd["DataFi_Esdeveniment"   ]).getFullYear()>=year
+        );
+      });
+
+      let n_actes = new Set(esdeveniments.map(e=>e["ID_Esdeveniment"])).size;
+
+      if(indicador){
+        indicador.years[year].valor  = n_actes;
+        indicador.years[year].llista = esdeveniments;
+      }
+
+      return n_actes;
+    },
+
+    aliances_solides_entitats_socials(year,indicador){
+      let esdeveniments = app.taules.esdeveniments.taula.filter(esd=>{
+        return(
+          esd["Tipus_Esdeveniment"].startsWith("20")&&
+          new Date(esd["DataInici_Esdeveniment"]).getFullYear()<=year &&
+          new Date(esd["DataFi_Esdeveniment"   ]).getFullYear()>=year
+        );
+      });
+
+      let n_actes = new Set(esdeveniments.map(e=>e["ID_Esdeveniment"])).size;
+
+      if(indicador){
+        indicador.years[year].valor  = n_actes;
+        indicador.years[year].llista = esdeveniments;
+      }
+
+      return n_actes;
+    },
+
     xxss_seguidors:null,
     xxss_shares:null,
     xxss_plays:null,
-    actes_disseminacio_participats_o_organitzats:null,
-    aparicions_mitjans_comunicacio_nacionals:null,
-    aparicions_mitjans_comunicacio_internacionals:null,
+
+    actes_disseminacio_participats_o_organitzats(year,indicador){
+      let esdeveniments = app.taules.esdeveniments.taula.filter(esd=>{
+        return(
+          esd["Tipus_Esdeveniment"].startsWith("01")&&
+          new Date(esd["DataInici_Esdeveniment"]).getFullYear()<=year &&
+          new Date(esd["DataFi_Esdeveniment"   ]).getFullYear()>=year
+        );
+      });
+
+      let n_actes = new Set(esdeveniments.map(e=>e["ID_Esdeveniment"])).size;
+
+      if(indicador){
+        indicador.years[year].valor  = n_actes;
+        indicador.years[year].llista = esdeveniments;
+      }
+
+      return n_actes;
+    },
+
+    aparicions_mitjans_comunicacio_nacionals(year,indicador){
+      let esdeveniments = app.taules.esdeveniments.taula.filter(esd=>{
+        return(
+          esd["Tipus_Esdeveniment"].startsWith("04")&&
+          new Date(esd["DataInici_Esdeveniment"]).getFullYear()<=year &&
+          new Date(esd["DataFi_Esdeveniment"   ]).getFullYear()>=year
+        );
+      });
+
+      let n_actes = new Set(esdeveniments.map(e=>e["ID_Esdeveniment"])).size;
+
+      if(indicador){
+        indicador.years[year].valor  = n_actes;
+        indicador.years[year].llista = esdeveniments;
+      }
+
+      return n_actes;
+    },
+
+    aparicions_mitjans_comunicacio_internacionals(year,indicador){
+      let esdeveniments = app.taules.esdeveniments.taula.filter(esd=>{
+        return(
+          esd["Tipus_Esdeveniment"].startsWith("03")&&
+          new Date(esd["DataInici_Esdeveniment"]).getFullYear()<=year &&
+          new Date(esd["DataFi_Esdeveniment"   ]).getFullYear()>=year
+        );
+      });
+
+      let n_actes = new Set(esdeveniments.map(e=>e["ID_Esdeveniment"])).size;
+
+      if(indicador){
+        indicador.years[year].valor  = n_actes;
+        indicador.years[year].llista = esdeveniments;
+      }
+
+      return n_actes;
+    },
+
     reunions_taula_aigua_ACA:null,
+
     hores_tasques_taula_aigua_ACA:null,
-    euros_projectes_KTT_ACA:null,
-    tallers_UdG_ICRA:null,
+
+    euros_projectes_KTT_ACA(year,indicador){
+      //"Aportacions de projectes o contractes de KTT amb l'ACA, via contracte programa o licitació"
+
+      //diccionari codi=>projecte
+      //3 taules: stakeholders, ingressos, projectes
+      let joined={};
+
+      let stakeholders = app.taules.stakeholders.taula
+        .filter(s=>s["1er Apellido / Razón Social"]=="Agència Catalana de l'Aigua");
+
+      //taula ingressos filtra per year
+      let ingressos = app.taules.ingressos.taula.filter(i=>i.Any==year);
+
+      //projectes (no filtrar per year perquè hi pot haver gastos un cop tancat)
+      let projectes = app.taules.projectes.taula;
+
+      stakeholders.forEach(sth=>{
+        let codi = sth["Código Identificativo"];
+        let ing  = busca_projecte(codi,ingressos,"Codi");
+        if(!ing) return;
+        let pro  = busca_projecte(codi);
+        if(!pro) return;
+        joined[codi]={
+          stakeholder: sth["1er Apellido / Razón Social"],
+          projecte   : pro,
+          ingressos  : ing.Ingressos,
+        };
+      });
+
+      app.taules.projectes.columnes["Concurrencia"]=true;
+      app.taules.projectes.columnes["Naturaleza del Proyecto"]=true;
+      app.taules.projectes.columnes["Financiador Convocatoria"]=true;
+      app.taules.projectes.columnes["Director del Proyecto"]=true;
+
+      let llista = Object.values(joined); //array
+      let keuros = llista.map(obj=>obj.ingressos).reduce((p,c)=>p+c,0)/1000; //number
+
+      indicador.years[year].valor  = keuros; //number
+      indicador.years[year].llista = llista.map(row=>{
+        let new_row={
+          stakeholder: row.stakeholder,
+          ingressos:   row.ingressos,
+        };
+        app.taules.projectes.columnes_actives.forEach(key=>{
+          new_row[key] = row.projecte[key];
+        });
+        return new_row;
+      });
+
+      return keuros;
+    },
+
+    tallers_UdG_ICRA(year,indicador){
+      let esdeveniments = app.taules.esdeveniments.taula.filter(esd=>{
+        return(
+          esd["Tipus_Esdeveniment"].startsWith("15")&&
+          new Date(esd["DataInici_Esdeveniment"]).getFullYear()<=year &&
+          new Date(esd["DataFi_Esdeveniment"   ]).getFullYear()>=year
+        );
+      });
+
+      let n_actes = new Set(esdeveniments.map(e=>e["ID_Esdeveniment"])).size;
+
+      if(indicador){
+        indicador.years[year].valor  = n_actes;
+        indicador.years[year].llista = esdeveniments;
+      }
+
+      return n_actes;
+    },
+
     iniciatives_UdG_ICRA:null,
-    euros_projectes_KTT_UdG:null,
-    participacions_activitats_JEDI_organitzades_per_CERCA:null,
+
+    euros_projectes_KTT_UdG(year,indicador){
+      //diccionari codi=>projecte
+      //3 taules: stakeholders, ingressos, projectes
+      let joined={};
+
+      let stakeholders = app.taules.stakeholders.taula
+        .filter(s=>s["1er Apellido / Razón Social"]=="Universitat de Girona");
+
+      //taula ingressos filtra per year
+      let ingressos = app.taules.ingressos.taula.filter(i=>i.Any==year);
+
+      //projectes (no filtrar per year perquè hi pot haver gastos un cop tancat)
+      let projectes = app.taules.projectes.taula;
+
+      stakeholders.forEach(sth=>{
+        let codi = sth["Código Identificativo"];
+        let ing  = busca_projecte(codi,ingressos,"Codi");
+        if(!ing) return;
+        let pro  = busca_projecte(codi);
+        if(!pro) return;
+        joined[codi]={
+          stakeholder: sth["1er Apellido / Razón Social"],
+          projecte   : pro,
+          ingressos  : ing.Ingressos,
+        };
+      });
+
+      app.taules.projectes.columnes["Concurrencia"]=true;
+      app.taules.projectes.columnes["Naturaleza del Proyecto"]=true;
+      app.taules.projectes.columnes["Financiador Convocatoria"]=true;
+      app.taules.projectes.columnes["Director del Proyecto"]=true;
+
+      let llista = Object.values(joined); //array
+      let keuros = llista.map(obj=>obj.ingressos).reduce((p,c)=>p+c,0)/1000; //number
+
+      indicador.years[year].valor  = keuros; //number
+      indicador.years[year].llista = llista.map(row=>{
+        let new_row={
+          stakeholder: row.stakeholder,
+          ingressos:   row.ingressos,
+        };
+        app.taules.projectes.columnes_actives.forEach(key=>{
+          new_row[key] = row.projecte[key];
+        });
+        return new_row;
+      });
+
+      return keuros;
+    },
+
+    participacions_activitats_JEDI_organitzades_per_CERCA(year,indicador){
+      let esdeveniments = app.taules.esdeveniments.taula.filter(esd=>{
+        return(
+          esd["Tipus_Esdeveniment"].startsWith("02")&&
+          new Date(esd["DataInici_Esdeveniment"]).getFullYear()<=year &&
+          new Date(esd["DataFi_Esdeveniment"   ]).getFullYear()>=year
+        );
+      });
+
+      let n_actes = new Set(esdeveniments.map(e=>e["ID_Esdeveniment"])).size;
+
+      if(indicador){
+        indicador.years[year].valor  = n_actes;
+        indicador.years[year].llista = esdeveniments;
+      }
+
+      return n_actes;
+    },
+
     eficiencia_articles_amb_socis_industrials:null,
+
     objectius_assolits_del_pla_formacio:null,
+
     participants_actes_disseminacio_participats:null,
-    projectes_competitius_outreach:null,
-    euros_projectes_competitius_outreach:null,
-    aliances_solides_empreses_i_administracio_publica:null,
+
+    projectes_competitius_outreach:null, //esperar ordi TODO
+
+    euros_projectes_competitius_outreach:null, //esperar ordi TODO
+
+    aliances_solides_empreses_i_administracio_publica(year,indicador){
+      let esdeveniments = app.taules.esdeveniments.taula.filter(esd=>{
+        return(
+          esd["Tipus_Esdeveniment"].startsWith("21")&&
+          new Date(esd["DataInici_Esdeveniment"]).getFullYear()<=year &&
+          new Date(esd["DataFi_Esdeveniment"   ]).getFullYear()>=year
+        );
+      });
+
+      let n_actes = new Set(esdeveniments.map(e=>e["ID_Esdeveniment"])).size;
+
+      if(indicador){
+        indicador.years[year].valor  = n_actes;
+        indicador.years[year].llista = esdeveniments;
+      }
+
+      return n_actes;
+    },
+
     projectes_i_encarrecs_ACA:null,
+
     accions_suport_tecnic_a_ACA_quimica_analitica:null,
-    participants_tallers_UdG_ICRA:null,
-    nombre_IPs:null,
+
+    participants_tallers_UdG_ICRA(year,indicador){
+      let esdeveniments = app.taules.esdeveniments.taula.filter(esd=>{
+        return(
+          esd["Tipus_Esdeveniment"].startsWith("15")&&
+          new Date(esd["DataInici_Esdeveniment"]).getFullYear()<=year &&
+          new Date(esd["DataFi_Esdeveniment"   ]).getFullYear()>=year
+        );
+      });
+
+      let n_participants = esdeveniments.map(e=>e.Participants).suma();
+
+      if(indicador){
+        indicador.years[year].valor  = n_participants;
+        indicador.years[year].llista = esdeveniments;
+      }
+
+      return n_participants;
+    },
+
+    nombre_IPs:null, //preguntar ruben
+
     posicions_RF_creades:null,
+
     posicions_RS_estabilitzacio_RF:null,
+
     canvis_tram_RS_o_RP:null,
-    sessions_JEDI_formacio_interna:null,
-    participants_sessions_JEDI_formacio_interna:null,
-    activitats_JEDI_organitzades:null,
+
+    sessions_JEDI_formacio_interna(year,indicador){
+      let esdeveniments = app.taules.esdeveniments.taula.filter(esd=>{
+        return(
+          esd["Tipus_Esdeveniment"].startsWith("22")&&
+          new Date(esd["DataInici_Esdeveniment"]).getFullYear()<=year &&
+          new Date(esd["DataFi_Esdeveniment"   ]).getFullYear()>=year
+        );
+      });
+
+      let n_actes = new Set(esdeveniments.map(e=>e["ID_Esdeveniment"])).size;
+
+      if(indicador){
+        indicador.years[year].valor  = n_actes;
+        indicador.years[year].llista = esdeveniments;
+      }
+
+      return n_actes;
+    },
+
+    participants_sessions_JEDI_formacio_interna(year,indicador){
+      let esdeveniments = app.taules.esdeveniments.taula.filter(esd=>{
+        return(
+          esd["Tipus_Esdeveniment"].startsWith("22")&&
+          new Date(esd["DataInici_Esdeveniment"]).getFullYear()<=year &&
+          new Date(esd["DataFi_Esdeveniment"   ]).getFullYear()>=year
+        );
+      });
+
+      let n_participants = esdeveniments.map(e=>e.Participants).suma();
+
+      if(indicador){
+        indicador.years[year].valor  = n_participants;
+        indicador.years[year].llista = esdeveniments;
+      }
+
+      return n_participants;
+    },
+
+    activitats_JEDI_organitzades:null, //TODO no hi ha tipus esdeveniment
+
     dones_categories_laborals_superiors:null,
-    projectes_amb_administracio_central:null,
-    euros_projectes_amb_administracio_central:null,
+
+    projectes_amb_administracio_central(year,indicador){
+      //diccionari codi=>projecte
+      let joined={};
+
+      let stakeholders = app.taules.stakeholders.taula
+        .filter(s=>s["1er Apellido / Razón Social"]=="Agencia Estatal de Investigación.");
+
+      //projectes filtrats per any
+      let projectes = app.taules.projectes.taula.filter(pro=>{
+        return(
+          new Date(pro["Fecha Comienzo"]).getFullYear()<=year&&
+          new Date(pro["Fecha Fin Real"]).getFullYear()>=year
+        );
+      });
+
+      stakeholders.forEach(sth=>{
+        let codi = sth["Código Identificativo"];
+        let pro  = busca_projecte(codi,projectes);
+        if(!pro) return;
+        joined[codi]={
+          stakeholder: sth["1er Apellido / Razón Social"],
+          projecte   : pro,
+        };
+      });
+
+      app.taules.projectes.columnes["Concurrencia"]=true;
+      app.taules.projectes.columnes["Naturaleza del Proyecto"]=true;
+      app.taules.projectes.columnes["Financiador Convocatoria"]=true;
+      app.taules.projectes.columnes["Director del Proyecto"]=true;
+
+      let llista = Object.values(joined); //array
+      let n_projectes = llista.length;
+
+      indicador.years[year].valor  = llista.length; //number
+      indicador.years[year].llista = llista.map(row=>{
+        let new_row={
+          stakeholder: row.stakeholder,
+        };
+        app.taules.projectes.columnes_actives.forEach(key=>{
+          new_row[key] = row.projecte[key];
+        });
+        return new_row;
+      });
+
+      return n_projectes;
+    },
+
+    euros_projectes_amb_administracio_central(year,indicador){
+      //diccionari codi=>projecte
+      //3 taules: stakeholders, ingressos, projectes
+      let joined={};
+
+      let stakeholders = app.taules.stakeholders.taula
+        .filter(s=>s["1er Apellido / Razón Social"]=="Agencia Estatal de Investigación.");
+
+      //taula ingressos filtra per year
+      let ingressos = app.taules.ingressos.taula.filter(i=>i.Any==year);
+
+      //projectes (no filtrar per year perquè hi pot haver gastos un cop tancat)
+      let projectes = app.taules.projectes.taula;
+
+      stakeholders.forEach(sth=>{
+        let codi = sth["Código Identificativo"];
+        let ing  = busca_projecte(codi,ingressos,"Codi");
+        if(!ing) return;
+        let pro  = busca_projecte(codi);
+        if(!pro) return;
+        joined[codi]={
+          stakeholder: sth["1er Apellido / Razón Social"],
+          projecte   : pro,
+          ingressos  : ing.Ingressos,
+        };
+      });
+
+      app.taules.projectes.columnes["Concurrencia"]=true;
+      app.taules.projectes.columnes["Naturaleza del Proyecto"]=true;
+      app.taules.projectes.columnes["Financiador Convocatoria"]=true;
+      app.taules.projectes.columnes["Director del Proyecto"]=true;
+
+      let llista = Object.values(joined); //array
+      let keuros = llista.map(obj=>obj.ingressos).reduce((p,c)=>p+c,0)/1000; //number
+
+      indicador.years[year].valor  = keuros; //number
+      indicador.years[year].llista = llista.map(row=>{
+        let new_row={
+          stakeholder: row.stakeholder,
+          ingressos:   row.ingressos,
+        };
+        app.taules.projectes.columnes_actives.forEach(key=>{
+          new_row[key] = row.projecte[key];
+        });
+        return new_row;
+      });
+
+      return keuros;
+    },
   };
 
   let responsables={
@@ -951,28 +1687,28 @@
     "congressos_tallers_escoles_estiu_organitzats"          : `esdeveniments`,
     "sessions_especials_organitzades"                       : `esdeveniments`,
     "comites_internacionals_participats"                    : `esdeveniments`,
-    "articles_Q1"                                           : `modul_scopus`,
-    "articles_Q1_amb_lideratge"                             : `modul_scopus`,
-    "articles_D1"                                           : `modul_scopus`,
-    "articles_FWCI_10"                                      : `modul_scopus`,
-    "cites_articles"                                        : `modul_scopus`,
-    "impact_factor"                                         : `modul_scopus`,
+    "articles_Q1"                                           : `scopus`,
+    "articles_Q1_amb_lideratge"                             : `scopus`,
+    "articles_D1"                                           : `scopus`,
+    "articles_FWCI_10"                                      : `scopus`,
+    "cites_articles"                                        : `scopus`,
+    "impact_factor"                                         : `scopus`,
     "estades_recercaires_acollits"                          : `RRHH`,
     "estades_recercaires_en_altres_centres"                 : `esdeveniments`,
     "rati_exit_propostes_europa"                            : `ordi`,
     "euros_recerca_L17_L18"                                 : `ecofin`,
-    "articles_Q1_L17_L18"                                   : `modul_scopus`,
+    "articles_Q1_L17_L18"                                   : `scopus`,
     "euros_projectes_KTT_respecte_total"                    : `ecofin`,
     "euros_projectes_KTT"                                   : `ecofin`,
     "projectes_KTT"                                         : `ordi`,
     "formacions_per_empreses_organitzades"                  : `esdeveniments`,
     "projectes_llavor_producte_innovadors"                  : `ordi`,
     "doctorats_industrials"                                 : `RRHH`,
-    "euros_mecenatge"                                       : `ordi`,
+    "euros_mecenatge"                                       : `ecofin`,
     "projectes_mecenatge"                                   : `ordi`,
     "patents_i_secrets_industrials"                         : `ordi`,
     "spinoffs_i_startups"                                   : `ordi`,
-    "articles_amb_socis_industrials"                        : `modul_scopus`,
+    "articles_amb_socis_industrials"                        : `scopus`,
     "estudiants_acollits"                                   : `RRHH`,
     "cites_en_legislacio"                                   : `modul_sage`,
     "participacions_comites_experts_ambit_legislatiu"       : `esdeveniments`,
@@ -989,7 +1725,7 @@
     "aparicions_mitjans_comunicacio_nacionals"              : `esdeveniments`,
     "aparicions_mitjans_comunicacio_internacionals"         : `esdeveniments`,
     "reunions_taula_aigua_ACA"                              : `esdeveniments`,
-    "hores_tasques_taula_aigua_ACA"                         : `SQL_Server`,
+    "hores_tasques_taula_aigua_ACA"                         : `MWR`,
     "euros_projectes_KTT_ACA"                               : `ecofin`,
     "tallers_UdG_ICRA"                                      : `esdeveniments`,
     "iniciatives_UdG_ICRA"                                  : `ordi`,
@@ -1004,7 +1740,7 @@
     "projectes_i_encarrecs_ACA"                             : `ordi`,
     "accions_suport_tecnic_a_ACA_quimica_analitica"         : `preguntar_vicenç`,
     "participants_tallers_UdG_ICRA"                         : `esdeveniments`,
-    "nombre_IPs"                                            : `SQL_Server`,
+    "nombre_IPs"                                            : `preguntar_ruben`,
     "posicions_RF_creades"                                  : `RRHH`,
     "posicions_RS_estabilitzacio_RF"                        : `RRHH`,
     "canvis_tram_RS_o_RP"                                   : `RRHH`,
@@ -1043,7 +1779,7 @@
     return false;
   }
 
-  //filtra projectes per any
+  //filtra projectes per any TODO
   function projectes_vigents(year){
     let projectes = app.taules.projectes.taula;
     if(!projectes) return false;
@@ -1305,6 +2041,8 @@
 <script>//vue app
   let app = Vue.createApp({
     data(){return{
+      debug:false,
+
       years:[2023,2024/*,2025,2026,2027,2028,2029*/],
       ambits, //indicadors
       funcions_calculadores, //taula helper funcions dels indicadors
@@ -1397,21 +2135,13 @@
             if(i==0){
               llista+="<tr>";
               Object.entries(row).forEach(([key,_])=>{
-                llista+=`
-                  <th>
-                    ${key}
-                  </th>
-                `;
+                llista+=`<th>${key}</th>`;
               });
               llista+="</tr>";
             }
             llista+="<tr>";
             Object.entries(row).forEach(([_,val])=>{
-              llista+=`
-                <td>
-                  ${val}
-                </td>
-              `;
+              llista+=`<td>${val}</td>`;
             });
             llista+="</tr>";
           });

@@ -4,7 +4,7 @@
   <script src="lib/vue.global.prod.js"></script>
   <style>
     body{
-      font-family: Eczar, IM Fell English, Georgia, serif;
+      font-family:Eczar,IM Fell English,Georgia,serif;
     }
     td,th{
       vertical-align:top;
@@ -20,11 +20,12 @@
     fieldset{
       margin-bottom:20px;
     }
+    [selected_year=true]{
+      background:royalblue;
+      color:white;
+    }
   </style>
 <head></head><body>
-
-<b>en construcció</b><hr>
-
 <!--nav--><div id=nav></div><hr><script src="nav.js"></script>
 
 <h2>Indicadors impacte ICRA (SAGE/OVERTON)</h2>
@@ -33,7 +34,7 @@
   <fieldset>
     <legend>Select year</legend>
     <label v-for="year in years">
-      <input type=radio v-model="selected_year" :value="year"> {{year}}
+      <button @click="select_year(year)" :selected_year="year==selected_year">{{year}}</button>
     </label>
   </fieldset>
 
@@ -57,7 +58,7 @@
   </fieldset>
 
   <div>
-    <b v-if="!loading">Profiles Sage ({{users.length}})</b>
+    <b v-if="!loading">Profiles Sage ({{users.length}}/{{n_users_expected}})</b>
     <table border=1 v-if="users.length">
       <tr v-for="user in users">
         <td>
@@ -70,12 +71,14 @@
           <b>{{user.summary.n_citations}} citations</b>
           in {{user.summary.n_documents}} policy documents
         </td>
-        <td>
+
+        <td v-if="false">
           <details xsmall>
             <summary>{{user.response?.data?.metadata}}</summary>
             <code><pre>{{JSON.stringify(user,null,"  ")}}</pre></code>
           </details>
         </td>
+
       </tr>
     </table>
   </div>
@@ -101,6 +104,22 @@
       ],
     }},
 
+    methods:{
+      select_year(new_year){
+        this.selected_year=new_year;
+        this.users.forEach(user=>{
+          let summary = calculate_user_anual_summary(user);
+          user.summary = summary;
+        });
+
+        app.users.sort((a,b)=>{
+          let aa = a.summary.n_citations;
+          let bb = b.summary.n_citations;
+          return bb-aa;
+        });
+      },
+    },
+
     computed:{
       resum_impacte(){
         if(this.users.length != this.n_users_expected) return false;
@@ -114,6 +133,16 @@
             Object.entries(usr.response.data.citations).forEach(([doi,list])=>{
               list.forEach(doc=>{
                 let id = doc.policy_document_id;
+
+                //filtra per any
+                let year = this.selected_year;
+                if(year!="All time"){
+                  let publication_year = usr.response.data.documents[id].published_on.split("-")[0];
+                  if(publication_year!=year){
+                    return;
+                  }
+                }
+
                 if(citations[id]==undefined){
                   citations[id]=[];
                 }
@@ -146,36 +175,57 @@
     });
   })
 
+  function calculate_user_anual_summary(user){
+    //calcula nombre de cites i nombre de documents
+    let citations={};// policy_document_id => [dois]
+
+    //filtra per "selected_year"
+    let year = app.selected_year;
+
+    Object.entries(user.response.data.citations).forEach(([doi,list])=>{
+      list.forEach(doc=>{
+        let id = doc.policy_document_id;
+
+        if(year!="All time"){
+          let publication_year = user.response.data.documents[id].published_on.split("-")[0];
+          if(publication_year!=year){
+            return;
+          }
+        }
+
+        if(citations[id]==undefined){
+          citations[id]=[];
+        }
+        citations[id].push(doi);
+      });
+    });
+
+    let n_citations = Object.values(citations).map(arr=>(new Set(arr)).size).reduce((p,c)=>p+c,0);
+    let n_documents = Object.keys(citations).length;
+
+    let summary={
+      n_citations,
+      n_documents,
+      citations,
+    };
+
+    return summary;
+  }
+
   //sagepub api call (evitar CORS)
   function fetch_sage_user(id_user, nom){
     let url=`curl_sagepub_user.php?id_user=${id_user}`;
-    let options={};
-    fetch(url,options).then(r=>r.json()).then(obj=>{
-      let user = {
+
+    fetch(url).then(r=>r.json()).then(obj=>{
+      let user={
         nom,
         id:id_user,
         response:obj,
+        summary:null, //filtrar per any
       };
       app.users.push(user);
 
-      //calcula nombre de cites i nombre de documents
-      let citations={};
-      Object.entries(obj.data.citations).forEach(([doi,list])=>{
-        list.forEach(doc=>{
-          let id = doc.policy_document_id;
-          if(citations[id]==undefined){
-            citations[id]=[];
-          }
-          citations[id].push(doi);
-        });
-      });
-      let n_citations = Object.values(citations).map(arr=>(new Set(arr)).size).reduce((p,c)=>p+c,0);
-      let n_documents = Object.keys(citations).length;
-      let summary = {
-        n_citations,
-        n_documents,
-        citations,
-      };
+      let summary = calculate_user_anual_summary(user);
       user.summary = summary;
 
       if(app.users.length>=app.n_users_expected){

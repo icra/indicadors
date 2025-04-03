@@ -7,11 +7,10 @@ function genera_nav(div_container_id){
   }
 
   let links=[
-    {href:"index.html",    nom:"scopus"},
-    {href:"centre.html",   nom:"centre"},
-    {href:"ips.html",      nom:"IPs"},
-    {href:"personal.html", nom:"personal"},
-    {href:"impacte.html",  nom:"impacte"},
+    {href:"index.html",         nom:"scopus"},
+    {href:"centre.html",        nom:"centre"},
+    {href:"personal.html",      nom:"personal"},
+    {href:"impacte.html",       nom:"impacte"},
     {href:"esdeveniments.html", nom:"esdeveniments"},
   ];
 
@@ -39,5 +38,4 @@ function genera_nav(div_container_id){
   let div = document.getElementById(div_container_id);
   div.appendChild(nav);
 };
-
 genera_nav();
