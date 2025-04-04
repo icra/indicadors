@@ -131,12 +131,19 @@
     </summary>
 
     <!--àmbits pestanyes-->
-    <p>
+    <p style="display:flex;align-items:center">
       <button
         v-for="ambit in ambits"
         @click="ambit_actual=ambit"
         :ambit_actual="ambit==ambit_actual"
       >{{ambit.nom}}</button>
+
+      <span>&emsp;</span>
+
+      <span>Anys analitzats:</span>
+      <label v-for="year in Object.keys(selected_years)">
+        <input type=checkbox v-model="selected_years[year]">{{year}}
+      </label>
     </p>
 
     <!--opcions-->
@@ -148,6 +155,10 @@
       <label>
         <input type=checkbox v-model="veure_boto_detalls">
         Veure botó "detalls"
+      </label>
+      <label>
+        <input type=checkbox v-model="veure_percentatge">
+        Veure variació indicador (%)
       </label>
     </p>
 
@@ -225,35 +236,37 @@
           </td>
 
           <!--indicador valors de cada anhy-->
-          <td v-for="obj,year in indi.years" center small nowrap monospace>
-            <div v-for="incr in [indi.increment(year)]">
-              <div
-                style="
-                  display:flex;
-                  justify-content:space-around;
-                  align-items:center;
-                "
-              >
-                <!--valor indicador-->
-                <div right>{{obj.valor.toFixed(0)}}</div>
+          <td v-for="year in years" center small nowrap monospace>
+            <div v-for="obj in [indi.years[year]]">
+              <div v-for="incr in [indi.increment(year)]">
+                <div
+                  style="
+                    display:flex;
+                    justify-content:space-around;
+                    align-items:center;
+                  "
+                >
+                  <!--valor indicador-->
+                  <div right>{{obj.valor.toFixed(0)}}</div>
 
-                <!--increment i objectiu-->
-                <div v-if="!obj.excloure && funcions_calculadores[indi.funcio_calculadora]" small right :title="`Variació respecte valor basal (${indi.base_year})`">
-                  <span :style="{color:incr.compleix?'green':'red'}">
-                    <span v-if="incr.delta>0">&uarr;</span>
-                    <span v-if="incr.delta<0">&darr;</span>
-                    <span>
-                      {{Math.abs(incr.perc).toFixed(0)}}%
+                  <!--increment i objectiu-->
+                  <div v-if="veure_percentatge && !obj.excloure && funcions_calculadores[indi.funcio_calculadora]" small right :title="`Variació respecte valor basal (${indi.base_year})`">
+                    <span :style="{color:incr.compleix?'green':'red'}">
+                      <span v-if="incr.delta>0">&uarr;</span>
+                      <span v-if="incr.delta<0">&darr;</span>
+                      <span>
+                        {{Math.abs(incr.perc).toFixed(0)}}%
+                      </span>
                     </span>
-                  </span>
-                </div>
+                  </div>
 
-                <!--botó detalls-->
-                <div v-if="!obj.excloure && funcions_calculadores[indi.funcio_calculadora] && veure_boto_detalls" small right>
-                  <button
-                    @click="click_detalls_indicador(indi,year)"
-                    style="padding:0;font-size:x-small"
-                  >detalls</button>
+                  <!--botó detalls-->
+                  <div v-if="!obj.excloure && funcions_calculadores[indi.funcio_calculadora] && veure_boto_detalls" small right>
+                    <button
+                      @click="click_detalls_indicador(indi,year)"
+                      style="padding:0;font-size:x-small"
+                    >detalls</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -378,10 +391,10 @@
         "2023":{valor:valor_basal, llista:null, objectiu:0, excloure:true},
         "2024":{valor:0,           llista:null, objectiu:objectius[0]||0},
         "2025":{valor:0,           llista:null, objectiu:objectius[1]||0},
-        //"2026":{valor:0, llista:null, objectiu:objectius[2]||0},
-        //"2027":{valor:0, llista:null, objectiu:objectius[3]||0},
-        //"2028":{valor:0, llista:null, objectiu:objectius[4]||0},
-        //"2029":{valor:0, llista:null, objectiu:objectius[5]||0},
+        "2026":{valor:0,           llista:null, objectiu:objectius[2]||0},
+        "2027":{valor:0,           llista:null, objectiu:objectius[3]||0},
+        "2028":{valor:0,           llista:null, objectiu:objectius[4]||0},
+        "2029":{valor:0,           llista:null, objectiu:objectius[5]||0},
       };
     }
 
@@ -419,8 +432,14 @@
       Object.entries(this.years)
         .filter(e=>!e[1].excloure).map(e=>e[0])
         .forEach(year=>{
-          app.funcions_calculadores[id](year, this);
+          if(app.selected_years[year]){
+            app.funcions_calculadores[id](year, this);
+          }
         });
+    }
+
+    get selected_years(){
+      return app.years;
     }
   }
 
@@ -1045,11 +1064,18 @@
       let ingressos = app.taules.ingressos.taula.filter(i=>i.Any==year);
 
       //filtra projectes
-      let projectes = app.taules.projectes.taula.filter(proj=>{
-        return(
-          proj["Unidad de Gestión"].includes("L17")||
-          proj["Unidad de Gestión"].includes("L18")
-        );
+      let projectes = app.taules.projectes.taula.filter(pro=>{
+        try{
+          return(
+            pro["Unidad de Gestión"]&&(
+              pro["Unidad de Gestión"].includes("L17")||
+              pro["Unidad de Gestión"].includes("L18")
+            )
+          );
+        }catch(err){
+          console.log({pro})
+          throw(err);
+        }
       });
 
       app.taules.projectes.columnes["Concurrencia"]=true;
@@ -2295,14 +2321,21 @@
 <script>//vue app
   let app = Vue.createApp({
     data(){return{
-      debug:false,
+      debug:1, //debug mode
 
-      years:[2023,2024,2025/*,2026,2027,2028,2029*/],
-      ambits, //indicadors
+      selected_years:{
+        "2023":true,
+        "2024":true,
+        "2025":false,
+        "2026":false,
+        "2027":false,
+        "2028":false,
+        "2029":false,
+      },
+
+      ambits,                //indicadors
       funcions_calculadores, //taula helper funcions dels indicadors
-
       carregant:true, //status
-
       ambit_actual:ambits[0], //"pestanyes"
 
       //veure detalls d'un sol indicador
@@ -2310,11 +2343,14 @@
       html_detalls_indicador:false,
 
       //columna responsable indicador
-      veure_responsable:true,
+      veure_responsable:false,
       filtre_responsable:false, //"RRHH",
 
       //veure botó detalls
       veure_boto_detalls:true,
+
+      //veure percentatge indicador
+      veure_percentatge:false,
 
       //taules des d'on es calculen els indicadors: origens diversos (SQL icra, excels, ...)
       taules:{
@@ -2449,6 +2485,10 @@
         return ips;
       },
 
+      years(){
+        return Object.entries(this.selected_years).filter(en=>en[1]).map(en=>en[0]);
+      },
+
       //retorna valors únics del camp responsable per poder crear un filtre
       get_responsables(){
         return Array.from(new Set(Object.values(responsables)));
@@ -2485,6 +2525,23 @@
     "Codi":true,
     "Ingressos":true,
   };
+  app.taules.taula_aigua.columnes={
+    "Codi":true,
+    "Nom":true,
+    "DataAlta":true,
+    "Horas":true,
+    "Descripcio":true,
+  };
+  app.taules.projectes_personal.columnes={
+    "Persona":true,
+    "EnQualitatde":true,
+    "Projecte":true,
+  };
+  app.taules.stakeholders.columnes={
+    "Proyecto":true,
+    "Tercero":true,
+    "Tipo Aportación":true,
+  };
 </script>
 
 <script>
@@ -2518,9 +2575,9 @@
 </script>
 
 <script>
-  //read excel file from url
-  async function llegir_excel(nom_taula){
-    let url    = `csv/${nom_taula}.xlsx`;
+  //read excel file from local url
+  async function llegir_excel(nom_taula, url){
+    //url = "csv/export-fundanet/fitxer.xlsx"
     let res    = await fetch(url);
     let blob   = await res.blob();
     let reader = new FileReader();
@@ -2564,7 +2621,7 @@
     return taula;
   }
 
-  llegir_excel("projectes");
-  llegir_excel("projectes_personal");
-  llegir_excel("stakeholders");
+  llegir_excel("projectes",          "csv/export-fundanet/Projectes.xlsx");
+  llegir_excel("projectes_personal", "csv/export-fundanet/Projectes_Personal2.xlsx");
+  llegir_excel("stakeholders",       "csv/export-fundanet/Stakeholders2.xlsx");
 </script>
