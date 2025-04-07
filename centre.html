@@ -163,7 +163,7 @@
     </p>
 
     <table border=1>
-      <tr>
+      <tr sticky>
         <td center><b>Pes</b></td>
         <td><b>Blocs</b></td>
         <td small center><b>Unitat</b></td>
@@ -1269,9 +1269,54 @@
       return keuros;
     },
 
-    projectes_mecenatge:null,
-    patents_i_secrets_industrials:null,
-    spinoffs_i_startups:null,
+    projectes_mecenatge(year,indicador){
+      let projectes = app.taules.projectes.taula.filter(pro=>{
+        return(
+          pro["Concurrencia"]=="MECENATGE"&&
+          new Date(pro["Fecha Comienzo"]).getFullYear()<=year&&
+          new Date(pro["Fecha Fin Real"]).getFullYear()>=year
+        );
+      });
+
+      let llista      = projectes;     //array
+      let n_projectes = llista.length; //number
+
+      indicador.years[year].valor  = n_projectes; //number
+      indicador.years[year].llista = llista; //array
+    },
+
+    patents_i_secrets_industrials(year,indicador){
+      let projectes = app.taules.projectes.taula.filter(pro=>{
+        return(
+          pro["Título Abreviado"].toUpperCase().startsWith("PATENT")&&
+          new Date(pro["Fecha Comienzo"]).getFullYear()<=year&&
+          new Date(pro["Fecha Fin Real"]).getFullYear()>=year
+        );
+      });
+
+      let llista      = projectes;     //array
+      let n_projectes = llista.length; //number
+
+      indicador.years[year].valor  = n_projectes; //number
+      indicador.years[year].llista = llista; //array
+    },
+
+    spinoffs_i_startups(year,indicador){
+      let projectes = app.taules.projectes.taula.filter(pro=>{
+        return(
+          pro["Título Abreviado"].replaceAll("-","").toUpperCase().startsWith("SPINOFF")&&
+          new Date(pro["Fecha Comienzo"]).getFullYear()<=year&&
+          new Date(pro["Fecha Fin Real"]).getFullYear()>=year
+        );
+      });
+
+      let llista      = projectes;     //array
+      let n_projectes = llista.length; //number
+
+      indicador.years[year].valor  = n_projectes; //number
+      indicador.years[year].llista = llista; //array
+    },
+
     articles_amb_socis_industrials:null,
 
     estudiants_acollits(year,indicador){
