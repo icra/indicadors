@@ -10,6 +10,7 @@
     crossorigin="anonymous"
     referrerpolicy="no-referrer"
   ></script>
+  <script src="lib/run_prettify.js"></script>
 
   <style>
     body{
@@ -86,6 +87,17 @@
       top:0;
       background:white;
     }
+    button[btn_calcular_tots]{
+      background:gold;
+      border:1px solid #666;
+      border-radius:5px;
+    }
+    button[btn_calcular_tots]:active{
+      border-style:inset;
+    }
+    button[btn_calcular_tots]:hover{
+      background:rgba(255,215,0,0.75);
+    }
   </style>
   <script>
     Array.prototype.suma=function(){
@@ -97,14 +109,16 @@
 
 <div id=app>
   <h2>
-    <div>
-      Indicadors de centre
-      <button @click="debug=!debug">mode debug {{debug?"ON":"OFF"}}</button>
+    <div style="display:flex;justify-content:space-between">
+      <div>Indicadors de centre</div>
+      <div>
+        <button @click="debug=!debug" xsmall>mode debug {{debug?"ON":"OFF"}}</button>
+      </div>
     </div>
   </h2>
 
   <!--avís certificat-->
-  <div v-if="!tot_carregat">
+  <div v-if="!tot_carregat"><hr>
     Perquè tot funcioni cal:<ol>
       <li>
         Estar dins la xarxa de l'ICRA (o a la VPN)
@@ -152,18 +166,23 @@
     </p>
 
     <!--opcions-->
-    <p>
+    <p 
+      style="
+        display:flex;
+        justify-content:space-around;
+      "
+    >
       <label>
         <input type=checkbox v-model="veure_responsable">
-        Columna "Responsable"
-      </label>
-      <label>
-        <input type=checkbox v-model="veure_boto_detalls">
-        Botó "detalls"
+        Veure columna "Responsable"
       </label>
       <label>
         <input type=checkbox v-model="veure_percentatge">
-        Variació (%) respecte valor basal (2023)
+        Veure variació (%) respecte 2023
+      </label>
+      <label>
+        <input type=checkbox v-model="veure_boto_detalls">
+        Veure botó "detalls"
       </label>
     </p>
 
@@ -192,7 +211,11 @@
           <span>{{year}}</span>
         </td>
         <th>
-          <button @click="calcular_tots_els_indicadors()" :disabled="!tot_carregat">calcular tots</button>
+          <button
+            @click="calcular_tots_els_indicadors()"
+            :disabled="!tot_carregat"
+            btn_calcular_tots
+          >calcular tots</button>
         </th>
       </tr>
       <tbody v-for="bloc,i in ambit_actual.blocs">
@@ -261,8 +284,11 @@
                     <span :style="{color:incr.compleix?'green':'red'}">
                       <span v-if="incr.delta>0">&uarr;</span>
                       <span v-if="incr.delta<0">&darr;</span>
-                      <span>
+                      <span v-if="isFinite(incr.perc)">
                         {{Math.abs(incr.perc).toFixed(0)}}%
+                      </span>
+                      <span v-else>
+                        <span large>∞</span>%
                       </span>
                     </span>
                   </div>
@@ -721,15 +747,15 @@
       let ingressos = app.taules.ingressos.taula.filter(i=>i.Any==year);
 
       //filtra projectes
-      let projectes = app.taules.projectes.taula.filter(proj=>{
+      let projectes = app.taules.projectes.taula.filter(pro=>{
         return(
-          proj["Concurrencia"]=="FONS COMPETITIUS"&&
-          proj["Naturaleza del Proyecto"]=="EUROPEA"&&
-          proj["Financiador Convocatoria"]!=null&&1
+          pro["Concurrencia"]=="FONS COMPETITIUS"&&
+          pro["Naturaleza del Proyecto"]=="EUROPEA"&&
+          pro["Financiador Convocatoria"]!=null&&1
           /*
           (
-            proj["Financiador Convocatoria"].toUpperCase().includes("H2020")||
-            proj["Financiador Convocatoria"].toUpperCase().includes("HORIZON")
+            pro["Financiador Convocatoria"].toUpperCase().includes("H2020")||
+            pro["Financiador Convocatoria"].toUpperCase().includes("HORIZON")
           )
           */
         );
@@ -770,14 +796,14 @@
 
     euros_recerca_erc_eic(year,indicador){
       //projectes ERC/EIC vigents a l'any "year"
-      let projectes = app.taules.projectes.taula.filter(proj=>{
+      let projectes = app.taules.projectes.taula.filter(pro=>{
         return(
-          proj["Concurrencia"]=="FONS COMPETITIUS"&&
-          proj["Naturaleza del Proyecto"]=="EUROPEA"&&
-          proj["Financiador Convocatoria"]!=null&&
+          pro["Concurrencia"]=="FONS COMPETITIUS"&&
+          pro["Naturaleza del Proyecto"]=="EUROPEA"&&
+          pro["Financiador Convocatoria"]!=null&&
           (
-            proj["Financiador Convocatoria"].toUpperCase().startsWith("ERC")||
-            proj["Financiador Convocatoria"].toUpperCase().startsWith("EIC")
+            pro["Financiador Convocatoria"].toUpperCase().startsWith("ERC")||
+            pro["Financiador Convocatoria"].toUpperCase().startsWith("EIC")
           )
         );
       });
@@ -931,12 +957,12 @@
 
     projectes_erc_eic(year, indicador){
       //calcula nombre de projectes horizon vigents
-      let projectes = app.taules.projectes.taula.filter(proj=>{
+      let projectes = app.taules.projectes.taula.filter(pro=>{
         return(
-          proj["Concurrencia"]=="FONS COMPETITIUS"&&
-          proj["Naturaleza del Proyecto"]=="EUROPEA"&&
-          proj["Financiador Convocatoria"]!=null&&
-          proj["Financiador Convocatoria"].includes("ERC")
+          pro["Concurrencia"]=="FONS COMPETITIUS"&&
+          pro["Naturaleza del Proyecto"]=="EUROPEA"&&
+          pro["Financiador Convocatoria"]!=null&&
+          pro["Financiador Convocatoria"].includes("ERC")
         );
       });
       indicador.years[year].valor  = projectes.length;
@@ -2460,7 +2486,7 @@
 
       //columna responsable indicador
       veure_responsable:true,
-      filtre_responsable:"ordi", //"RRHH",
+      filtre_responsable:false, //"RRHH","ordi",...
 
       //veure botó detalls
       veure_boto_detalls:true,
@@ -2502,6 +2528,7 @@
         this.$nextTick().then(()=>{
           let el = document.querySelector("#detalls");
           if(el) el.scrollIntoView();
+          PR.prettyPrint();
         });
       },
 
@@ -2509,7 +2536,7 @@
       crea_html_caption(indi,year){
         let incr = indi.increment(year);
         let header=`
-          <b>Detalls indicador [${indi.id}]</b>
+          <b>Detalls indicador [id:${indi.id}]</b>
           <p>
             <i>${indi.text}</i>
           </p>
@@ -2544,9 +2571,11 @@
           funcio+="<details>";
           funcio+="<summary small><b>[MODE DEBUG] Codi que calcula l'indicador</b></summary>";
           funcio+="<p>";
+          funcio+=`<pre class="prettyprint lang-js"><code xsmall>`;
           fx.toString().split("\n").forEach(linia=>{
-            funcio+=`<code xsmall><pre style='margin:0'>${linia}</pre></code>`;
+            funcio+=`${linia}\n`;
           });
+          funcio+=`</code></pre>`;
           funcio+="</p>";
           funcio+="</details>";
         }
@@ -2576,8 +2605,8 @@
 
         let ret=[
           header,
-          llista,
           funcio,
+          llista,
         ].join("");
 
         return ret;
@@ -2604,11 +2633,6 @@
         });
 
         let noms = Array.from(new Set(personal.map(row=>row.Persona)));
-        //busca ORCID TODO
-        //busca ORCID TODO
-        //busca ORCID TODO
-        //busca ORCID TODO
-        //busca ORCID TODO
         return noms;
       },
 
