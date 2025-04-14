@@ -405,16 +405,16 @@
 
       if(!this.text) throw(`no text for ${id}`)
 
-      this.base_year = "2023"; //String
+      this.base_year="2023"; //String
 
       //funció que calcula l'indicador per un determinat any. Modifica this.years[year][valor i llista]
       this.funcio_calculadora = id; //String
 
       //Cada indicador té varis anys:
-      //  valor: numero, valor cru de l'indicador en sí per aquell any
-      //  llista: array des d'on es calcula el valor. El genera la funció calculadora
-      //  objectiu: numero (percentatge que cal assolir)
-      //  excloure: per l'any basal no mostrar indicadors
+      //  valor    : numero, valor cru de l'indicador en sí per aquell any
+      //  llista   : array des d'on es calcula el valor. El genera la funció calculadora
+      //  objectiu : numero (percentatge que cal assolir)
+      //  excloure : per l'any basal no mostrar indicadors
       this.years={
         "2023":{valor:valor_basal, llista:null, objectiu:0, excloure:true},
         "2024":{valor:0,           llista:null, objectiu:objectius[0]||0},
@@ -426,7 +426,7 @@
       };
     }
 
-    //calcula puntuació
+    //calcula puntuació indicador
     puntuacio(year){
       let pes = this.pes_percent/100;
       let val = this.years[year] ? this.years[year].valor : 0;
@@ -518,7 +518,7 @@
     "aliances_solides_entitats_socials"                     : `Aliances sòlides amb entitats que tinguin una finalitat social (ambientals, esportives, culturals, educatives)`,
     "xxss_seguidors"                                        : `Seguidors/subscriptors a les xarxes socials d'ICRA`,
     "xxss_shares"                                           : `Comparticions (shares, retweets) a les xarxes socials d'ICRA`,
-    "xxss_plays"                                            : `Visualitzacions de sessions de streaming realitzades a les xarxes socials d'ICRA`,
+    "xxss_streams"                                          : `Visualitzacions de sessions de streaming realitzades a les xarxes socials d'ICRA`,
     "actes_disseminacio_participats_o_organitzats"          : `Actes de disseminació participats o organitzats per ICRA`,
     "aparicions_mitjans_comunicacio_nacionals"              : `Aparicions en els mitjans de comunicació escrits i audiovisuals regionals o estatals`,
     "aparicions_mitjans_comunicacio_internacionals"         : `Aparicions en els mitjans de comunicació escrits i audiovisuals internacionals`,
@@ -626,7 +626,7 @@
     "aliances_solides_entitats_socials"                     : `aliances`,
     "xxss_seguidors"                                        : `seguidors`,
     "xxss_shares"                                           : `shares`,
-    "xxss_plays"                                            : `views`,
+    "xxss_streams"                                          : `views`,
     "actes_disseminacio_participats_o_organitzats"          : `actes`,
     "aparicions_mitjans_comunicacio_nacionals"              : `aparicions`,
     "aparicions_mitjans_comunicacio_internacionals"         : `aparicions`,
@@ -1027,17 +1027,44 @@
       return n_actes;
     },
 
-    articles_Q1:null,
-
-    articles_Q1_amb_lideratge:null,
-
-    articles_D1:null,
-
-    articles_FWCI_10:null,
-
-    cites_articles:null,
-
-    impact_factor:null,
+    //bloc scopus
+    articles_Q1(year,indicador){
+      let scopus = app.taules.scopus.taula.filter(row=>row.year==year);
+      let n      = scopus.length ? scopus[0].articles_Q1 : 0;
+      indicador.years[year].valor  = n;
+      indicador.years[year].llista = scopus;
+    },
+    articles_Q1_amb_lideratge(year,indicador){
+      let scopus = app.taules.scopus.taula.filter(row=>row.year==year);
+      let n      = scopus.length ? scopus[0].articles_Q1_amb_lideratge : 0;
+      indicador.years[year].valor  = n;
+      indicador.years[year].llista = scopus;
+    },
+    articles_D1(year,indicador){
+      let scopus = app.taules.scopus.taula.filter(row=>row.year==year);
+      let n      = scopus.length ? scopus[0].articles_D1 : 0;
+      indicador.years[year].valor  = n;
+      indicador.years[year].llista = scopus;
+    },
+    articles_FWCI_10(year,indicador){
+      let scopus = app.taules.scopus.taula.filter(row=>row.year==year);
+      let n      = scopus.length ? scopus[0].articles_FWCI_10 : 0;
+      indicador.years[year].valor  = n;
+      indicador.years[year].llista = scopus;
+    },
+    cites_articles(year,indicador){
+      let scopus = app.taules.scopus.taula.filter(row=>row.year==year);
+      let n      = scopus.length ? scopus[0].cites_articles : 0;
+      indicador.years[year].valor  = n;
+      indicador.years[year].llista = scopus;
+    },
+    impact_factor(year,indicador){
+      let scopus = app.taules.scopus.taula.filter(row=>row.year==year);
+      let n      = scopus.length ? scopus[0].impact_factor : 0;
+      indicador.years[year].valor  = n;
+      indicador.years[year].llista = scopus;
+    },
+    //bloc scopus end
 
     estades_recercaires_acollits(year,indicador){
       let personal = app.taules.personal.taula.filter(per=>{
@@ -1178,7 +1205,12 @@
       return keuros;
     },
 
-    articles_Q1_L17_L18:null,
+    articles_Q1_L17_L18(year,indicador){
+      let scopus = app.taules.scopus.taula.filter(row=>row.year==year);
+      let n      = scopus.length ? scopus[0].articles_Q1_L17_L18 : 0;
+      indicador.years[year].valor  = n;
+      indicador.years[year].llista = scopus;
+    },
 
     euros_projectes_KTT_respecte_total(year, indicador){
       let keuros_projectes_KTT = this.euros_projectes_KTT(year);
@@ -1409,7 +1441,12 @@
       indicador.years[year].llista = llista; //array
     },
 
-    articles_amb_socis_industrials:null,
+    articles_amb_socis_industrials(year,indicador){
+      let scopus = app.taules.scopus.taula.filter(row=>row.year==year);
+      let n      = scopus.length ? scopus[0].articles_amb_socis_industrials : 0;
+      indicador.years[year].valor  = n;
+      indicador.years[year].llista = scopus;
+    },
 
     estudiants_acollits(year,indicador){
       let personal = app.taules.personal.taula.filter(per=>{
@@ -1433,7 +1470,12 @@
       return personal.length;
     },
 
-    cites_en_legislacio:null,
+    cites_en_legislacio(year,indicador){
+      let scopus = app.taules.scopus.taula.filter(row=>row.year==year);
+      let n      = scopus.length ? scopus[0].cites_en_legislacio : 0;
+      indicador.years[year].valor  = n;
+      indicador.years[year].llista = scopus;
+    },
 
     participacions_comites_experts_ambit_legislatiu(year,indicador){
       let esdeveniments = app.taules.esdeveniments.taula.filter(esd=>{
@@ -1568,9 +1610,35 @@
       return n_actes;
     },
 
-    xxss_seguidors:null,
-    xxss_shares:null,
-    xxss_plays:null,
+    xxss_seguidors(year,indicador){
+      let xarxes = app.taules.xarxes_socials.taula.find(row=>{
+        return row["any"]==year;
+      });
+      if(!xarxes) return;
+
+      indicador.years[year].valor  = xarxes["seguidors"];
+      indicador.years[year].llista = [xarxes];
+    },
+
+    xxss_shares(year,indicador){
+      let xarxes = app.taules.xarxes_socials.taula.find(row=>{
+        return row["any"]==year;
+      });
+      if(!xarxes) return;
+
+      indicador.years[year].valor  = xarxes["shares"];
+      indicador.years[year].llista = [xarxes];
+    },
+
+    xxss_streams(year,indicador){
+      let xarxes = app.taules.xarxes_socials.taula.find(row=>{
+        return row["any"]==year;
+      });
+      if(!xarxes) return;
+
+      indicador.years[year].valor  = xarxes["streams"];
+      indicador.years[year].llista = [xarxes];
+    },
 
     actes_disseminacio_participats_o_organitzats(year,indicador){
       let esdeveniments = app.taules.esdeveniments.taula.filter(esd=>{
@@ -2085,7 +2153,7 @@
     "spinoffs_i_startups"                                   : `ordi`,
     "articles_amb_socis_industrials"                        : `scopus`,
     "estudiants_acollits"                                   : `RRHH`,
-    "cites_en_legislacio"                                   : `sage`,
+    "cites_en_legislacio"                                   : `scopus`,
     "participacions_comites_experts_ambit_legislatiu"       : `esdeveniments`,
     "premis_nacionals"                                      : `esdeveniments`,
     "premis_internacionals"                                 : `esdeveniments`,
@@ -2095,7 +2163,7 @@
     "aliances_solides_entitats_socials"                     : `esdeveniments`,
     "xxss_seguidors"                                        : `comunicacio`,
     "xxss_shares"                                           : `comunicacio`,
-    "xxss_plays"                                            : `comunicacio`,
+    "xxss_streams"                                          : `comunicacio`,
     "actes_disseminacio_participats_o_organitzats"          : `esdeveniments`,
     "aparicions_mitjans_comunicacio_nacionals"              : `esdeveniments`,
     "aparicions_mitjans_comunicacio_internacionals"         : `esdeveniments`,
@@ -2148,7 +2216,7 @@
     "ips_spinoffs_i_startups"                             :"ordi",
     "ips_articles_amb_socis_industrials"                  :"scopus",
     "ips_estudiants_acollits"                             :"RRHH",
-    "ips_cites_en_legislacio"                             :"sage",
+    "ips_cites_en_legislacio"                             :"scopus",
     "ips_participacions_comites_experts_ambit_legislatiu" :"esdeveniments",
     "ips_premis_nacionals_i_internacionals"               :"esdeveniments",
     "ips_narratives_impacte_CERCA "                       :"esdeveniments",
@@ -2242,7 +2310,7 @@
       new Bloc("Promoure comunicació",10,[
         new Indicador(`xxss_seguidors`,                                25, [0,  10,  15,  20,  25,  30], 1164 ),
         new Indicador(`xxss_shares`,                                    5, [0,  10,  15,  20,  25,  30],  505 ),
-        new Indicador(`xxss_plays`,                                    10, [0, 100, 200, 300, 500, 800],    0 ),
+        new Indicador(`xxss_streams`,                                  10, [0, 100, 200, 300, 500, 800],    0 ),
         new Indicador(`actes_disseminacio_participats_o_organitzats`,  15, [0,   5,  10,  15,  20,  20],    0 ),
         new Indicador(`aparicions_mitjans_comunicacio_nacionals`,      25, [0,  10,  15,  20,  25,  30],  197 ),
         new Indicador(`aparicions_mitjans_comunicacio_internacionals`, 20, [0,  10,  15,  20,  25,  30],   11 ),
@@ -2315,7 +2383,7 @@
       new Bloc("Promoure comunicació",10,[
         new Indicador(`xxss_seguidors`,                                25, [0,  10,  15,  20,  25,  30], 1164 ),
         new Indicador(`xxss_shares`,                                    5, [0,  10,  15,  20,  25,  30],  505 ),
-        new Indicador(`xxss_plays`,                                    10, [0, 100, 200, 300, 500, 800],    0 ),
+        new Indicador(`xxss_streams`,                                  10, [0, 100, 200, 300, 500, 800],    0 ),
         new Indicador(`actes_disseminacio_participats_o_organitzats`,  15, [0,   5,  10,  15,  20,  20],    0 ),
         new Indicador(`aparicions_mitjans_comunicacio_nacionals`,      25, [0,  10,  15,  20,  25,  30],  197 ),
         new Indicador(`aparicions_mitjans_comunicacio_internacionals`, 20, [0,  10,  15,  20,  25,  30],   11 ),
@@ -2487,7 +2555,7 @@
       veure_boto_detalls:true,
 
       //veure percentatge indicador
-      veure_percentatge:false,
+      veure_percentatge:true,
 
       //taules des d'on es calculen els indicadors: origens diversos (SQL icra, excels, ...)
       taules:{
@@ -2499,6 +2567,8 @@
         taula_aigua:         new Conf_Taula(), //MS-SQL
         projectes_personal:  new Conf_Taula(), //from fundanet: projectes_personal.xlsx
         stakeholders:        new Conf_Taula(), //from fundanet: stakeholders.xlsx
+        xarxes_socials:      new Conf_Taula(), //from excel manual sady
+        scopus:              new Conf_Taula(), //from excel manual 
       },
     }},
 
@@ -2691,6 +2761,12 @@
     "Tercero":true,
     "Tipo Aportación":true,
   };
+  app.taules.scopus.columnes={
+    "year":true,
+    "articles_Q1":true,
+    "cites_articles":true,
+    "cites_en_legislacio":true,
+  };
 </script>
 
 <script>
@@ -2747,7 +2823,6 @@
       */
     };
   }
-
   //helper function for "llegir_excel"
   function converteix_wb_a_taula_json(wb, index_sheet){
     index_sheet = index_sheet || 0;
@@ -2773,4 +2848,6 @@
   llegir_excel("projectes",          "csv/export-fundanet/Projectes.xlsx");
   llegir_excel("projectes_personal", "csv/export-fundanet/Projectes_Personal2.xlsx");
   llegir_excel("stakeholders",       "csv/export-fundanet/Stakeholders3.xlsx");
+  llegir_excel("xarxes_socials",     "csv/export-fundanet/xarxes_socials.xlsx");
+  llegir_excel("scopus",             "csv/export-fundanet/scopus.xlsx");
 </script>

@@ -76,7 +76,6 @@
       <li>scimagojr CSV descarregar per tots els anys
       <li>journal metrics buscar per ISSN i no per nom
       <li>calcular per cada any X el nombre de cites fetes durant aquell any a tots els articles publicats
-      <li>policyprofiles.sagepub.com
     </ul>
     <button onclick="this.parentNode.style.display='none'">X</button>
   </details>
@@ -222,7 +221,7 @@
                           <div>
                             <div v-if="abstract[entry['prism:doi']]">
                               <details open>
-                                <summary>Detalls ("abstract") en construcció</summary>
+                                <summary>Detalls ("abstract metadata request")</summary>
                                 <pre>{{
                                   JSON.stringify(
                                     abstract[entry['prism:doi']],
@@ -379,26 +378,26 @@
             </div>
           </td>
           <td v-if="scimagocsv">
-            <div v-if="scimagocsv[key]">
-              <table border=2 xsmall v-for="sjr in [scimagocsv[key]]">
-                <tbody v-if="sjr">
+            <div v-for="sjr in [busca_a_scimagocsv(key,val.issn,val.eIssn)]">
+              <table border=1 xsmall v-if="sjr">
+                <tbody>
                   <tr><th nowrap>SJR              <td>{{sjr.SJR}}</tr>
                   <tr><th nowrap>SJR Best Quartile<th>{{sjr["SJR Best Quartile"]}}</th>
                   <tr><th nowrap>H index          <td>{{sjr["H index"]}}</tr>
                 </tbody>
               </table>
-              <details xsmall>
+              <details xsmall v-if="sjr">
                 <summary>see all ScimagoJR metrics</summary>
                 <table border=2 xsmall>
-                  <tr v-for="val2,key2 in scimagocsv[key]">
+                  <tr v-for="val2,key2 in sjr">
                     <th nowrap>{{key2}}</th>
                     <td>{{val2}}</td>
                   </tr>
                 </table>
               </details>
-            </div>
-            <div v-if="!scimagocsv[key]">
-              <code>~journal not found in ScimagoJR CSV (workinprogress)</code>
+              <div v-if="!sjr">
+                <code>~journal not ranked in SJR</code>
+              </div>
             </div>
           </td>
           <td v-if="!scimagocsv">
@@ -409,7 +408,7 @@
     </details>
   </fieldset>
 
-  <fieldset v-if="true">
+  <fieldset v-if="false">
     <legend>ICRA affiliation metrics</legend>
     <div v-if="institution">
       <pre>{{
@@ -428,15 +427,7 @@
   </fieldset>
 
   <fieldset>
-    <legend>Resultats globals (Excel Vicenç) <span style="background:yellow">(en construcció)</span></legend>
-    <ul>
-      <li>Increment nombre d'articles al Q1 (segons Scopus) respecte any anterior
-      <li>Increment nombre cites anuals (segons Scopus) respecte any anterior
-      <li>Increment Impact factor de la institució (segons Scopus) en el moment de l'anàlisi respecte any anterior
-      <li>Nombre d'articles científics al Q1 (segons Scopus) associats a la L17 i la L18
-        <b>(preguntar què és L17/L18)</b>
-      </li>
-    </ul>
+    <legend>Indicadors</legend>
     <table border=1>
       <tr>
         <td>Nombre d'articles a revista Q1</td>
@@ -980,6 +971,26 @@
 
         this.scimagocsv = csv_dictionary;
       },
+
+      busca_a_scimagocsv(nom_revista,issn,eIssn){
+        if(!this.scimagocsv) return false;
+
+        let csv = this.scimagocsv; //dictionary to search
+
+        //search by name
+        let obj = csv[nom_revista]; //object or undefined
+        if(obj) return obj;
+
+        //search by issn
+        obj = Object.entries(csv).find(en=>en[1].Issn.includes(issn)); //object or null
+        if(obj) return obj[1];
+
+        //search by eIssn
+        obj = Object.entries(csv).find(en=>en[1].Issn.includes(eIssn)); //object or null
+        if(obj) return obj[1];
+
+        return false; //not found
+      },
     },
 
     computed:{
@@ -1143,8 +1154,9 @@
         pages.forEach(page=>{
           page.forEach(entry=>{
             let nom_revista = entry["prism:publicationName"];
-
-            let sjr = this.scimagocsv[nom_revista];
+            let issn        = entry["prism:issn"];
+            let eIssn       = entry["prism:eissn"];
+            let sjr = this.busca_a_scimagocsv(nom_revista,issn,eIssn);
             if(!sjr) return;
 
             if(sjr["SJR Best Quartile"]=="Q1"){
