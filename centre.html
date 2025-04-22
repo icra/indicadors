@@ -98,6 +98,13 @@
     button[btn_calcular_tots]:hover{
       background:rgba(255,215,0,0.75);
     }
+    [indicador_text]:hover{
+      text-decoration:underline;
+      cursor:pointer;
+    }
+    [marcat="1"]{
+      background:gold;
+    }
   </style>
   <script>
     Array.prototype.suma=function(){
@@ -240,11 +247,13 @@
           <td></td>
         </tr>
 
-        <tr v-for="indi,j in bloc.indicadors.filter(i=>!filtre_responsable || i.responsable==filtre_responsable)" v-if="bloc.visible">
+        <tr v-for="indi,j in bloc.indicadors.filter(i=>!filtre_responsable || i.responsable==filtre_responsable)" v-if="bloc.visible"
+          :marcat="indi.marcat"
+        >
           <td small right>{{indi.pes_percent}}%</td>
 
           <!--indicador text-->
-          <td small>
+          <td small @click="indi.marcat^=1" indicador_text>
             <div>{{i+1}}.{{j+1}}.
               <span :title="`${indi.text} (${indi.id})`">{{indi.text.slice(0,100)}}</span>
               <span v-if="indi.text.length>100">...</span>
@@ -425,6 +434,9 @@
         "2028":{valor:0,           llista:null, objectiu:objectius[4]||0},
         "2029":{valor:0,           llista:null, objectiu:objectius[5]||0},
       };
+
+      //visual
+      this.marcat=false;
     }
 
     //calcula puntuació indicador
