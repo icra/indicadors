@@ -533,7 +533,7 @@
     "objectius_assolits_del_pla_formacio"                   : `Objectius del pla de formació anual assolits`,
     "participants_actes_disseminacio_participats"           : `Participants en actes de disseminació participats per ICRA`,
     "projectes_competitius_outreach"                        : `Projectes singulars competitius per desenvolupar activitats d'outreach`,
-    "euros_projectes_competitius_outreach"                  : `Aportació econòmica (k€ executats) en projectes competitius per activitats d'outreach`,
+    "euros_projectes_competitius_outreach"                  : `Aportació econòmica en projectes competitius per activitats d'outreach`,
     "aliances_solides_empreses_i_administracio_publica"     : `Aliances sòlides amb empreses i administració pública`,
     "projectes_i_encarrecs_ACA"                             : `Projectes/encàrrecs directes de l'ACA`,
     "accions_suport_tecnic_a_ACA_quimica_analitica"         : `Accions de suport tècnic ofertes a l'ACA en temes de química analítica`,
@@ -547,10 +547,10 @@
     "activitats_JEDI_organitzades"                          : `Organització d'activitats per fomentar valors JEDI en la recerca`,
     "dones_categories_laborals_superiors"                   : `Percentatge de dones en categories laborals superiors o amb càrrecs de gestió i lideratge (IPs i caps de departament)`,
     "projectes_amb_administracio_central"                   : `Projectes/contractes/comitès amb participació d'ICRA i de l'administració central de l'estat`,
-    "euros_projectes_amb_administracio_central"             : `Aportació econòmica (k€ executats) en contractes de recerca amb l'administració central de l'estat`,
+    "euros_projectes_amb_administracio_central"             : `Aportació econòmica en contractes de recerca amb l'administració central de l'estat`,
 
     //textos indicadors ip
-    "ips_euros_recerca"                                   :"Aportació econòmica total (k€ executats) a través de projectes competitius Europeus, estatals i regionals com IP o co-IP",
+    "ips_euros_recerca"                                   :"Aportació econòmica total a través de projectes competitius Europeus, estatals i regionals com IP o co-IP",
     "ips_projectes_erc_eic"                               :"Projectes de recerca (ERC/EIC, amb pressupost superior a 1 M€) aconseguits",
     "ips_projectes_coordinats_5_socis_2M€"                :"Projectes de recerca competitius coordinats (Horizon IA, RIA, DN i altres amb més de 5 socis i pressupost total superior a 2 M€) aconseguits",
     "ips_projectes_coordinats_4_socis_1M€"                :"Projectes de recerca competitius coordinats (JPI, LIFE i altres amb més de 4 socis i pressupost total superior a 1 M€) aconseguits",
@@ -566,7 +566,7 @@
     "ips_tesis_doctorals"                                 :"Tesis doctorals defensades",
     "ips_postdocs_supervisats"                            :"Postdocs (>6 mesos) supervisats",
     "ips_estades_recercaires_acollits"                    :"Estades de recercaires (predocs, postdocs, visiting scientist) acollits en estades de recerca (>3 mesos)",
-    "ips_euros_projectes_KTT"                             :"Aportació econòmica (k€ executats ) a través de projectes/contractes tipus KTT com IP o co-IP",
+    "ips_euros_projectes_KTT"                             :"Aportació econòmica a través de projectes/contractes tipus KTT com IP o co-IP",
     "ips_formacions_per_empreses_organitzades"            :"Formacions/tallers per empreses/administracions organitzats",
     "ips_patents_i_secrets_industrials"                   :"Patents/secrets industrials en tramitació o vigents",
     "ips_spinoffs_i_startups"                             :"Spin-offs o start-ups amb participació d'ICRA vigents",
@@ -2677,11 +2677,11 @@
         return ret;
       },
 
-      //continuar aqui
       get_ips(year){
         if(!this.tot_carregat) return false;
         year = year || "2023";
-        let personal = this.taules.projectes_personal.taula?.filter(row=>{
+
+        let personal = this.taules.projectes_personal.taula.filter(row=>{
           return(
             (
               row["EnQualitatde"]=="INVESTIGADOR/A PRINCIPAL (IP)"||
@@ -2697,8 +2697,46 @@
           );
         });
 
+        //{nom,orcid}
+        let ips=[];
         let noms = Array.from(new Set(personal.map(row=>row.Persona)));
-        return noms;
+
+        console.log(noms);
+
+        noms.forEach(nom=>{
+          let tr     = this.treu_accents; //function
+          let tr_nom = tr(nom);
+          let obj = this.taules.personal.taula.find(row=>tr(row.Nom)==tr_nom);
+          if(!obj) return;
+          let orcid  = obj.ORCID;
+          let email  = obj.Email;
+          let genere = obj.Descripcio;
+          ips.push({nom,orcid,email});
+        });
+
+        if(noms.length != ips.length){
+          console.warn("noms.length != ips.length");
+          console.log({noms,ips});
+        }
+
+        return ips;
+      },
+
+      treu_accents(Str){
+        let str = Str.toLowerCase();
+        str = str.replace(new RegExp("\\s",      'g'),"");
+        str = str.replace(new RegExp("[àáâãäå]", 'g'),"a");
+        str = str.replace(new RegExp("æ",        'g'),"ae");
+        str = str.replace(new RegExp("ç",        'g'),"c");
+        str = str.replace(new RegExp("[èéêë]",   'g'),"e");
+        str = str.replace(new RegExp("[ìíîï]",   'g'),"i");
+        str = str.replace(new RegExp("ñ",        'g'),"n");
+        str = str.replace(new RegExp("[òóôõö]",  'g'),"o");
+        str = str.replace(new RegExp("œ",        'g'),"oe");
+        str = str.replace(new RegExp("[ùúûü]",   'g'),"u");
+        str = str.replace(new RegExp("[ýÿ]",     'g'),"y");
+        str = str.replace(new RegExp("\\W",      'g'),"");
+        return str;
       },
 
     },
