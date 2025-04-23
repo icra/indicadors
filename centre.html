@@ -98,6 +98,13 @@
     button[btn_calcular_tots]:hover{
       background:rgba(255,215,0,0.75);
     }
+    [indicador_text]:hover{
+      text-decoration:underline;
+      cursor:pointer;
+    }
+    [marcat="1"]{
+      background:gold;
+    }
   </style>
   <script>
     Array.prototype.suma=function(){
@@ -105,6 +112,7 @@
     }
   </script>
 <head></head><body>
+
 <!--nav--><div id=nav></div><hr><script src="nav.js"></script>
 
 <div id=app>
@@ -239,11 +247,13 @@
           <td></td>
         </tr>
 
-        <tr v-for="indi,j in bloc.indicadors.filter(i=>!filtre_responsable || i.responsable==filtre_responsable)" v-if="bloc.visible">
+        <tr v-for="indi,j in bloc.indicadors.filter(i=>!filtre_responsable || i.responsable==filtre_responsable)" v-if="bloc.visible"
+          :marcat="indi.marcat"
+        >
           <td small right>{{indi.pes_percent}}%</td>
 
           <!--indicador text-->
-          <td small>
+          <td small @click="indi.marcat^=1" indicador_text>
             <div>{{i+1}}.{{j+1}}.
               <span :title="`${indi.text} (${indi.id})`">{{indi.text.slice(0,100)}}</span>
               <span v-if="indi.text.length>100">...</span>
@@ -424,6 +434,9 @@
         "2028":{valor:0,           llista:null, objectiu:objectius[4]||0},
         "2029":{valor:0,           llista:null, objectiu:objectius[5]||0},
       };
+
+      //visual
+      this.marcat=false;
     }
 
     //calcula puntuació indicador
@@ -601,7 +614,7 @@
     "impact_factor"                                         : `IF`,
     "estades_recercaires_acollits"                          : `estades`,
     "estades_recercaires_en_altres_centres"                 : `estades`,
-    "rati_exit_propostes_europa"                            : `rati`,
+    "rati_exit_propostes_europa"                            : `%`,
     "euros_recerca_L17_L18"                                 : `k€`,
     "articles_Q1_L17_L18"                                   : `articles`,
     "euros_projectes_KTT_respecte_total"                    : `%`,
@@ -1413,6 +1426,7 @@
       let projectes = app.taules.projectes.taula.filter(pro=>{
         return(
           pro["Título Abreviado"].toUpperCase().startsWith("PATENT")&&
+          pro["Situación del Proyecto"]!="Descartat"&&
           new Date(pro["Fecha Comienzo"]).getFullYear()<=year&&
           new Date(pro["Fecha Fin Real"]).getFullYear()>=year
         );
@@ -1429,6 +1443,7 @@
       let projectes = app.taules.projectes.taula.filter(pro=>{
         return(
           pro["Título Abreviado"].replaceAll("-","").toUpperCase().startsWith("SPINOFF")&&
+          pro["Situación del Proyecto"]!="Descartat"&&
           new Date(pro["Fecha Comienzo"]).getFullYear()<=year&&
           new Date(pro["Fecha Fin Real"]).getFullYear()>=year
         );
