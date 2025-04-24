@@ -247,7 +247,10 @@
           <td></td>
         </tr>
 
-        <tr v-for="indi,j in bloc.indicadors.filter(i=>!filtre_responsable || i.responsable==filtre_responsable)" v-if="bloc.visible"
+        <!--itera indicadors-->
+        <tr
+          v-for="indi,j in bloc.indicadors.filter(i=>!filtre_responsable || i.responsable==filtre_responsable)"
+          v-if="bloc.visible"
           :marcat="indi.marcat"
         >
           <td small right>{{indi.pes_percent}}%</td>

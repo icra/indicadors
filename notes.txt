@@ -1,13 +1,11 @@
 COSES PENDENTS executables
-  - calcular Decils a partir del scimago (per ambits)
   - carregar CSV scimago 2024
   - mirar si es pot calcular impact factor a partir del citation overview api scopus
     "https://nonprod-devportal.elsevier.com/documentation/AbstractCitationAPI.wadl"
-  - buscar historial per retrobar buscador de percentil de journal
 
 no calculable:
   - articles Q1 L17 i L18 
-  - sage profile dels que no son ips i signen sota icra
+  - sage profile dels que no son ips i signen sota icra (per exemple, jpueyo)
 
 dubtes:
   - damia barcelo no surt a la llista d'implicacions en projectes (que té des del principi)

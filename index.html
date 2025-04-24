@@ -440,14 +440,77 @@
           <details small>
             <summary>llista</summary>
             <table border=1 small>
+              <tr>
+                <td center>Journal
+                <td center>Rank (percentile)
+                <td center>Author
+                <td center>Title
+              </tr>
               <tr v-for="entry in get_articles_a_revista_Q1">
-                <td><span>{{entry["prism:publicationName"]}}&nbsp;</span></td>
-                <td>Q1</td>
-                <td><b>{{entry["dc:creator"]}}&nbsp;</b></td>
+                <td>
+                  <b>{{entry.pub["prism:publicationName"]}}</b>
+                </td>
+                <td>
+                  <table style="width:100%">
+                    <tr v-for="val,key in entry.sjr.percentils">
+                      <td>{{key}}</td>
+                      <td>#{{val.rank}}/{{val.n}}</td>
+                      <td>
+                        ({{val.percentil.toFixed(2)}}%)
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+                <td><b>{{entry.pub["dc:creator"]}}&nbsp;</b></td>
                 <td>
                   <small><i>
-                    <a target=_blank :href="`https://doi.org/${entry['prism:doi']}`">
-                      {{entry["dc:title"]}}
+                    <a target=_blank :href="`https://doi.org/${entry.pub['prism:doi']}`">
+                      {{entry.pub["dc:title"]}}
+                    </a>
+                  </i></small>
+                </td>
+              </tr>
+            </table>
+          </details>
+        </td>
+      </tr>
+      <tr>
+        <td>Nombre d'articles a revista D1</td>
+        <td center>
+          <div v-if="get_articles_a_revista_D1">
+            {{get_articles_a_revista_D1.length}}
+          </div>
+        </td>
+        <td v-if="get_articles_a_revista_D1">
+          <details small>
+            <summary>llista</summary>
+            <table border=1 small>
+              <tr>
+                <td center>Journal
+                <td center>Rank (percentile)
+                <td center>Author
+                <td center>Title
+              </tr>
+              <tr v-for="entry in get_articles_a_revista_D1">
+                <td>
+                  <b>{{entry.pub["prism:publicationName"]}}</b>
+                </td>
+                <td>
+                  <table style="width:100%">
+                    <tr v-for="val,key in entry.sjr.percentils">
+                      <td>{{key}}</td>
+                      <td>#{{val.rank}}/{{val.n}}</td>
+                      <td>
+                        ({{val.percentil.toFixed(2)}}%)
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+                <td><b>{{entry.pub["dc:creator"]}}&nbsp;</b></td>
+                <td>
+                  <small><i>
+                    <a target=_blank :href="`https://doi.org/${entry.pub['prism:doi']}`">
+                      {{entry.pub["dc:title"]}}
                     </a>
                   </i></small>
                 </td>
@@ -564,7 +627,7 @@
         //"doi":abstract_object
       },
 
-      scimagocsv:null,
+      scimagocsv:null, //fetch *.csv
 
       /*utils*/
       //http requests error code descriptions
@@ -915,10 +978,11 @@
         let text = await res.text();
 
         let csv = text.split("\n").map(line=>{
-          let row = line.split(";");
+          let row = line.split(";"); //array
 
           let indexs_to_delete=[];
 
+          //arregla camps entre cometes
           for(let i=0;i<row.length;i++){
             let val = row[i];
             if(val[0]=="\"" && val.at(-1)!="\""){
@@ -970,6 +1034,8 @@
         });
 
         this.scimagocsv = csv_dictionary;
+
+        this.calcula_percentils_ambits_scimago();
       },
 
       busca_a_scimagocsv(nom_revista,issn,eIssn){
@@ -991,6 +1057,45 @@
 
         return false; //not found
       },
+
+      calcula_percentils_ambits_scimago(){
+        let ambits = {};
+        let csv = this.scimagocsv;
+
+        Object.values(csv).forEach(journal=>{
+          journal.Categories.split(";").forEach(cat=>{
+            cat = cat.trim();
+            cat = cat.replace(" (Q1)","");
+            cat = cat.replace(" (Q2)","");
+            cat = cat.replace(" (Q3)","");
+            cat = cat.replace(" (Q4)","");
+
+            if(ambits[cat]==undefined){
+              ambits[cat]=[];
+            }
+            ambits[cat].push(journal);
+          });
+        });
+
+        Object.entries(ambits).forEach(([key,val])=>{
+          let cat      = key; //string
+          let journals = val; //array
+          let n        = journals.length;
+
+          journals.forEach((jou,i)=>{
+            let percentil = 100*(i+1)/n;
+            if(jou.percentils==undefined){
+              jou.percentils={};
+            }
+            jou.percentils[cat]={
+              rank:i+1, n,
+              percentil,
+            }
+          });
+        });;
+
+      },
+
     },
 
     computed:{
@@ -1159,18 +1264,64 @@
             let sjr = this.busca_a_scimagocsv(nom_revista,issn,eIssn);
             if(!sjr) return;
 
+            if(!sjr.percentils) return;
+
             if(sjr["SJR Best Quartile"]=="Q1"){
-              articles.push(entry);
+              articles.push({
+                pub:entry,
+                sjr,
+              });
             }
           });
         });
 
         return articles;
       },
+
+      get_articles_a_revista_D1(){
+        if(
+          this.scopus.response  == null  ||
+          this.scopus.result    == null  ||
+          this.scopus.result_ok == false ||
+          this.scimagocsv       == null
+        ){
+          return false;
+        }
+
+        let articles=[];
+
+        let pages = this.scopus.result;
+
+        pages.forEach(page=>{
+          page.forEach(entry=>{
+            let nom_revista = entry["prism:publicationName"];
+            let issn        = entry["prism:issn"];
+            let eIssn       = entry["prism:eissn"];
+            let sjr = this.busca_a_scimagocsv(nom_revista,issn,eIssn);
+            if(!sjr) return;
+
+            if(!sjr.percentils) return;
+
+            if(Object.values(sjr.percentils).some(per=>per.percentil<=10)){
+              articles.push({
+                pub:entry,
+                sjr,
+              });
+            }
+          });
+        });
+
+        return articles;
+      },
+
+      journals_ranking(){
+      },
     },
 
     mounted(){
       document.querySelector("textarea[query]").focus();
+
+      //get scimago csv 2023
       this.get_scimagocsv();
 
       //if query is in the url, start search immediately
