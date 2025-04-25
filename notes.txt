@@ -1,11 +1,17 @@
-COSES PENDENTS executables
-  - carregar CSV scimago 2024
-  - mirar si es pot calcular impact factor a partir del citation overview api scopus
-    "https://nonprod-devportal.elsevier.com/documentation/AbstractCitationAPI.wadl"
+=== COSES PENDENTS ===
 
-no calculable:
+Possibles:
+  - carregar CSV scimago 2024 (journalrank)
+  - enviar correu a ips per dir que
+    - marquin nom persona IP a esdeveniment i no el seu estudiant
+  - taula resum esdeveniments per IP
+
+Impossibles per ara:
   - articles Q1 L17 i L18 
   - sage profile dels que no son ips i signen sota icra (per exemple, jpueyo)
+  - calcular impact factor a partir del citation overview api scopus
+    "https://nonprod-devportal.elsevier.com/documentation/AbstractCitationAPI.wadl"
+    resultat request: 403 forbidden
 
-dubtes:
-  - damia barcelo no surt a la llista d'implicacions en projectes (que té des del principi)
+Dubtes:
+  - damià barceló no surt a la llista d'implicacions en projectes

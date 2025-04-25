@@ -233,9 +233,15 @@
                             </div>
                             <button
                               v-if="!abstract[entry['prism:doi']]"
-                              @click="request_abstract(entry,0)"
+                              @click="request_abstract(entry)"
                             >
                               request publication details
+                            </button>
+                            <button
+                              v-if="!abstract[entry['prism:doi']]"
+                              @click="request_citation_overview(entry)"
+                            >
+                              request citation overview
                             </button>
                           </div>
 
@@ -274,7 +280,7 @@
 
   <fieldset>
     <legend>Journals in the results</legend>
-    <details open>
+    <details>
       <summary sticky>
         Journals
         <span v-if="get_revistes">({{get_revistes.length}})</span>
@@ -420,7 +426,7 @@
       }}</pre>
     </div>
     <div v-if="!institution">
-      <button @click="get_institution()">
+      <button @click="request_institution()">
         request affiliation data
       </button>
     </div>
@@ -442,7 +448,7 @@
             <table border=1 small>
               <tr>
                 <td center>Journal
-                <td center>Rank (percentile)
+                <td center>Rank (percentile) by category
                 <td center>Author
                 <td center>Title
               </tr>
@@ -487,7 +493,7 @@
             <table border=1 small>
               <tr>
                 <td center>Journal
-                <td center>Rank (percentile)
+                <td center>Rank (percentile) by category
                 <td center>Author
                 <td center>Title
               </tr>
@@ -839,15 +845,46 @@
         this.abstract[doi]=data;
       },
 
-      //TODO no funciona
-      async get_institution(){
-        let API_KEY = this.scopus.API_KEY;
-        let afid    = 60110375; //icra affiliation id
-        let url     = `https://api.elsevier.com/content/affiliation/affiliation_id/${afid}?apiKey=${API_KEY}`;
+      //scopus api call: fetch citation overview TODO
+      async request_citation_overview(entry){
+        let doi       = entry["prism:doi"];
+        let scopus_id = entry["dc:identifier"].replace("SCOPUS_ID:","");
+        let API_KEY   = this.scopus.API_KEY;
+
+        //return cached value TODO
+        //if(this.abstract[doi]) return this.abstract[doi];
+
+        let url=`https://api.elsevier.com/content/abstract/citations?scopus_id=${scopus_id}`;
 
         let options={
           method:"GET",
           headers:{
+            "X-ELS-APIKey":API_KEY,
+            "Accept":"application/json",
+          },
+        };
+        let response = await fetch(url,options);
+        if(!response.ok){
+          throw new Error("Error in fetch(): response.ok==false");
+        }
+        const data = await response.json();
+
+        console.log(data);
+
+        //cache result TODO
+        //this.abstract[doi]=data;
+      },
+
+      //TODO no funciona
+      async request_institution(){
+        let API_KEY = this.scopus.API_KEY;
+        let afid    = 60110375; //icra affiliation id
+        let url     = `https://api.elsevier.com/content/affiliation/affiliation_id/${afid}`;
+
+        let options={
+          method:"GET",
+          headers:{
+            "X-ELS-APIKey":API_KEY,
             "Accept":"application/json",
           },
         };
@@ -1058,10 +1095,12 @@
         return false; //not found
       },
 
+      //calcula percentils dels rankings
       calcula_percentils_ambits_scimago(){
         let ambits = {};
         let csv = this.scimagocsv;
 
+        //classifica journals dins dels ambits
         Object.values(csv).forEach(journal=>{
           journal.Categories.split(";").forEach(cat=>{
             cat = cat.trim();
@@ -1077,13 +1116,14 @@
           });
         });
 
+        //recorre els ambits i calcula el ranking de cada revista
         Object.entries(ambits).forEach(([key,val])=>{
           let cat      = key; //string
           let journals = val; //array
-          let n        = journals.length;
+          let n        = journals.length; //number
 
           journals.forEach((jou,i)=>{
-            let percentil = 100*(i+1)/n;
+            let percentil = 100*(i+1)/n; //number
             if(jou.percentils==undefined){
               jou.percentils={};
             }
@@ -1092,10 +1132,8 @@
               percentil,
             }
           });
-        });;
-
+        });
       },
-
     },
 
     computed:{
@@ -1312,9 +1350,6 @@
         });
 
         return articles;
-      },
-
-      journals_ranking(){
       },
     },
 
