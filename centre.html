@@ -154,22 +154,6 @@
     <div v-html="html_detalls_indicador"></div>
   </div>
 
-  <!--àmbits pestanyes-->
-  <p style="display:flex;align-items:center">
-    <button
-      v-for="ambit in ambits"
-      @click="ambit_actual=ambit"
-      :ambit_actual="ambit==ambit_actual"
-    >{{ambit.nom}}</button>
-
-    <span>&emsp;</span>
-
-    <span>Anys analitzats:</span>
-    <label v-for="year in Object.keys(selected_years)">
-      <input type=checkbox v-model="selected_years[year]">{{year}}
-    </label>
-  </p>
-
   <!--secció indicadors-->
   <details open>
     <summary large bold>
@@ -178,6 +162,22 @@
         ({{ambit_actual.blocs.map(b=>b.indicadors.length).suma()}} indicadors)
       </small>
     </summary>
+
+    <!--àmbits pestanyes-->
+    <p style="display:flex;align-items:center">
+      <button
+        v-for="ambit in ambits"
+        @click="ambit_actual=ambit"
+        :ambit_actual="ambit==ambit_actual"
+      >{{ambit.nom}}</button>
+
+      <span>&emsp;</span>
+
+      <span>Anys analitzats:</span>
+      <label v-for="year in Object.keys(selected_years)">
+        <input type=checkbox v-model="selected_years[year]">{{year}}
+      </label>
+    </p>
 
     <!--opcions-->
     <p>
@@ -217,7 +217,7 @@
           style="
             display:grid;
             grid-template-columns:repeat(5,1fr);
-            grid-gap:1px 5px;
+            grid-gap:1px 3px;
           "
         >
           <div v-for="ip in {'IPs':get_ips,'UdG professors':get_professors}[ambit_actual.nom]()">
@@ -296,13 +296,21 @@
           v-if="bloc.visible"
           :marcat="indi.marcat"
         >
-          <td small right>{{indi.pes_percent}}%</td>
+          <td xsmall right>{{indi.pes_percent}}%</td>
 
-          <!--indicador text-->
+          <!--text indicador-->
           <td small @click="indi.marcat^=1" indicador_text>
-            <div>{{i+1}}.{{j+1}}.
-              <span :title="`${indi.text} (${indi.id})`">{{indi.text.slice(0,100)}}</span>
-              <span v-if="indi.text.length>100">...</span>
+            <div>
+              <span>{{i+1}}.{{j+1}}.</span>
+
+              <!--text indicador-->
+              <span v-if="!indi.marcat">
+                <span :title="`${indi.text} (${indi.id})`">{{indi.text.slice(0,100)}}</span>
+                <span v-if="indi.text.length>100">...</span>
+              </span>
+              <span v-if="indi.marcat">
+                {{indi.text}}
+              </span>
             </div>
           </td>
 
@@ -378,13 +386,15 @@
     </table>
   </details>
 
-  <div v-if="debug"><hr>
-    <h4>[MODE DEBUG] Taules desenvolupament per calcular indicadors</h4><hr>
-
+  <!--taules dev "Conf_Taula"-->
+  <details v-if="debug" open>
+    <summary large bold>
+      [dev] Taules desenvolupament
+    </summary>
     <!--itera taules-->
     <div v-for="taula in Object.keys(taules)">
-      <details>
-        <summary large bold>
+      <details :id="`container_taula_${taula}`">
+        <summary large bold style="margin-left:1em;color:#555">
           Taula {{taula}}
           <span v-if="taules[taula].taula" small>
             ({{taules[taula].files_filtrades.length}}/{{taules[taula].taula.length}} items)
@@ -412,6 +422,11 @@
                 </button>
                 <button @click="taules[taula].columnes[key]=false">X</button>
               </th>
+              <th>
+                <a :href="`#container_taula_${taula}`">
+                  #taula_{{taula}}
+                </a>
+              </th>
             </tr>
           </thead>
           <tr v-for="row in taules[taula].files_filtrades">
@@ -420,9 +435,60 @@
             </td>
           </tr>
         </table>
-      </details><hr>
+      </details>
     </div>
-  </div>
+  </details>
+
+  <!--taula_resum_esdeveniments-->
+  <details v-if="debug && taula_resum_esdeveniments">
+    <summary large bold>
+      [dev] Taula resum esdeveniments-IPs
+    </summary>
+    <ul
+      v-for="[a,b] in [[
+        taula_resum_esdeveniments.map(row=>row.esdeveniments.length).suma(),
+        taules.esdeveniments.taula.length,
+      ]]"
+    >
+      <li>Hi ha {{b}} esdeveniments ("totals").
+      <li>Hi ha {{a}} esdeveniments associats a IPs ("correctes").
+      <li>La diferència ({{b-a}} esdeveniments) no estan associats a IPs.
+    </ul>
+
+    <table border=1>
+      <tr>
+        <th>ip</th>
+        <th>esdeveniments</th>
+      </tr>
+      <tr v-for="row in taula_resum_esdeveniments">
+        <td>{{row.ip.nom}}</td>
+        <td>
+          <details>
+            <summary>{{row.esdeveniments.length}} esdeveniments</summary>
+            <table border=1 small style="margin-left:5px">
+              <tr v-for="esd in row.esdeveniments">
+                <td>
+                  <details>
+                    <summary>
+                      [{{new Date(esd.DataInici_Esdeveniment).getFullYear()}}]
+                      {{esd.Esdeveniment}}
+                    </summary>
+                    <table style="margin-left:5px">
+                      <tr v-for="val,key in esd">
+                        <td>{{key}}</td>
+                        <td>{{val}}</td>
+                      </tr>
+                    </table>
+                  </details>
+                </td>
+              </tr>
+            </table>
+          </details>
+        </td>
+      </tr>
+    </table>
+  </details>
+
 </div>
 
 <script>//classes i dades
@@ -638,7 +704,7 @@
     "ips_cites_en_legislacio"                             :"Cites en legislació  (Sage Policy Profiles)",
     "ips_participacions_comites_experts_ambit_legislatiu" :"Participacions en comitès d'experts en l'àmbit legislatiu i de gestió de l'aigua",
     "ips_premis_nacionals_i_internacionals"               :"Premis internacionals o nacionals",
-    "ips_narratives_impacte_CERCA "                       :"Narratives d'impacte sotmeses a CERCA i avaluades amb un excel·lent o outstanding",
+    "ips_narratives_impacte_CERCA"                        :"Narratives d'impacte sotmeses a CERCA i avaluades amb un excel·lent o outstanding",
     "ips_actes_disseminacio_participats_o_organitzats"    :"Actes de disseminació participats o organitzats",
     "ips_aparicions_mitjans_comunicacio_nacionals"        :"Aparicions en mitjans de comunicació regionals o estatals",
     "ips_aparicions_mitjans_comunicacio_internacionals"   :"Aparicions en mitjans de comunicació internacionals",
@@ -745,7 +811,7 @@
     "ips_cites_en_legislacio"                             :"cites",
     "ips_participacions_comites_experts_ambit_legislatiu" :"participacions",
     "ips_premis_nacionals_i_internacionals"               :"premis",
-    "ips_narratives_impacte_CERCA "                       :"narratives",
+    "ips_narratives_impacte_CERCA"                        :"narratives",
     "ips_actes_disseminacio_participats_o_organitzats"    :"actes",
     "ips_aparicions_mitjans_comunicacio_nacionals"        :"aparicions",
     "ips_aparicions_mitjans_comunicacio_internacionals"   :"aparicions",
@@ -1560,7 +1626,10 @@
       let personal = app.taules.personal.taula.filter(per=>{
         return(
           per["Categoria"]=="120. VISITING STUDENT"&&
-          per["Titulacio"]=="070. BATXILLERAT"&&
+          (
+            per["Titulacio"]=="070. BATXILLERAT"||
+            per["Titulacio"]=="085. ESO"
+          )&&
           new Date(per["Datainicicontracte"]).getFullYear()<=year &&
           new Date(per["DataFiContracte"   ]).getFullYear()>=year
         );
@@ -2604,31 +2673,417 @@
       indicador.years[year].llista = llista; //array
     },
 
+    ips_postdocs_supervisats(year,indicador){
+      let nom_ip=app.ip_seleccionat?.nom||"Acuña Salazar, Vicenç";
+
+      let tr = app.treu_accents;//function
+      nom_ip = tr(nom_ip);
+
+      let personal = app.taules.personal.taula.filter(row=>{
+        let responsable = tr(row["Responsable"]);
+
+        //check duració postdoc >6 mesos (180dies)
+        let sis_mesos_ms = 180*24*3600*1000; //ms
+        let data_inici   = new Date(row.Datainicicontracte);
+        let data_final   = new Date(row.DataFiContracte);
+        let duracio_ms   = data_final.getTime() - data_inici.getTime();
+
+        return (
+          responsable==nom_ip                 &&
+          row["Categoria"]                    &&
+          row["Categoria"].includes("POSTDOC")&&
+          data_inici.getFullYear()<=year      &&
+          data_final.getFullYear()>=year      &&
+          duracio_ms>=sis_mesos_ms
+        );
+      });
+
+      indicador.years[year].valor  = personal.length; //number
+      indicador.years[year].llista = personal;        //array
+    },
+
+    ips_congressos_tallers_escoles_estiu_organitzats(year,indicador){
+      let nom_ip=app.ip_seleccionat?.nom||"Acuña Salazar, Vicenç";
+
+      let tr = app.treu_accents;//function
+      nom_ip = tr(nom_ip);
+
+      let esdeveniments = app.taules.esdeveniments.taula.filter(row=>{
+        return(
+          row["Tipus_Esdeveniment"].startsWith("08")                  &&
+          tr(row["Persona"])==nom_ip                                  &&
+          new Date(row["DataInici_Esdeveniment"]).getFullYear()<=year &&
+          new Date(row["DataFi_Esdeveniment"   ]).getFullYear()>=year
+        );
+      });
+
+      let n_actes = new Set(esdeveniments.map(e=>e["ID_Esdeveniment"])).size;
+
+      if(indicador){
+        indicador.years[year].valor  = n_actes;
+        indicador.years[year].llista = esdeveniments;
+      }
+
+      return n_actes;
+    },
+
+    ips_conferencies_convidades(year,indicador){
+      let nom_ip=app.ip_seleccionat?.nom||"Acuña Salazar, Vicenç";
+
+      let tr = app.treu_accents;//function
+      nom_ip = tr(nom_ip);
+
+      let esdeveniments = app.taules.esdeveniments.taula.filter(row=>{
+        return(
+          row["Tipus_Esdeveniment"].startsWith("07")                  &&
+          tr(row["Persona"])==nom_ip                                  &&
+          new Date(row["DataInici_Esdeveniment"]).getFullYear()<=year &&
+          new Date(row["DataFi_Esdeveniment"   ]).getFullYear()>=year
+        );
+      });
+
+      let n_actes = new Set(esdeveniments.map(e=>e["ID_Esdeveniment"])).size;
+
+      if(indicador){
+        indicador.years[year].valor  = n_actes;
+        indicador.years[year].llista = esdeveniments;
+      }
+
+      return n_actes;
+    },
+
+    ips_comites_internacionals_participats(year,indicador){
+      let nom_ip=app.ip_seleccionat?.nom||"Acuña Salazar, Vicenç";
+
+      let tr = app.treu_accents;//function
+      nom_ip = tr(nom_ip);
+
+      let esdeveniments = app.taules.esdeveniments.taula.filter(row=>{
+        return(
+          row["Tipus_Esdeveniment"].startsWith("06")                  &&
+          tr(row["Persona"])==nom_ip                                  &&
+          new Date(row["DataInici_Esdeveniment"]).getFullYear()<=year &&
+          new Date(row["DataFi_Esdeveniment"   ]).getFullYear()>=year
+        );
+      });
+
+      let n_actes = new Set(esdeveniments.map(e=>e["ID_Esdeveniment"])).size;
+
+      if(indicador){
+        indicador.years[year].valor  = n_actes;
+        indicador.years[year].llista = esdeveniments;
+      }
+
+      return n_actes;
+    },
+
+    ips_treball_editorial_Q1(year,indicador){
+      let nom_ip=app.ip_seleccionat?.nom||"Acuña Salazar, Vicenç";
+
+      let tr = app.treu_accents;//function
+      nom_ip = tr(nom_ip);
+
+      let esdeveniments = app.taules.esdeveniments.taula.filter(row=>{
+        return(
+          row["Tipus_Esdeveniment"].startsWith("16")                  &&
+          tr(row["Persona"])==nom_ip                                  &&
+          new Date(row["DataInici_Esdeveniment"]).getFullYear()<=year &&
+          new Date(row["DataFi_Esdeveniment"   ]).getFullYear()>=year
+        );
+      });
+
+      let n_actes = new Set(esdeveniments.map(e=>e["ID_Esdeveniment"])).size;
+
+      if(indicador){
+        indicador.years[year].valor  = n_actes;
+        indicador.years[year].llista = esdeveniments;
+      }
+
+      return n_actes;
+    },
+
+    ips_narratives_impacte_CERCA(year,indicador){
+      let nom_ip=app.ip_seleccionat?.nom||"Acuña Salazar, Vicenç";
+
+      let tr = app.treu_accents;//function
+      nom_ip = tr(nom_ip);
+
+      let esdeveniments = app.taules.esdeveniments.taula.filter(row=>{
+        return(
+          row["Tipus_Esdeveniment"].startsWith("17")                  &&
+          tr(row["Persona"])==nom_ip                                  &&
+          new Date(row["DataInici_Esdeveniment"]).getFullYear()<=year &&
+          new Date(row["DataFi_Esdeveniment"   ]).getFullYear()>=year
+        );
+      });
+
+      let n_actes = new Set(esdeveniments.map(e=>e["ID_Esdeveniment"])).size;
+
+      if(indicador){
+        indicador.years[year].valor  = n_actes;
+        indicador.years[year].llista = esdeveniments;
+      }
+
+      return n_actes;
+    },
+
+    ips_formacions_per_empreses_organitzades(year,indicador){
+      let nom_ip=app.ip_seleccionat?.nom||"Acuña Salazar, Vicenç";
+
+      let tr = app.treu_accents;//function
+      nom_ip = tr(nom_ip);
+
+      let esdeveniments = app.taules.esdeveniments.taula.filter(row=>{
+        return(
+          row["Tipus_Esdeveniment"].startsWith("11")                  &&
+          tr(row["Persona"])==nom_ip                                  &&
+          new Date(row["DataInici_Esdeveniment"]).getFullYear()<=year &&
+          new Date(row["DataFi_Esdeveniment"   ]).getFullYear()>=year
+        );
+      });
+
+      let n_actes = new Set(esdeveniments.map(e=>e["ID_Esdeveniment"])).size;
+
+      if(indicador){
+        indicador.years[year].valor  = n_actes;
+        indicador.years[year].llista = esdeveniments;
+      }
+
+      return n_actes;
+    },
+
+    ips_participacions_comites_experts_ambit_legislatiu(year,indicador){
+      let nom_ip=app.ip_seleccionat?.nom||"Acuña Salazar, Vicenç";
+
+      let tr = app.treu_accents;//function
+      nom_ip = tr(nom_ip);
+
+      let esdeveniments = app.taules.esdeveniments.taula.filter(row=>{
+        return(
+          row["Tipus_Esdeveniment"].startsWith("05")                  &&
+          tr(row["Persona"])==nom_ip                                  &&
+          new Date(row["DataInici_Esdeveniment"]).getFullYear()<=year &&
+          new Date(row["DataFi_Esdeveniment"   ]).getFullYear()>=year
+        );
+      });
+
+      let n_actes = new Set(esdeveniments.map(e=>e["ID_Esdeveniment"])).size;
+
+      if(indicador){
+        indicador.years[year].valor  = n_actes;
+        indicador.years[year].llista = esdeveniments;
+      }
+
+      return n_actes;
+    },
+
+    ips_premis_nacionals_i_internacionals(year,indicador){
+      let nom_ip=app.ip_seleccionat?.nom||"Acuña Salazar, Vicenç";
+
+      let tr = app.treu_accents;//function
+      nom_ip = tr(nom_ip);
+
+      let esdeveniments = app.taules.esdeveniments.taula.filter(row=>{
+        return(
+          (
+            row["Tipus_Esdeveniment"].startsWith("12")||
+            row["Tipus_Esdeveniment"].startsWith("13")
+          )&&
+          tr(row["Persona"])==nom_ip &&
+          new Date(row["DataInici_Esdeveniment"]).getFullYear()<=year &&
+          new Date(row["DataFi_Esdeveniment"   ]).getFullYear()>=year
+        );
+      });
+
+      let n_actes = new Set(esdeveniments.map(e=>e["ID_Esdeveniment"])).size;
+
+      if(indicador){
+        indicador.years[year].valor  = n_actes;
+        indicador.years[year].llista = esdeveniments;
+      }
+
+      return n_actes;
+    },
+
+    ips_actes_disseminacio_participats_o_organitzats(year,indicador){
+      let nom_ip=app.ip_seleccionat?.nom||"Acuña Salazar, Vicenç";
+
+      let tr = app.treu_accents;//function
+      nom_ip = tr(nom_ip);
+
+      let esdeveniments = app.taules.esdeveniments.taula.filter(row=>{
+        return(
+          row["Tipus_Esdeveniment"].startsWith("01") &&
+          tr(row["Persona"])==nom_ip &&
+          new Date(row["DataInici_Esdeveniment"]).getFullYear()<=year &&
+          new Date(row["DataFi_Esdeveniment"   ]).getFullYear()>=year
+        );
+      });
+
+      let n_actes = new Set(esdeveniments.map(e=>e["ID_Esdeveniment"])).size;
+
+      if(indicador){
+        indicador.years[year].valor  = n_actes;
+        indicador.years[year].llista = esdeveniments;
+      }
+
+      return n_actes;
+    },
+
+    ips_aparicions_mitjans_comunicacio_nacionals(year,indicador){
+      let nom_ip=app.ip_seleccionat?.nom||"Acuña Salazar, Vicenç";
+
+      let tr = app.treu_accents;//function
+      nom_ip = tr(nom_ip);
+
+      let esdeveniments = app.taules.esdeveniments.taula.filter(row=>{
+        return(
+          row["Tipus_Esdeveniment"].startsWith("04") &&
+          tr(row["Persona"])==nom_ip &&
+          new Date(row["DataInici_Esdeveniment"]).getFullYear()<=year &&
+          new Date(row["DataFi_Esdeveniment"   ]).getFullYear()>=year
+        );
+      });
+
+      let n_actes = new Set(esdeveniments.map(e=>e["ID_Esdeveniment"])).size;
+
+      if(indicador){
+        indicador.years[year].valor  = n_actes;
+        indicador.years[year].llista = esdeveniments;
+      }
+
+      return n_actes;
+    },
+
+    ips_aparicions_mitjans_comunicacio_internacionals(year,indicador){
+      let nom_ip=app.ip_seleccionat?.nom||"Acuña Salazar, Vicenç";
+
+      let tr = app.treu_accents;//function
+      nom_ip = tr(nom_ip);
+
+      let esdeveniments = app.taules.esdeveniments.taula.filter(row=>{
+        return(
+          row["Tipus_Esdeveniment"].startsWith("03") &&
+          tr(row["Persona"])==nom_ip &&
+          new Date(row["DataInici_Esdeveniment"]).getFullYear()<=year &&
+          new Date(row["DataFi_Esdeveniment"   ]).getFullYear()>=year
+        );
+      });
+
+      let n_actes = new Set(esdeveniments.map(e=>e["ID_Esdeveniment"])).size;
+
+      if(indicador){
+        indicador.years[year].valor  = n_actes;
+        indicador.years[year].llista = esdeveniments;
+      }
+
+      return n_actes;
+    },
+
+    ips_estades_recercaires_acollits(year,indicador){
+      let nom_ip=app.ip_seleccionat?.nom||"Acuña Salazar, Vicenç";
+
+      let tr = app.treu_accents;//function
+      nom_ip = tr(nom_ip);
+
+      let personal = app.taules.personal.taula.filter(row=>{
+        let responsable = tr(row["Responsable"]);
+
+        //check duració postdoc >3 mesos (90dies)
+        let tres_mesos_ms = 90*24*3600*1000; //ms
+        let data_inici    = new Date(row.Datainicicontracte);
+        let data_final    = new Date(row.DataFiContracte);
+        let duracio_ms    = data_final.getTime() - data_inici.getTime();
+
+        return(
+          responsable==nom_ip && (
+            row["Categoria"]=="110. VISITING SCIENTIST"|| (
+              row["Categoria"]=="120. VISITING STUDENT"&& (
+                row["Titulacio"]=="010. DOCTOR"||
+                row["Titulacio"]=="020. MASTER"||
+                row["Titulacio"]=="030. LLICENCIAT"||
+                row["Titulacio"]=="040. DIPLOMAT"||
+                row["Titulacio"]=="050. GRAU"
+              )
+            )
+          ) &&
+          data_inici.getFullYear()<=year &&
+          data_final.getFullYear()>=year &&
+          duracio_ms>=tres_mesos_ms
+        );
+      });
+
+      if(indicador){
+        indicador.years[year].valor  = personal.length;
+        indicador.years[year].llista = personal;
+      }
+
+      return personal.length;
+    },
+
+    ips_cites_en_legislacio(year,indicador){
+      let nom_ip=app.ip_seleccionat?.nom||"Acuña Salazar, Vicenç";
+
+      let tr = app.treu_accents;//function
+      nom_ip = tr(nom_ip);
+
+      let sage = app.taules.sage.taula.find(row=>{
+        return tr(row.nom)==nom_ip;
+      }); //object or null
+
+      if(!sage) return
+      if(!sage.response_rebuda) return;
+
+      let cites = sage.cites[year]||0; //number
+
+      if(indicador){
+        indicador.years[year].valor  = cites;
+        indicador.years[year].llista = [{nom_ip,year,cites}];
+      }
+
+      return cites;
+    },
+
+    ips_estudiants_acollits(year,indicador){
+      let nom_ip=app.ip_seleccionat?.nom||"Acuña Salazar, Vicenç";
+
+      let tr = app.treu_accents;//function
+      nom_ip = tr(nom_ip); //"acunasalazarvicenc";
+
+      let personal = app.taules.personal.taula.filter(row=>{
+        let responsable = tr(row["Responsable"]);
+
+        return(
+          responsable==nom_ip &&
+          row["Categoria"]=="120. VISITING STUDENT"&&
+          (
+            row["Titulacio"]=="070. BATXILLERAT"||
+            row["Titulacio"]=="085. ESO"
+          )&&
+          new Date(row["Datainicicontracte"]).getFullYear()<=year &&
+          new Date(row["DataFiContracte"   ]).getFullYear()>=year
+        );
+      });
+
+      if(indicador){
+        indicador.years[year].valor  = personal.length;
+        indicador.years[year].llista = personal;
+      }
+
+      return personal.length;
+    }
   };
 
   let funcions_calculadores_ips={
-    //ips_projectes_coordinats_5_socis_2M(year,indicador){}, //TODO
-    //ips_projectes_coordinats_4_socis_1M(year,indicador){}, //TODO
-    //ips_congressos_tallers_escoles_estiu_organitzats(year,indicador){}, //TODO
-    //ips_conferencies_convidades(year,indicador){}, //TODO
-    //ips_comites_internacionals_participats(year,indicador){}, //TODO
-    //ips_articles_Q1(year,indicador){}, //TODO
-    //ips_articles_D1_percentatge(year,indicador){}, //TODO
-    //ips_articles_FWCI_10(year,indicador){}, //TODO
-    //ips_treball_editorial_Q1(year,indicador){}, //TODO
-    //ips_tesis_doctorals(year,indicador){}, //TODO
-    //ips_postdocs_supervisats(year,indicador){}, //TODO
-    //ips_estades_recercaires_acollits(year,indicador){}, //TODO
-    //ips_formacions_per_empreses_organitzades(year,indicador){}, //TODO
-    //ips_articles_amb_socis_industrials(year,indicador){}, //TODO
-    //ips_estudiants_acollits(year,indicador){}, //TODO
-    //ips_cites_en_legislacio(year,indicador){}, //TODO
-    //ips_participacions_comites_experts_ambit_legislatiu(year,indicador){}, //TODO
-    //ips_premis_nacionals_i_internacionals(year,indicador){}, //TODO
-    //ips_narratives_impacte_CERCA(year,indicador){}, //TODO
-    //ips_actes_disseminacio_participats_o_organitzats(year,indicador){}, //TODO
-    //ips_aparicions_mitjans_comunicacio_nacionals(year,indicador){}, //TODO
-    //ips_aparicions_mitjans_comunicacio_internacionals(year,indicador){}, //TODO
+    //ordi ips_projectes_coordinats_5_socis_2M(year,indicador){}, //TODO pendent resposta jaume
+    //ordi ips_projectes_coordinats_4_socis_1M(year,indicador){}, //TODO pendent resposta jaume
+
+    //scop ips_articles_Q1(year,indicador){},                    //TODO pendent (possible)
+    //scop ips_articles_D1_percentatge(year,indicador){},        //TODO pendent (possible)
+    //scop ips_articles_FWCI_10(year,indicador){},               //TODO pendent accés scopus api
+    //scop ips_articles_amb_socis_industrials(year,indicador){}, //TODO no se
+
+    //rrhh ips_tesis_doctorals(year,indicador){},     //TODO preguntat
   };
 
   let responsables={
@@ -2695,7 +3150,7 @@
     "projectes_i_encarrecs_ACA"                             : `ordi`,
     "accions_suport_tecnic_a_ACA_quimica_analitica"         : `preguntar_vicenç`,
     "participants_tallers_UdG_ICRA"                         : `esdeveniments`,
-    "nombre_IPs"                                            : `preguntar_ruben`,
+    "nombre_IPs"                                            : `RRHH`,
     "posicions_RF_creades"                                  : `RRHH`,
     "posicions_RS_estabilitzacio_RF"                        : `RRHH`,
     "canvis_tram_RS_o_RP"                                   : `RRHH`,
@@ -2719,8 +3174,8 @@
     "ips_articles_D1_percentatge"                         :"scopus",
     "ips_articles_FWCI_10"                                :"scopus",
     "ips_treball_editorial_Q1"                            :"esdeveniments",
-    "ips_tesis_doctorals"                                 :"preguntar_vicenç",
-    "ips_postdocs_supervisats"                            :"preguntar_vicenç",
+    "ips_tesis_doctorals"                                 :"RRHH",
+    "ips_postdocs_supervisats"                            :"RRHH",
     "ips_estades_recercaires_acollits"                    :"RRHH",
     "ips_euros_projectes_KTT"                             :"ecofin",
     "ips_formacions_per_empreses_organitzades"            :"esdeveniments",
@@ -2731,7 +3186,7 @@
     "ips_cites_en_legislacio"                             :"scopus",
     "ips_participacions_comites_experts_ambit_legislatiu" :"esdeveniments",
     "ips_premis_nacionals_i_internacionals"               :"esdeveniments",
-    "ips_narratives_impacte_CERCA "                       :"esdeveniments",
+    "ips_narratives_impacte_CERCA"                        :"esdeveniments",
     "ips_actes_disseminacio_participats_o_organitzats"    :"esdeveniments",
     "ips_aparicions_mitjans_comunicacio_nacionals"        :"esdeveniments",
     "ips_aparicions_mitjans_comunicacio_internacionals"   :"esdeveniments",
@@ -2966,7 +3421,7 @@
         new Indicador("ips_cites_en_legislacio"                             ),
         new Indicador("ips_participacions_comites_experts_ambit_legislatiu" ),
         new Indicador("ips_premis_nacionals_i_internacionals"               ),
-        new Indicador("ips_narratives_impacte_CERCA "                       ),
+        new Indicador("ips_narratives_impacte_CERCA"                        ),
       ]),
       new Bloc("Promoure comunicació",0,[
         new Indicador("ips_actes_disseminacio_participats_o_organitzats"    ),
@@ -3053,7 +3508,7 @@
       ambits,                 //indicadors
       funcions_calculadores,  //taula helper funcions dels indicadors
       carregant:true,         //status
-      ambit_actual:ambits[0], //objecte
+      ambit_actual:ambits[3], //objecte
 
       //veure detalls d'un sol indicador
       vista_detalls_indicador:false,
@@ -3077,10 +3532,11 @@
         tipus_esdeveniments: new Conf_Taula(), //MS-SQL
         ingressos:           new Conf_Taula(), //MS-SQL
         taula_aigua:         new Conf_Taula(), //MS-SQL
-        projectes_personal:  new Conf_Taula(), //from fundanet: projectes_personal.xlsx
-        stakeholders:        new Conf_Taula(), //from fundanet: stakeholders.xlsx
+        projectes_personal:  new Conf_Taula(), //from fundanet: "projectes_personal.xlsx"
+        stakeholders:        new Conf_Taula(), //from fundanet: "stakeholders.xlsx"
         xarxes_socials:      new Conf_Taula(), //from excel manual sady
         scopus:              new Conf_Taula(), //from excel manual 
+        sage:                new Conf_Taula(), //from fetch "sage_profiles.txt"
       },
 
       //opcions indicadors per IPs
@@ -3175,6 +3631,9 @@
             }
             llista+="<tr>";
             Object.entries(row).forEach(([_,val])=>{
+              if(val && val.constructor===Object){
+                val = JSON.stringify(val);
+              }
               llista+=`<td>${val}</td>`;
             });
             llista+="</tr>";
@@ -3260,7 +3719,7 @@
         let professors=[];
         //let tr = this.treu_accents; //function
         personal.forEach(row=>{
-          let nom    = row.Nom;
+          let nom    = this.treu_accents_lite(row.Nom);
           let orcid  = row.ORCID;
           let email  = row.Email;
           let genere = row.Descripcio;
@@ -3274,8 +3733,10 @@
       },
 
       treu_accents(Str){
+        if(!Str) return false;
+
         let str = Str.toLowerCase();
-        str = str.replace(new RegExp("\\s",      'g'),"");
+        str = str.replace(new RegExp("\\s",      'g'),""); // "\s" matches spaces
         str = str.replace(new RegExp("[àáâãäå]", 'g'),"a");
         str = str.replace(new RegExp("æ",        'g'),"ae");
         str = str.replace(new RegExp("ç",        'g'),"c");
@@ -3290,6 +3751,47 @@
         return str;
       },
 
+      treu_accents_lite(str){
+        if(!str) return false;
+
+        str = str.replace(new RegExp("[àáâãäå]", 'g'),"a");
+        str = str.replace(new RegExp("[ÀÁÂÃÄÅ]", 'g'),"A");
+
+        str = str.replace(new RegExp("æ",        'g'),"ae");
+        str = str.replace(new RegExp("Æ",        'g'),"AE");
+
+        str = str.replace(new RegExp("ç",        'g'),"c");
+        str = str.replace(new RegExp("Ç",        'g'),"C");
+
+        str = str.replace(new RegExp("[èéêë]",   'g'),"e");
+        str = str.replace(new RegExp("[ÈÉÊË]",   'g'),"E");
+
+        str = str.replace(new RegExp("[ìíîï]",   'g'),"i");
+        str = str.replace(new RegExp("[ÌÍÎÏ]",   'g'),"I");
+
+        str = str.replace(new RegExp("ñ",        'g'),"n");
+        str = str.replace(new RegExp("Ñ",        'g'),"N");
+
+        str = str.replace(new RegExp("[òóôõö]",  'g'),"o");
+        str = str.replace(new RegExp("[ÒÓÔÕÖ]",  'g'),"O");
+
+        str = str.replace(new RegExp("œ",        'g'),"oe");
+        str = str.replace(new RegExp("Œ",        'g'),"OE");
+
+        str = str.replace(new RegExp("[ùúûü]",   'g'),"u");
+        str = str.replace(new RegExp("[ÙÚÛÜ]",   'g'),"U");
+
+        str = str.replace(new RegExp("[ýÿ]",     'g'),"y");
+        str = str.replace(new RegExp("[ÝŸ]",     'g'),"Y");
+
+        /* "\W": Non-word character class escape: Matches any character that is
+           not a word character from the basic Latin alphabet. Equivalent to
+           [^A-Za-z0-9_]. For example, /\W/ or /[^A-Za-z0-9_]/ matches "%" in
+           "50%" and "É" in "Émanuel".
+        */
+        str = str.replace(new RegExp("[^\\w\\s,]",      'g'),"");
+        return str;
+      },
     },
 
     computed:{
@@ -3304,7 +3806,36 @@
 
       //boolea per saber si totes les taules auxiliars tenen valors
       tot_carregat(){
-        return Object.values(this.taules).every(obj=>obj.taula);
+        return (
+          Object.values(this.taules).every(obj=>obj.taula)
+        );
+      },
+
+      taula_resum_esdeveniments(){
+        if(!this.tot_carregat) return false;
+        let taula=[];//retval
+        let ips = this.get_ips();
+
+        let tr = this.treu_accents; //function
+
+        ips.forEach(ip=>{
+          let nom           = tr(ip.nom);
+          let esdeveniments = this.taules.esdeveniments.taula.filter(row=>tr(row.Persona)==nom);
+          esdeveniments.sort((a,b)=>{
+            return a.DataInici_Esdeveniment<b.DataInici_Esdeveniment?1:-1;
+          });
+          let new_row = {
+            ip,
+            esdeveniments,
+          };
+          taula.push(new_row);
+        });
+
+        taula.sort((a,b)=>{
+          return b.esdeveniments.length-a.esdeveniments.length;
+        })
+
+        return taula;
       },
     },
   }).mount("#app");
@@ -3362,6 +3893,11 @@
     "shares":true,
     "streams":true,
   };
+  app.taules.sage.columnes={
+    "nom":true,
+    "cites":true,
+    "response_rebuda":true,
+  };
 </script>
 
 <script>
@@ -3379,7 +3915,7 @@
 
       let data = await response.json();
       app.taules[nom_taula].taula = data;
-      console.log(`OK GET /${nom_taula}`);
+      console.log(`OK GET /${nom_taula} (MSSQL)`);
     }catch(err){
       console.error('Error fetching data:', err);
       app.carregant = false;
@@ -3408,7 +3944,7 @@
       await wb.xlsx.load(buffer);
       let taula = converteix_wb_a_taula_json(wb);
       app.taules[nom_taula].taula = taula;
-      console.log(`OK excel "${nom_taula}.xlsx"`)
+      console.log(`OK excel "${nom_taula}.xlsx" (fetch)`)
       /*
         wb.worksheets (array)
         sheet.columns (array)
@@ -3444,4 +3980,60 @@
   llegir_excel("stakeholders",       "csv/export-fundanet/Stakeholders3.xlsx");
   llegir_excel("xarxes_socials",     "csv/export-fundanet/xarxes_socials.xlsx");
   llegir_excel("scopus",             "csv/export-fundanet/scopus.xlsx");
+</script>
+
+<script>
+  fetch("sage_profiles.txt").then(r=>r.text()).then(txt=>{
+    let taula=[];
+    let linies = txt.split("\n").filter(e=>e);
+
+    linies.forEach(linia=>{
+      let tokens = linia.split("/");
+      let id_user = tokens[4];
+      let nom     = tokens[5];
+      let newrow={
+        nom,
+        id_user,
+        cites:{},
+        response_rebuda:false,
+      };
+      taula.push(newrow);
+    });
+
+    app.taules.sage.taula=taula;
+    console.log(`OK "sage_profiles.txt" (fetch)`);
+
+    taula.forEach(async row=>{
+      let cites = await fetch_sage_user(row.id_user); //async
+      row.cites = cites;
+      row.response_rebuda = true;
+
+      let N = app.taules.sage.taula.length;
+      let n = app.taules.sage.taula.filter(row=>row.response_rebuda).length;
+      console.log(`OK sage id:${row.id_user} (${n}/${N})`);
+    });
+  });
+
+  async function fetch_sage_user(id_user){
+    //id_user: string;
+
+    let url=`curl_sagepub_user.php?id_user=${id_user}`;
+    let res = await fetch(url);
+    if(!res.ok) throw(`error fetching sage profile (${id_user})`);
+    let data = await res.json();
+
+    let cites={};
+    //itera dois investigador
+    Object.entries(data.data.citations).forEach(([doi,list])=>{
+      //itera policy documents
+      list.forEach(doc=>{
+        let id       = doc.policy_document_id; //string
+        let pub_year = data.data.documents[id].published_on.split("-")[0]; //string
+        if(cites[pub_year]==undefined) cites[pub_year]=0;
+        cites[pub_year]++;
+      });
+    });
+
+    return cites;
+  }
 </script>

@@ -176,12 +176,11 @@
     });
   })
 
-  function calculate_user_anual_summary(user){
+  function calculate_user_anual_summary(user,year){
+    year = year || app.selected_year;
+
     //calcula nombre de cites i nombre de documents
     let citations={};// policy_document_id => [dois]
-
-    //filtra per "selected_year"
-    let year = app.selected_year;
 
     Object.entries(user.response.data.citations).forEach(([doi,list])=>{
       list.forEach(doc=>{

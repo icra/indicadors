@@ -2,9 +2,14 @@
 
 Possibles:
   - carregar CSV scimago 2024 (journalrank)
-  - enviar correu a ips per dir que
-    - marquin nom persona IP a esdeveniment i no el seu estudiant
-  - taula resum esdeveniments per IP
+  - preguntar jalemany
+    - Projectes de recerca competitius coordinats (Horizon IA, RIA, DN i altres amb més de 5 socis i press...  projectes
+    - Projectes de recerca competitius coordinats (JPI, LIFE i altres amb més de 4 socis i pressupost tota...
+  - insistir home scopus adriano
+
+  - [fet] preguntar dlopez rrhh per calcular tesis doctorals anuals
+  - [fet] preguntar dlopez rrhh com categoritzen estudiants ESO
+  - [fet] preguntar dlopez rrhh per calcular postdocs supervisats >6mesos
 
 Impossibles per ara:
   - articles Q1 L17 i L18 
