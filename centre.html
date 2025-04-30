@@ -404,6 +404,10 @@
         <div v-if="!taules[taula].taula">carregant "{{taula}}"...</div>
         <div v-if="!taules[taula].taula && !carregant">error consulta SQL Server ICRA</div>
 
+        <code v-if="taules[taula].comentaris" style="margin-left:1em">
+          {{taules[taula].comentaris}}
+        </code>
+
         <!--checkboxes per veure columnes-->
         <p v-if="taules[taula].taula?.length" small>
           <label v-for="val,key in taules[taula].taula[0]">
@@ -3071,7 +3075,32 @@
       }
 
       return personal.length;
-    }
+    },
+
+    ips_tesis_doctorals(year,indicador){
+      let nom_ip=app.ip_seleccionat?.nom||"Acuña Salazar, Vicenç";
+
+      let tr = app.treu_accents; //function
+      nom_ip = tr(nom_ip);       //"acunasalazarvicenc";
+
+      let tesis = app.taules.tesis.taula.filter(row=>{
+        return(
+          (
+            tr(row["Director Tesi 1"])==nom_ip ||
+            tr(row["Director tesi 2"])==nom_ip ||
+            tr(row["Director tesi 3"])==nom_ip
+          ) &&
+          new Date(row["Data"]).getFullYear()==year
+        );
+      });
+
+      if(indicador){
+        indicador.years[year].valor  = tesis.length;
+        indicador.years[year].llista = tesis;
+      }
+
+      return tesis.length;
+    },
   };
 
   let funcions_calculadores_ips={
@@ -3083,7 +3112,6 @@
     //scop ips_articles_FWCI_10(year,indicador){},               //TODO pendent accés scopus api
     //scop ips_articles_amb_socis_industrials(year,indicador){}, //TODO no se
 
-    //rrhh ips_tesis_doctorals(year,indicador){},     //TODO preguntat
   };
 
   let responsables={
@@ -3464,10 +3492,13 @@
 <script>
   //configuracio columnes visibles i filtres per taules origen de dades
   class Conf_Taula{
-    constructor(){
-      this.taula    = null; //fetch_taula_undarius(nom_taula)
-      this.columnes = {};   //sintaxi: "nom_columna" => true/false
-      this.filtres  = {};   //sintaxi: "nom_columna" => valor (string o number) a filtrar
+    constructor(comentaris){
+      this.taula    = null; //Array objectes | fetch_taula_undarius(nom_taula)
+      this.columnes = {};   //objecte        | "nom_columna" => true/false
+      this.filtres  = {};   //objecte        | "nom_columna" => valor (string o number) a filtrar
+
+      this.comentaris = comentaris || "";
+
       this.error_loading = null; //TODO
     }
 
@@ -3526,17 +3557,19 @@
 
       //taules des d'on es calculen els indicadors: origens diversos (SQL icra, excels, ...)
       taules:{
-        projectes:           new Conf_Taula(), //from fundanet: projectes.xlsx
-        personal:            new Conf_Taula(), //MS-SQL
-        esdeveniments:       new Conf_Taula(), //MS-SQL
-        tipus_esdeveniments: new Conf_Taula(), //MS-SQL
-        ingressos:           new Conf_Taula(), //MS-SQL
-        taula_aigua:         new Conf_Taula(), //MS-SQL
-        projectes_personal:  new Conf_Taula(), //from fundanet: "projectes_personal.xlsx"
-        stakeholders:        new Conf_Taula(), //from fundanet: "stakeholders.xlsx"
-        xarxes_socials:      new Conf_Taula(), //from excel manual sady
-        scopus:              new Conf_Taula(), //from excel manual 
-        sage:                new Conf_Taula(), //from fetch "sage_profiles.txt"
+        projectes:           new Conf_Taula("origen: 'projectes.xlsx'          (export fundanet per rdiaz)"),
+        personal:            new Conf_Taula("origen: SQL Server ICRA           (icranet db per rdiaz)"),
+        esdeveniments:       new Conf_Taula("origen: SQL Server ICRA           (icranet db per rdiaz)"),
+        tipus_esdeveniments: new Conf_Taula("origen: SQL Server ICRA           (icranet db per rdiaz)"),
+        ingressos:           new Conf_Taula("origen: SQL Server ICRA           (icranet db per rdiaz)"),
+        taula_aigua:         new Conf_Taula("origen: SQL Server ICRA           (icranet db per rdiaz)"),
+        projectes_personal:  new Conf_Taula("origen: 'projectes_personal.xlsx' (export fundanet per rdiaz)"),
+        stakeholders:        new Conf_Taula("origen: 'stakeholders.xlsx'       (export fundanet per rdiaz)"),
+        xarxes_socials:      new Conf_Taula("origen: 'xarxes_socials.xlsx'     (fet manualment per sdrammeh)"),
+        scopus:              new Conf_Taula("origen: 'scopus.xlsx'             (fet manualment per etornes)"),
+        sage:                new Conf_Taula("origen: 'sage_profiles.txt'       (fet manualment per lbosch, consultes fetes a temps real)"),
+        projectes_icranet:   new Conf_Taula("origen: SQL Server ICRA           (icranet db per rdiaz)"),
+        tesis:               new Conf_Taula("origen: SQL Server ICRA           (icranet db per rdiaz)"),
       },
 
       //opcions indicadors per IPs
@@ -3903,30 +3936,35 @@
 <script>
   //consulta SQL SERVER via node express instalat al cluster que consulta el server "srv-apps-03.icra.local"
   //pq funcioni cal estar connectat a la VPN icra
-  async function fetch_taula_undarius(nom_taula){
-    //nom_taula: String
+  async function fetch_taula_undarius(nom_taula_sql, nom_taula_desti){
+    //nom_taula_sql: String
+    //nom_taula_desti: String
+
+    nom_taula_desti = nom_taula_desti || nom_taula_sql;
+
     try{
       //console.log(`llegint SQL server /${nom_taula}...`);
-      let url=`https://undarius.icra.local:50000/${nom_taula}`;
+      let url=`https://undarius.icra.local:50000/${nom_taula_sql}`;
       let response = await fetch(url);
       if(!response.ok){
-        throw(`error fetching SQL Server (taula '${nom_taula}')`);
+        throw(`error fetching SQL Server (taula '${nom_taula_sql}')`);
       }
 
       let data = await response.json();
-      app.taules[nom_taula].taula = data;
-      console.log(`OK GET /${nom_taula} (MSSQL)`);
+      app.taules[nom_taula_desti].taula = data;
+      console.log(`OK GET /${nom_taula_sql} (MSSQL)`);
     }catch(err){
       console.error('Error fetching data:', err);
       app.carregant = false;
     }
   }
-  //fetch_taula_undarius("projectes");
+  fetch_taula_undarius("projectes","projectes_icranet");
   fetch_taula_undarius("personal");
   fetch_taula_undarius("esdeveniments");
   fetch_taula_undarius("tipus_esdeveniments");
   fetch_taula_undarius("ingressos");
   fetch_taula_undarius("taula_aigua");
+  fetch_taula_undarius("tesis");
 </script>
 
 <script>
