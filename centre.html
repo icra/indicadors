@@ -98,6 +98,18 @@
     button[btn_calcular_tots]:hover{
       background:rgba(255,215,0,0.75);
     }
+    button[btn_exportar_csv]{
+      background:royalblue;
+      color:white;
+      border:1px solid #666;
+      border-radius:5px;
+    }
+    button[btn_exportar_csv]:active{
+      border-style:inset;
+    }
+    button[btn_exportar_csv]:hover{
+      background:rgba(65,105,225,0.75);
+    }
     [indicador_text]:hover{
       text-decoration:underline;
       cursor:pointer;
@@ -130,6 +142,7 @@
 
   <!--avís certificat-->
   <div v-if="!tot_carregat"><hr>
+    Carregant...<hr>
     Perquè tot funcioni cal:<ol>
       <li>
         Estar dins la xarxa de l'ICRA (o a la VPN)
@@ -186,6 +199,10 @@
         Veure columna "Responsable"
       </label>
       <label>
+        <input type=checkbox v-model="veure_identificador">
+        Veure columna "identificador"
+      </label>
+      <label>
         <input type=checkbox v-model="veure_percentatge">
         Veure variació (%) respecte 2023
       </label>
@@ -237,6 +254,7 @@
         <th>Pes</th>
         <th left>Blocs</th>
         <td small center>Unitat</td>
+        <td center small v-if="veure_identificador">Identificador</td>
         <td center title="Departament responsable" small v-if="veure_responsable">
           <details>
             <summary style="list-style:none">Responsable</summary>
@@ -263,6 +281,13 @@
             btn_calcular_tots
           >calcular tots</button>
         </th>
+        <th>
+          <button
+            @click="exportar_csv()"
+            :disabled="!tot_carregat"
+            btn_exportar_csv
+          >exportar csv</button>
+        </th>
       </tr>
       <tbody v-for="bloc,i in ambit_actual.blocs">
         <tr style="background:#eee;">
@@ -282,6 +307,7 @@
 
           <td></td>
 
+          <td v-if="veure_identificador"></td>
           <td v-if="veure_responsable"></td>
 
           <td v-for="year in years" center monospace title="Puntuació" style="color:darkblue">
@@ -308,9 +334,7 @@
                 <span :title="`${indi.text} (${indi.id})`">{{indi.text.slice(0,100)}}</span>
                 <span v-if="indi.text.length>100">...</span>
               </span>
-              <span v-if="indi.marcat">
-                {{indi.text}}
-              </span>
+              <span v-if="indi.marcat">{{indi.text}}</span>
             </div>
           </td>
 
@@ -318,6 +342,9 @@
           <td center>
             <div xsmall style="color:#666" v-if="indi.unit">{{indi.unit}}</div>
           </td>
+
+          <!--identificador indicador-->
+          <td v-if="veure_identificador" center xsmall>{{indi.id}}</td>
 
           <!--indicador responsable-->
           <td v-if="veure_responsable" center xsmall>
@@ -930,8 +957,8 @@
           pro["Naturaleza del Proyecto"]=="EUROPEA"&&
           pro["Financiador Convocatoria"]!=null&&
           (
-            pro["Financiador Convocatoria"].toUpperCase().startsWith("ERC")||
-            pro["Financiador Convocatoria"].toUpperCase().startsWith("EIC")
+            pro["Financiador Convocatoria"].toUpperCase().includes("ERC")||
+            pro["Financiador Convocatoria"].toUpperCase().includes("EIC")
           )
         );
       });
@@ -1089,7 +1116,10 @@
           pro["Concurrencia"]=="FONS COMPETITIUS"&&
           pro["Naturaleza del Proyecto"]=="EUROPEA"&&
           pro["Financiador Convocatoria"]!=null&&
-          pro["Financiador Convocatoria"].includes("ERC")&&
+          (
+            pro["Financiador Convocatoria"].includes("ERC")||
+            pro["Financiador Convocatoria"].includes("EIC")
+          )&&
           new Date(pro["Fecha Comienzo"]).getFullYear()<=year&&
           new Date(pro["Fecha Fin Real"]).getFullYear()>=year
         );
@@ -2436,7 +2466,10 @@
           pro["Concurrencia"]=="FONS COMPETITIUS"&&
           pro["Naturaleza del Proyecto"]=="EUROPEA"&&
           pro["Financiador Convocatoria"]!=null&&
-          pro["Financiador Convocatoria"].includes("ERC")&&
+          (
+            pro["Financiador Convocatoria"].includes("ERC")||
+            pro["Financiador Convocatoria"].includes("EIC")
+          )&&
           new Date(pro["Fecha Comienzo"]).getFullYear()<=year&&
           new Date(pro["Fecha Fin Real"]).getFullYear()>=year
         );
@@ -3101,10 +3134,69 @@
 
       return tesis.length;
     },
+
+    ips_projectes_coordinats_5_socis_2M(year,indicador){
+      let nom_ip=app.ip_seleccionat?.nom||"Acuña Salazar, Vicenç";
+
+      let tr = app.treu_accents; //function
+      nom_ip = tr(nom_ip);       //"acunasalazarvicenc";
+
+      //filtra per competitius coordinats taula projectes fundanet
+      let projectes = app.taules.projectes.taula.filter(row=>{
+        return(
+          nom_ip == tr(row["Director del Proyecto"])&&
+          row["Concurrencia"]=="FONS COMPETITIUS"&&
+          row["Iniciativa"]=="COORDINAT / COORDINADOR"&&
+          new Date(row["Fecha Comienzo"]).getFullYear()<=year&&
+          new Date(row["Fecha Fin Real"]).getFullYear()>=year
+        );
+      });
+
+      let joined=[];
+
+      //busca la columna "ImportTotalOtorgat"
+      projectes.forEach(pro=>{
+        let codi        = pro["Código Identificativo"];
+        let pro_icranet = busca_projecte(codi,app.taules.projectes_icranet.taula,"Codi");
+        if(!pro_icranet) return;
+
+        //comprova si pressupost >= 2M€ TODO aquest es nomes ICRA
+        let pressupost = parseFloat(pro_icranet.ImportTotalOtorgat);
+        if(!pressupost || pressupost<2e6) return;
+
+        //comprova que el nº de socis és 5 o més
+        let stakeholders = app.taules.stakeholders.taula.filter(row=>{
+          return row["Proyecto Código Identificativo"]==codi;
+        }); //array
+
+        let socis = stakeholders.length; //number
+
+        if(socis<5) return;
+
+        //guarda resultat
+        let new_row={
+          codi,
+          pressupost,
+          socis,
+        };
+
+        joined.push(new_row);
+
+        //app.taules.projectes.columnes_actives.forEach(key=>{
+          //new_row[key] = row.projecte[key];
+        //});
+      });
+
+      if(indicador){
+        indicador.years[year].valor  = joined.length;
+        indicador.years[year].llista = joined;
+      }
+
+      return joined.length;
+    },
   };
 
   let funcions_calculadores_ips={
-    //ordi ips_projectes_coordinats_5_socis_2M(year,indicador){}, //TODO pendent resposta jaume
     //ordi ips_projectes_coordinats_4_socis_1M(year,indicador){}, //TODO pendent resposta jaume
 
     //scop ips_articles_Q1(year,indicador){},                    //TODO pendent (possible)
@@ -3539,15 +3631,16 @@
       ambits,                 //indicadors
       funcions_calculadores,  //taula helper funcions dels indicadors
       carregant:true,         //status
-      ambit_actual:ambits[3], //objecte
+      ambit_actual:ambits[0], //objecte
 
       //veure detalls d'un sol indicador
       vista_detalls_indicador:false,
       html_detalls_indicador:false,
 
       //columna responsable indicador
-      veure_responsable:true,
-      filtre_responsable:false, //"RRHH","ordi",...
+      veure_identificador:false,
+      veure_responsable:false,
+      filtre_responsable:false, //string || "RRHH","ordi",...
 
       //veure botó detalls
       veure_boto_detalls:true,
@@ -3586,9 +3679,54 @@
         });
       },
 
+      exportar_csv(){
+        let csv="";
+
+        if(this.ambit_actual.nom=="IPs" && this.ip_seleccionat){
+          csv+=`${this.ip_seleccionat.nom}\r\n`;
+          csv+="\r\n";
+        }
+
+        csv+="Bloc;Indicador;Unitat;";
+        this.years.forEach(y=>{
+          csv+=y+";";
+        });
+        csv+="\r\n";
+
+        this.ambit_actual.blocs.forEach(bloc=>{
+          bloc.indicadors.forEach(indi=>{
+            csv+=bloc.nom+";";
+            csv+=indi.text+";";
+            csv+=indi.unit+";";
+            this.years.forEach(y=>{
+              let valor = indi.years[y].valor;
+              csv+=valor+";";
+            });
+            csv+="\r\n";
+          });
+        });
+
+        let blob = new Blob([csv],{type:'text/plain'});
+        //generate <a> link and click it
+        let a      = document.createElement('a');
+        a.href     = URL.createObjectURL(blob);
+        a.target   = '_blank';
+
+        if(this.ambit_actual.nom=="IPs" && this.ip_seleccionat){
+          a.download = `Indicadors-${this.ip_seleccionat.nom}.csv`;
+        }else{
+          a.download = `Indicadors-${this.ambit_actual.nom}.csv`;
+        }
+
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      },
+
       //veure detalls indicador
       click_detalls_indicador(indi,year){
         this.vista_detalls_indicador=true;
+        indi.marcat = 1;
         let html = this.crea_html_caption(indi,year);
         this.html_detalls_indicador=html;
 
@@ -4013,7 +4151,7 @@
     return taula;
   }
 
-  llegir_excel("projectes",          "csv/export-fundanet/Projectes.xlsx");
+  llegir_excel("projectes",          "csv/export-fundanet/Projectes2.xlsx");
   llegir_excel("projectes_personal", "csv/export-fundanet/Projectes_Personal2.xlsx");
   llegir_excel("stakeholders",       "csv/export-fundanet/Stakeholders3.xlsx");
   llegir_excel("xarxes_socials",     "csv/export-fundanet/xarxes_socials.xlsx");

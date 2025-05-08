@@ -1,5 +1,5 @@
 <!doctype html><html><head>
-  <title>ICRA indicadors</title>
+  <title>ICRA Scopus</title>
   <meta charset="utf8">
   <script src="lib/vue.global.prod.js"></script>
   <style>
@@ -435,96 +435,52 @@
   <fieldset>
     <legend>Indicadors</legend>
     <table border=1>
-      <tr>
-        <td>Nombre d'articles a revista Q1</td>
-        <td center>
-          <div v-if="get_articles_a_revista_Q1">
-            {{get_articles_a_revista_Q1.length}}
-          </div>
-        </td>
-        <td v-if="get_articles_a_revista_Q1">
-          <details small>
-            <summary>llista</summary>
-            <table border=1 small>
-              <tr>
-                <td center>Journal
-                <td center>Rank (percentile) by category
-                <td center>Author
-                <td center>Title
-              </tr>
-              <tr v-for="entry in get_articles_a_revista_Q1">
-                <td>
-                  <b>{{entry.pub["prism:publicationName"]}}</b>
-                </td>
-                <td>
-                  <table style="width:100%">
-                    <tr v-for="val,key in entry.sjr.percentils">
-                      <td>{{key}}</td>
-                      <td>#{{val.rank}}/{{val.n}}</td>
-                      <td>
-                        ({{val.percentil.toFixed(2)}}%)
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-                <td><b>{{entry.pub["dc:creator"]}}&nbsp;</b></td>
-                <td>
-                  <small><i>
-                    <a target=_blank :href="`https://doi.org/${entry.pub['prism:doi']}`">
-                      {{entry.pub["dc:title"]}}
-                    </a>
-                  </i></small>
-                </td>
-              </tr>
-            </table>
-          </details>
-        </td>
-      </tr>
-      <tr>
-        <td>Nombre d'articles a revista D1</td>
-        <td center>
-          <div v-if="get_articles_a_revista_D1">
-            {{get_articles_a_revista_D1.length}}
-          </div>
-        </td>
-        <td v-if="get_articles_a_revista_D1">
-          <details small>
-            <summary>llista</summary>
-            <table border=1 small>
-              <tr>
-                <td center>Journal
-                <td center>Rank (percentile) by category
-                <td center>Author
-                <td center>Title
-              </tr>
-              <tr v-for="entry in get_articles_a_revista_D1">
-                <td>
-                  <b>{{entry.pub["prism:publicationName"]}}</b>
-                </td>
-                <td>
-                  <table style="width:100%">
-                    <tr v-for="val,key in entry.sjr.percentils">
-                      <td>{{key}}</td>
-                      <td>#{{val.rank}}/{{val.n}}</td>
-                      <td>
-                        ({{val.percentil.toFixed(2)}}%)
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-                <td><b>{{entry.pub["dc:creator"]}}&nbsp;</b></td>
-                <td>
-                  <small><i>
-                    <a target=_blank :href="`https://doi.org/${entry.pub['prism:doi']}`">
-                      {{entry.pub["dc:title"]}}
-                    </a>
-                  </i></small>
-                </td>
-              </tr>
-            </table>
-          </details>
-        </td>
-      </tr>
+      <tbody v-if="get_articles_quartils">
+        <tr v-for="arr,key in get_articles_quartils">
+          <td>Articles publicats a revista {{key}}</td>
+          <td center>
+            {{arr.length}}
+          </td>
+          <td v-if="arr.length">
+            <details small>
+              <summary>llista</summary>
+              <table border=1 small>
+                <tr>
+                  <td center>Journal
+                  <td center>Rank (percentile) by category
+                  <td center>Author
+                  <td center>Title
+                </tr>
+                <tr v-for="entry in arr">
+                  <td>
+                    <b>{{entry.pub["prism:publicationName"]}}</b>
+                  </td>
+                  <td>
+                    <table style="width:100%">
+                      <tr v-for="val,key in entry.sjr.percentils">
+                        <td>{{key}}</td>
+                        <td>#{{val.rank}}/{{val.n}}</td>
+                        <td>
+                          ({{val.percentil.toFixed(2)}}%)
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                  <td><b>{{entry.pub["dc:creator"]}}&nbsp;</b></td>
+                  <td>
+                    <small><i>
+                      <a target=_blank :href="`https://doi.org/${entry.pub['prism:doi']}`">
+                        {{entry.pub["dc:title"]}}
+                      </a>
+                    </i></small>
+                  </td>
+                </tr>
+              </table>
+            </details>
+          </td>
+        </tr>
+      </tbody>
+
       <tr>
         <td>Nombre de cites</td>
         <td center>
@@ -1280,17 +1236,23 @@
         return origin+path+search;
       },
 
-      get_articles_a_revista_Q1(){
+      get_articles_quartils(){
+        let ret={
+          Q1:[],
+          Q2:[],
+          Q3:[],
+          Q4:[],
+          D1:[],
+        };
+
         if(
           this.scopus.response  == null  ||
           this.scopus.result    == null  ||
           this.scopus.result_ok == false ||
           this.scimagocsv       == null
         ){
-          return false;
+          return ret;
         }
-
-        let articles=[];
 
         let pages = this.scopus.result;
 
@@ -1299,57 +1261,23 @@
             let nom_revista = entry["prism:publicationName"];
             let issn        = entry["prism:issn"];
             let eIssn       = entry["prism:eissn"];
-            let sjr = this.busca_a_scimagocsv(nom_revista,issn,eIssn);
-            if(!sjr) return;
+            let sjr         = this.busca_a_scimagocsv(nom_revista,issn,eIssn);
 
+            if(!sjr) return;
             if(!sjr.percentils) return;
 
-            if(sjr["SJR Best Quartile"]=="Q1"){
-              articles.push({
-                pub:entry,
-                sjr,
-              });
-            }
+            //Q1 Q2 Q3 Q4
+            if(sjr["SJR Best Quartile"]=="Q1") ret.Q1.push({pub:entry, sjr});
+            if(sjr["SJR Best Quartile"]=="Q2") ret.Q2.push({pub:entry, sjr});
+            if(sjr["SJR Best Quartile"]=="Q3") ret.Q3.push({pub:entry, sjr});
+            if(sjr["SJR Best Quartile"]=="Q4") ret.Q3.push({pub:entry, sjr});
+
+            //D1
+            if(Object.values(sjr.percentils).some(per=>per.percentil<=10)) ret.D1.push({pub:entry, sjr});
           });
         });
 
-        return articles;
-      },
-
-      get_articles_a_revista_D1(){
-        if(
-          this.scopus.response  == null  ||
-          this.scopus.result    == null  ||
-          this.scopus.result_ok == false ||
-          this.scimagocsv       == null
-        ){
-          return false;
-        }
-
-        let articles=[];
-
-        let pages = this.scopus.result;
-
-        pages.forEach(page=>{
-          page.forEach(entry=>{
-            let nom_revista = entry["prism:publicationName"];
-            let issn        = entry["prism:issn"];
-            let eIssn       = entry["prism:eissn"];
-            let sjr = this.busca_a_scimagocsv(nom_revista,issn,eIssn);
-            if(!sjr) return;
-
-            if(!sjr.percentils) return;
-
-            if(Object.values(sjr.percentils).some(per=>per.percentil<=10)){
-              articles.push({
-                pub:entry,
-                sjr,
-              });
-            }
-          });
-        });
-
-        return articles;
+        return ret;
       },
     },
 

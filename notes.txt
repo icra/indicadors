@@ -2,11 +2,15 @@
 
 Possibles:
   - carregar CSV scimago 2024 (journalrank)
-  - preguntar jalemany
-    - Projectes de recerca competitius coordinats (Horizon IA, RIA, DN i altres amb més de 5 socis i press...  projectes
-    - Projectes de recerca competitius coordinats (JPI, LIFE i altres amb més de 4 socis i pressupost tota...
   - insistir home scopus adriano
 
+  - [ara] resum esdeveniments llistar els que no son ips
+
+  - [fet] demanar ruben pressupost total projecte enlloc de import icra
+    - 1.3.Projectes competitius coordinats (Horizon IA, RIA, DN i altres amb més de 5 socis i pressupost total superior a 2 M€) aconseguits
+    - 1.4.Projectes competitius coordinats (JPI, LIFE i altres amb més de 4 socis i pressupost total superior a 1 M€) aconseguits
+  - [fet] calcular Q2 Q3 i Q4
+  - [fet] botó exportar CSV taula indicadors per ip
   - [fet] preguntar dlopez rrhh per calcular tesis doctorals anuals
   - [fet] preguntar dlopez rrhh com categoritzen estudiants ESO
   - [fet] preguntar dlopez rrhh per calcular postdocs supervisats >6mesos
