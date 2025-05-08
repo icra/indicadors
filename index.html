@@ -238,7 +238,6 @@
                               request publication details
                             </button>
                             <button
-                              v-if="!abstract[entry['prism:doi']]"
                               @click="request_citation_overview(entry)"
                             >
                               request citation overview
@@ -539,7 +538,9 @@
       //data for querying publications (elsevier's scopus)
       scopus:{
         //API_KEY:"7f59af901d2d86f78a1fd60c1bf9426a", //clau web scopus
-        API_KEY:"006782f7796da6b38899e0c889fa3c80",   //clau mireia
+        //API_KEY:"f29af1b7149e7949bbd705b657b1ec26",   //clau elisabet
+        API_KEY:"006782f7796da6b38899e0c889fa3c80", //clau mireia
+
         query:query||`AF-ID(60110375) AND PUBYEAR IS ${new Date().getFullYear()}`,//default query
         response:null,           //cache
         result:null,             //cache
@@ -810,7 +811,8 @@
         //return cached value TODO
         //if(this.abstract[doi]) return this.abstract[doi];
 
-        let url=`https://api.elsevier.com/content/abstract/citations?scopus_id=${scopus_id}`;
+        let url=`https://api.elsevier.com/content/abstract/citations?scopus_id=${scopus_id}&apiKey=${API_KEY}`;
+        //let url=`https://api.elsevier.com/content/abstract/citations?doi=${doi}`;
 
         let options={
           method:"GET",
@@ -821,6 +823,7 @@
         };
         let response = await fetch(url,options);
         if(!response.ok){
+          console.log(response);
           throw new Error("Error in fetch(): response.ok==false");
         }
         const data = await response.json();
