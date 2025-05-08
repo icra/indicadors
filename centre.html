@@ -202,10 +202,6 @@
         Veure columna "Responsable"
       </label>
       <label>
-        <input type=checkbox v-model="veure_identificador">
-        Veure columna "identificador"
-      </label>
-      <label>
         <input type=checkbox v-model="veure_percentatge">
         Veure variació (%) respecte 2023
       </label>
@@ -233,6 +229,7 @@
             <button @click="ip_seleccionat=null">X</button>
           </span>
         </summary>
+        <code v-if="ip_seleccionat">orcid({{ip_seleccionat.orcid}})</code>
         <div
           style="
             display:grid;
@@ -257,7 +254,6 @@
         <th>Pes</th>
         <th left>Blocs</th>
         <td small center>Unitat</td>
-        <td center small v-if="veure_identificador">Identificador</td>
         <td center title="Departament responsable" small v-if="veure_responsable">
           <details>
             <summary style="list-style:none">Responsable</summary>
@@ -310,7 +306,6 @@
 
           <td></td>
 
-          <td v-if="veure_identificador"></td>
           <td v-if="veure_responsable"></td>
 
           <td v-for="year in years" center monospace title="Puntuació" style="color:darkblue">
@@ -345,9 +340,6 @@
           <td center>
             <div xsmall style="color:#666" v-if="indi.unit">{{indi.unit}}</div>
           </td>
-
-          <!--identificador indicador-->
-          <td v-if="veure_identificador" center xsmall>{{indi.id}}</td>
 
           <!--indicador responsable-->
           <td v-if="veure_responsable" center xsmall>
@@ -527,7 +519,6 @@
       </tr>
     </table>
   </details>
-
 </div>
 
 <script>//classes i dades
@@ -580,10 +571,11 @@
       //  llista   : array des d'on es calcula el valor. El genera la funció calculadora
       //  objectiu : numero (percentatge que cal assolir)
       //  excloure : per l'any basal no mostrar indicadors
-      //  status   : string per si l'indicador depen d'una altra request, 
+      //  status   : string per si l'indicador depen d'una altra request
       //             com per exemple "esperant request"
+      let excloure_basal = objectius.length ? true : false;
       this.years={
-        "2023":{valor:valor_basal[0]||0, llista:null, objectiu:0,               status:null, excloure:true},
+        "2023":{valor:valor_basal[0]||0, llista:null, objectiu:0,               status:null, excloure:excloure_basal},
         "2024":{valor:valor_basal[1]||0, llista:null, objectiu:objectius[0]||0, status:null},
         "2025":{valor:valor_basal[2]||0, llista:null, objectiu:objectius[1]||0, status:null},
         "2026":{valor:valor_basal[3]||0, llista:null, objectiu:objectius[2]||0, status:null},
@@ -592,7 +584,7 @@
         "2029":{valor:valor_basal[6]||0, llista:null, objectiu:objectius[5]||0, status:null},
       };
 
-      //visual
+      //visual: veure text en groc
       this.marcat=false;
     }
 
@@ -3150,6 +3142,7 @@
       return tesis.length;
     },
 
+    //TODO
     ips_projectes_coordinats_5_socis_2M(year,indicador){
       let nom_ip=app.ip_seleccionat?.nom||"Acuña Salazar, Vicenç";
 
@@ -3209,12 +3202,57 @@
 
       return joined.length;
     },
+
+    ips_projectes_coordinats_5_socis_2M:null,
+
+    async ips_articles_Q1(year,indicador){
+      if(!app.ip_seleccionat) return;
+
+      indicador.years[year].status = "requesting...";
+
+      let orcid    = app.ip_seleccionat.orcid;
+      let response = await fetch_orcid(orcid,year);
+      let articles = response.articles;
+
+      let articles_Q1 = articles.filter(entry=>entry.rank?.Q1);
+
+      if(indicador){
+        indicador.years[year].valor  = articles_Q1.length
+        indicador.years[year].llista = articles;
+        indicador.years[year].status = null;
+      }
+
+      return articles_Q1.length;
+    },
+
+    async ips_articles_D1_percentatge(year,indicador){
+      if(!app.ip_seleccionat) return;
+
+      indicador.years[year].status = "requesting...";
+
+      let orcid    = app.ip_seleccionat.orcid;
+      let response = await fetch_orcid(orcid,year);
+
+      let articles = response.articles;
+      let articles_D1 = articles.filter(entry=>entry.rank?.D1);
+
+      let N = articles.length;
+      let n = articles_D1.length;
+
+      let percentatge = N?100*n/N:0;
+
+      if(indicador){
+        indicador.years[year].valor  = percentatge;
+        indicador.years[year].llista = articles;
+        indicador.years[year].status = null;
+      }
+
+      return percentatge;
+    },
   };
 
   let funcions_calculadores_ips={
     //ordi ips_projectes_coordinats_4_socis_1M(year,indicador){}, //TODO pendent resposta jaume
-    //scop ips_articles_Q1(year,indicador){},                    //TODO pendent (possible)
-    //scop ips_articles_D1_percentatge(year,indicador){},        //TODO pendent (possible)
     //scop ips_articles_FWCI_10(year,indicador){},               //TODO pendent accés scopus api
     //scop ips_articles_amb_socis_industrials(year,indicador){}, //TODO impossible
   };
@@ -3651,8 +3689,7 @@
       html_detalls_indicador:false,
 
       //columna responsable indicador
-      veure_identificador:false,
-      veure_responsable:false,
+      veure_responsable:true,
       filtre_responsable:false, //string || "RRHH","ordi",...
 
       //veure botó detalls
@@ -4178,7 +4215,7 @@
   llegir_excel("scopus",             "csv/export-fundanet/scopus.xlsx");
 </script>
 
-<script>
+<script>/*seccio sagepub (cites en documents legislació)*/
   fetch("sage_profiles.txt").then(r=>r.text()).then(txt=>{
     let taula=[];
     let linies = txt.split("\n").filter(e=>e);
@@ -4232,3 +4269,290 @@
     return cites;
   }
 </script>
+
+<script>/*seccio scimago*/
+  /*
+    scimago permet tenir ranking de journals
+  */
+
+  //cache year=>obj
+  let scimagojr={};
+
+  //llegir csv i convertir en diccionari
+  async function fetch_scimagocsv(year){
+    year=year||"2023";
+    if(scimagojr[year]) return;
+
+    let res = await fetch(`csv/scimagojr ${year}.csv`);
+    if(!res.ok) throw("error reading scimago csv file");
+    let text = await res.text();
+    let csv = text.split("\n").map(line=>{
+      let row = line.split(";"); //array
+
+      let indexs_to_delete=[];
+
+      //arregla camps entre cometes
+      for(let i=0;i<row.length;i++){
+        let val = row[i];
+        if(val[0]=="\"" && val.at(-1)!="\""){
+          let new_val = val;
+          let index = 1;
+          while(true){
+            let next_cell = row[i+index]; //value
+            indexs_to_delete.push(i+index);
+            new_val += ";"+next_cell; //join values
+            if(next_cell.at(-1)=="\""){
+              break;
+            }else{
+              index++;
+            }
+          }
+          row[i] = new_val;
+        }
+      }
+
+      indexs_to_delete.forEach(index=>{
+        row[index]="";
+      });
+
+      row = row.filter(cell=>cell!="");
+
+      return row;
+    });
+    csv.forEach(row=>{
+      row.forEach((cell,i)=>{
+        if(cell.at(0)=="\"" && cell.at(-1)=="\""){
+          row[i] = cell.replaceAll("\"","");
+        }
+      });
+    });
+    csv.pop();//delete last row
+
+    //result dictionary to be cached
+    let csv_dictionary={};
+    csv.forEach((row,i)=>{
+      if(i==0) return;
+      let obj={};
+      csv[0].forEach((field,j)=>{
+        obj[field] = row[j];
+      });
+
+      csv_dictionary[obj.Title] = obj;
+    });
+
+    //save result to cache
+    scimagojr[year] = csv_dictionary;
+
+    //calcula els percentils dins de cada journal object
+    calcula_percentils_ambits_scimago(csv_dictionary);
+
+    console.log(`[ok] scimago ${year} csv`);
+  }
+
+  //calcula percentils de cada revista i categoria
+  function calcula_percentils_ambits_scimago(csv){
+    let ambits={};
+
+    //classifica journals dins dels ambits
+    Object.values(csv).forEach(journal=>{
+      journal.Categories.split(";").forEach(cat=>{
+        cat = cat.trim();
+        cat = cat.replace(" (Q1)","");
+        cat = cat.replace(" (Q2)","");
+        cat = cat.replace(" (Q3)","");
+        cat = cat.replace(" (Q4)","");
+
+        if(ambits[cat]==undefined){
+          ambits[cat]=[];
+        }
+        ambits[cat].push(journal);
+      });
+    });
+
+    //recorre els ambits i calcula el ranking de cada revista
+    Object.entries(ambits).forEach(([key,val])=>{
+      let cat      = key; //string
+      let journals = val; //array
+      let n        = journals.length; //number
+
+      journals.forEach((jou,i)=>{
+        let percentil = 100*(i+1)/n; //number
+        if(jou.percentils==undefined){
+          jou.percentils={};
+        }
+        jou.percentils[cat]={
+          rank:i+1, n,
+          percentil,
+        }
+      });
+    });
+  }
+
+  //buscar revista dins un ranking
+  function busca_a_scimagocsv(nom_revista, issn, eIssn, year){
+    if(!year) throw new Error("year not defined");
+
+    let csv = scimagojr[year]; //dictionary to search
+
+    if(!csv){
+      let max_year = Math.max(...Object.keys(scimagojr));
+      max_year = String(max_year);
+      csv = scimagojr[max_year];
+    }
+    if(!csv) return;
+
+    //search by name
+    let obj = csv[nom_revista]; //object or undefined
+    if(obj) return obj;
+
+    //search by issn
+    obj = Object.entries(csv).find(en=>en[1].Issn.includes(issn)); //object or null
+    if(obj) return obj[1];
+
+    //search by eIssn
+    obj = Object.entries(csv).find(en=>en[1].Issn.includes(eIssn)); //object or null
+    if(obj) return obj[1];
+
+    return false; //not found
+  }
+
+  //llegeix rankings disponibles (descarregats manualment)
+  fetch_scimagocsv("2023");
+  fetch_scimagocsv("2024");
+</script>
+
+<script>/*seccio scopus (request per investigador)*/
+  let cache_scopus_requests={
+    //"year-orcid":{response},
+  };
+
+  async function fetch_orcid(orcid,year){
+    if(!orcid) throw new Error("orcid not defined");
+    if(!year) throw new Error("year not defined");
+
+    //return cached value if exists
+    let cache_key = `${year}-${orcid}`;
+    if(cache_scopus_requests[cache_key]){
+      return cache_scopus_requests[cache_key];
+    }
+
+    //prepare request
+    let query         = `AF-ID(60110375) AND PUBYEAR IS ${year} AND orcid(${orcid})`;
+    let API_KEY       = "006782f7796da6b38899e0c889fa3c80"; //clau mireia
+    let encoded_query = encodeURIComponent(query);
+    let url           = `https://api.elsevier.com/content/search/scopus?query=${encoded_query}`;
+    let options={
+      method:"GET",
+      headers:{
+        "X-ELS-APIKey":API_KEY,
+        "Accept":"application/json",
+      },
+    };
+
+    //request 1
+    //console.log(`fetching to scopus "${query}"`);
+
+    let response = await fetch(url,options);
+    if(!response.ok){
+      throw new Error(`Error ${response.status} fetching scopus data`);
+    }
+
+    //response is ok
+    const data = await response.json();
+
+    //save results (entries) here
+    let pages=[];
+
+    //each element in "pages" is an array of "entries" (a page of 25 results)
+    let first_page = data["search-results"].entry;
+    pages.push(first_page);
+
+    //compute necessary number of requests
+    let totalResults = data["search-results"]["opensearch:totalResults"];
+    let itemsPerPage = data["search-results"]["opensearch:itemsPerPage"];
+    let n_requests = Math.ceil(totalResults/itemsPerPage)||1;
+    let urls_next_pages=[];//save urls to request here
+    for(let i=1;i<n_requests;i++){ //omit first search
+      let start = i*itemsPerPage;
+      let url   = `https://api.elsevier.com/content/search/scopus?start=${start}&count=${itemsPerPage}&query=${encoded_query}&apiKey=${API_KEY}`;
+      urls_next_pages.push(url);
+    }
+
+    if(urls_next_pages.length){
+      async function get_next_result_page(index){
+        index = index || 0;
+        let url = urls_next_pages[index];
+        if(!url) return;
+        console.log(`fetching "${url}"`);
+        let resp = await fetch(url,options);
+        if(!resp.ok){
+          throw new Error(`Error ${resp.status} fetching scopus data`);
+          return;
+        }
+        let data = await resp.json();
+        let page = data["search-results"].entry;
+        pages.push(page);
+
+        if(index < urls_next_pages.length-1){
+          await get_next_result_page(index+1);
+        }else{
+          return;
+        }
+      }
+      await get_next_result_page();
+    }
+
+    //unpack pages into a 1-depth array of entries
+    let articles=[];
+    if(totalResults!="0"){
+      pages.forEach(page=>{
+        page.forEach(entry=>{
+          articles.push(entry);
+        });
+      });
+    }
+
+    //busca el quartil de la revista de cada article
+    articles.forEach(entry=>{
+      let nom_revista = entry["prism:publicationName"];
+      let issn        = entry["prism:issn"];
+      let eIssn       = entry["prism:eIssn"];
+      let year        = entry["prism:coverDate"]?.split("-")[0];
+      let sjr         = busca_a_scimagocsv(nom_revista,issn,eIssn,year);
+
+      if(!sjr) return;
+      if(!sjr.percentils) return;
+
+      let rank={
+        Q1:false,
+        Q2:false,
+        Q3:false,
+        Q4:false,
+        D1:false,
+      };
+
+      //Q1 Q2 Q3 Q4
+      if(sjr["SJR Best Quartile"]=="Q1") rank.Q1=true;
+      if(sjr["SJR Best Quartile"]=="Q2") rank.Q2=true;
+      if(sjr["SJR Best Quartile"]=="Q3") rank.Q3=true;
+      if(sjr["SJR Best Quartile"]=="Q4") rank.Q4=true;
+
+      //D1
+      if(Object.values(sjr.percentils).some(per=>per.percentil<=10)) rank.D1=true;
+
+      //guarda ranking
+      entry.rank = rank;
+    });
+
+    //save results to cache
+    cache_scopus_requests[cache_key]={
+      articles,
+      totalResults,
+      n_requests, //number of requests
+    };
+
+    console.log(`[ok] scopus request | year:${year} orcid:${orcid}`);
+    return cache_scopus_requests[cache_key];
+  }
+</script>
+

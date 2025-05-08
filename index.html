@@ -604,7 +604,7 @@
     }},
 
     methods:{
-      async get_auth(){
+      async get_auth(){ //TODO not used
         let API_KEY = this.scopus.API_KEY;
         let url     = `https://api.elsevier.com/authenticate/?apiKey=${API_KEY}`;
         let options={
@@ -1285,7 +1285,7 @@
           page.forEach(entry=>{
             let nom_revista = entry["prism:publicationName"];
             let issn        = entry["prism:issn"];
-            let eIssn       = entry["prism:eissn"];
+            let eIssn       = entry["prism:eIssn"];
             let sjr         = this.busca_a_scimagocsv(nom_revista,issn,eIssn);
 
             if(!sjr) return;
