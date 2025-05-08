@@ -806,6 +806,7 @@
       async request_citation_overview(entry){
         let doi       = entry["prism:doi"];
         let scopus_id = entry["dc:identifier"].replace("SCOPUS_ID:","");
+
         let API_KEY   = this.scopus.API_KEY;
 
         //return cached value TODO
@@ -832,6 +833,27 @@
 
         //cache result TODO
         //this.abstract[doi]=data;
+      },
+
+      //scopus api call test zone
+      async request_test(){
+        let API_KEY   = this.scopus.API_KEY;
+
+        //let url=`https://api.elsevier.com/content/abstract/citations?scopus_id=${scopus_id}&apiKey=${API_KEY}`;
+        //let url=`https://api.elsevier.com/content/abstract/citations?doi=${doi}`;
+        let url="https://www.scopus.com/inward/citedby.uri?partnerID=HzOxMe3b&scp=85153786709&origin=inward";
+
+        let options={
+          method:"GET",
+          headers:{
+            "X-ELS-APIKey":API_KEY,
+            "Accept":"application/json",
+          },
+        };
+        let response = await fetch(url,options);
+        if(!response.ok) throw new Error("Error in fetch");
+        const data = await response.json();
+        console.log(data);
       },
 
       //TODO no funciona

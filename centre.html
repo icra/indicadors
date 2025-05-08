@@ -120,6 +120,9 @@
     button[ip_seleccionat=true]{
       background:gold;
     }
+    [gris=true]{
+      color:#ccc;
+    }
   </style>
   <script>
     Array.prototype.suma=function(){
@@ -354,41 +357,46 @@
           <!--indicador valors de cada anhy-->
           <td v-for="year in years" center small nowrap monospace>
             <div v-for="obj in [indi.years[year]]">
-              <div v-for="incr in [indi.increment(year)]">
-                <div
-                  style="
-                    display:flex;
-                    justify-content:space-around;
-                    align-items:center;
-                  "
-                >
-                  <!--valor indicador-->
-                  <div right>{{obj.valor.toFixed(0)}}</div>
-
-                  <!--increment i objectiu-->
+              <div v-if="obj.status">
+                {{obj.status}}
+              </div>
+              <div v-if="!obj.status">
+                <div v-for="incr in [indi.increment(year)]">
                   <div
-                    v-if="veure_percentatge && !obj.excloure && funcions_calculadores[indi.funcio_calculadora]"
-                    small right
-                    :title="`Variació respecte valor basal (${indi.base_year})`"
+                    style="
+                      display:flex;
+                      justify-content:space-around;
+                      align-items:center;
+                    "
                   >
-                    <span :style="{color:incr.compleix?'green':'red'}">
-                      <span v-if="incr.delta>0">&uarr;</span>
-                      <span v-if="incr.delta<0">&darr;</span>
-                      <span v-if="isFinite(incr.perc)">
-                        {{Math.abs(incr.perc).toFixed(0)}}%
-                      </span>
-                      <span v-else>
-                        <span large>∞</span>%
-                      </span>
-                    </span>
-                  </div>
+                    <!--valor indicador-->
+                    <div right :gris="obj.valor==0">{{obj.valor.toFixed(0)}}</div>
 
-                  <!--boto veure detalls-->
-                  <div v-if="!obj.excloure && funcions_calculadores[indi.funcio_calculadora] && veure_boto_detalls" small right>
-                    <button
-                      @click="click_detalls_indicador(indi,year)"
-                      style="padding:0;font-size:x-small"
-                    >detalls</button>
+                    <!--increment i objectiu-->
+                    <div
+                      v-if="veure_percentatge && !obj.excloure && funcions_calculadores[indi.funcio_calculadora]"
+                      small right
+                      :title="`Variació respecte valor basal (${indi.base_year})`"
+                    >
+                      <span :style="{color:incr.compleix?'green':'red'}">
+                        <span v-if="incr.delta>0">&uarr;</span>
+                        <span v-if="incr.delta<0">&darr;</span>
+                        <span v-if="isFinite(incr.perc)">
+                          {{Math.abs(incr.perc).toFixed(0)}}%
+                        </span>
+                        <span v-else>
+                          <span large>∞</span>%
+                        </span>
+                      </span>
+                    </div>
+
+                    <!--boto veure detalls-->
+                    <div v-if="!obj.excloure && funcions_calculadores[indi.funcio_calculadora] && veure_boto_detalls" small right>
+                      <button
+                        @click="click_detalls_indicador(indi,year)"
+                        style="padding:0;font-size:x-small"
+                      >detalls</button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -572,14 +580,16 @@
       //  llista   : array des d'on es calcula el valor. El genera la funció calculadora
       //  objectiu : numero (percentatge que cal assolir)
       //  excloure : per l'any basal no mostrar indicadors
+      //  status   : string per si l'indicador depen d'una altra request, 
+      //             com per exemple "esperant request"
       this.years={
-        "2023":{valor:valor_basal[0]||0, llista:null, objectiu:0, excloure:true},
-        "2024":{valor:valor_basal[1]||0, llista:null, objectiu:objectius[0]||0},
-        "2025":{valor:valor_basal[2]||0, llista:null, objectiu:objectius[1]||0},
-        "2026":{valor:valor_basal[3]||0, llista:null, objectiu:objectius[2]||0},
-        "2027":{valor:valor_basal[4]||0, llista:null, objectiu:objectius[3]||0},
-        "2028":{valor:valor_basal[5]||0, llista:null, objectiu:objectius[4]||0},
-        "2029":{valor:valor_basal[6]||0, llista:null, objectiu:objectius[5]||0},
+        "2023":{valor:valor_basal[0]||0, llista:null, objectiu:0,               status:null, excloure:true},
+        "2024":{valor:valor_basal[1]||0, llista:null, objectiu:objectius[0]||0, status:null},
+        "2025":{valor:valor_basal[2]||0, llista:null, objectiu:objectius[1]||0, status:null},
+        "2026":{valor:valor_basal[3]||0, llista:null, objectiu:objectius[2]||0, status:null},
+        "2027":{valor:valor_basal[4]||0, llista:null, objectiu:objectius[3]||0, status:null},
+        "2028":{valor:valor_basal[5]||0, llista:null, objectiu:objectius[4]||0, status:null},
+        "2029":{valor:valor_basal[6]||0, llista:null, objectiu:objectius[5]||0, status:null},
       };
 
       //visual
@@ -3059,6 +3069,8 @@
     },
 
     ips_cites_en_legislacio(year,indicador){
+      indicador.years[year].status=null; //reset status
+
       let nom_ip=app.ip_seleccionat?.nom||"Acuña Salazar, Vicenç";
 
       let tr = app.treu_accents;//function
@@ -3068,8 +3080,11 @@
         return tr(row.nom)==nom_ip;
       }); //object or null
 
-      if(!sage) return
-      if(!sage.response_rebuda) return;
+      if(!sage) return;
+      if(!sage.response_rebuda){
+        indicador.years[year].status="esperant request sagepub";
+        return;
+      }
 
       let cites = sage.cites[year]||0; //number
 
@@ -3198,12 +3213,10 @@
 
   let funcions_calculadores_ips={
     //ordi ips_projectes_coordinats_4_socis_1M(year,indicador){}, //TODO pendent resposta jaume
-
     //scop ips_articles_Q1(year,indicador){},                    //TODO pendent (possible)
     //scop ips_articles_D1_percentatge(year,indicador){},        //TODO pendent (possible)
     //scop ips_articles_FWCI_10(year,indicador){},               //TODO pendent accés scopus api
-    //scop ips_articles_amb_socis_industrials(year,indicador){}, //TODO no se
-
+    //scop ips_articles_amb_socis_industrials(year,indicador){}, //TODO impossible
   };
 
   let responsables={
@@ -3631,7 +3644,7 @@
       ambits,                 //indicadors
       funcions_calculadores,  //taula helper funcions dels indicadors
       carregant:true,         //status
-      ambit_actual:ambits[0], //objecte
+      ambit_actual:ambits[3], //objecte
 
       //veure detalls d'un sol indicador
       vista_detalls_indicador:false,
@@ -4069,6 +4082,13 @@
     "cites":true,
     "response_rebuda":true,
   };
+  app.taules.tesis.columnes={
+    "Doctorant":true,
+    "Data":true,
+    "Director Tesi 1":true,
+    "Director tesi 2":true,
+    "Director tesi 3":true,
+  };
 </script>
 
 <script>
@@ -4192,7 +4212,6 @@
 
   async function fetch_sage_user(id_user){
     //id_user: string;
-
     let url=`curl_sagepub_user.php?id_user=${id_user}`;
     let res = await fetch(url);
     if(!res.ok) throw(`error fetching sage profile (${id_user})`);
