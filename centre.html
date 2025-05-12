@@ -44,6 +44,9 @@
     [center]{
       text-align:center;
     }
+    [block]{
+      display:block;
+    }
     [right]{
       text-align:right;
     }
@@ -229,7 +232,7 @@
             <button @click="ip_seleccionat=null">X</button>
           </span>
         </summary>
-        <code v-if="ip_seleccionat">orcid({{ip_seleccionat.orcid}})</code>
+        <code v-if="ip_seleccionat" center block>orcid({{ip_seleccionat.orcid}})</code>
         <div
           style="
             display:grid;
@@ -518,6 +521,26 @@
         </td>
       </tr>
     </table>
+
+    <div v-if="taula_esdeveniments_orfes && taula_esdeveniments_orfes.length">
+      <b>Taula esdeveniments no associats a IPs ({{ taula_esdeveniments_orfes.length }})</b>
+      <table border=1 xsmall>
+        <thead>
+          <tr sticky>
+            <th>nº</th>
+            <th v-for="val,key in taula_esdeveniments_orfes[0]">
+              {{key}}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="row,i in taula_esdeveniments_orfes">
+            <td>{{i+1}}</td>
+            <td v-for="val,key in row">{{val}}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </details>
 </div>
 
@@ -714,8 +737,8 @@
     //textos indicadors ip
     "ips_euros_recerca"                                   :"Aportació econòmica total a través de projectes competitius Europeus, estatals i regionals com IP o co-IP",
     "ips_projectes_erc_eic"                               :"Projectes de recerca (ERC/EIC, amb pressupost superior a 1 M€) aconseguits",
-    "ips_projectes_coordinats_5_socis_2M"                 :"Projectes de recerca competitius coordinats (Horizon IA, RIA, DN i altres amb més de 5 socis i pressupost total superior a 2 M€) aconseguits",
-    "ips_projectes_coordinats_4_socis_1M"                 :"Projectes de recerca competitius coordinats (JPI, LIFE i altres amb més de 4 socis i pressupost total superior a 1 M€) aconseguits",
+    "ips_projectes_coordinats_5_socis_2M"                 :"Projectes de recerca competitius coordinats amb més de 5 socis i pressupost total superior a 2 M€ aconseguits",
+    "ips_projectes_coordinats_4_socis_1M"                 :"Projectes de recerca competitius coordinats amb més de 4 socis i pressupost total superior a 1 M€ aconseguits",
     "ips_projectes_IP_o_COIP"                             :"Projectes de recerca competitius Europeus, estatals i regionals (IP o co-IP)",
     "ips_projectes_participant"                           :"Projectes de recerca competitius Europeus, estatals i regionals (participant)",
     "ips_congressos_tallers_escoles_estiu_organitzats"    :"Congressos/tallers/escoles d'estiu/sessions especials en congressos i altres activitats internacionals de recerca organitzats",
@@ -776,7 +799,7 @@
     "projectes_mecenatge"                                   : `projectes`,
     "patents_i_secrets_industrials"                         : `#`,
     "spinoffs_i_startups"                                   : `#`,
-    "articles_amb_socis_industrials"                        : `articles`,
+    "articles_amb_socis_industrials"                        : `%`,
     "estudiants_acollits"                                   : `persones`,
     "cites_en_legislacio"                                   : `cites`,
     "participacions_comites_experts_ambit_legislatiu"       : `participacions`,
@@ -1653,7 +1676,7 @@
 
     articles_amb_socis_industrials(year,indicador){
       let scopus = app.taules.scopus.taula.filter(row=>row.year==year);
-      let n      = scopus.length ? scopus[0].articles_amb_socis_industrials : 0;
+      let n      = scopus.length ? scopus[0].articles_amb_socis_industrials : 0; //percentatge
       indicador.years[year].valor  = n;
       indicador.years[year].llista = scopus;
     },
@@ -1910,7 +1933,7 @@
       return n_actes;
     },
 
-    reunions_taula_aigua_ACA:null, //TODO
+    reunions_taula_aigua_ACA:null, //TBD s'ha demanat amagar-lo
 
     hores_tasques_taula_aigua_ACA(year,indicador){
       let taula_aigua = app.taules.taula_aigua.taula.filter(row=>{
@@ -2132,9 +2155,9 @@
 
     participants_actes_disseminacio_participats:null,
 
-    projectes_competitius_outreach:null, //esperar ordi TODO
+    projectes_competitius_outreach:null, //ordi TODO
 
-    euros_projectes_competitius_outreach:null, //esperar ordi TODO
+    euros_projectes_competitius_outreach:null, //ordi TODO
 
     aliances_solides_empreses_i_administracio_publica(year,indicador){
       let esdeveniments = app.taules.esdeveniments.taula.filter(esd=>{
@@ -3060,7 +3083,7 @@
       return personal.length;
     },
 
-    ips_cites_en_legislacio(year,indicador){
+    async ips_cites_en_legislacio(year,indicador){
       indicador.years[year].status=null; //reset status
 
       let nom_ip=app.ip_seleccionat?.nom||"Acuña Salazar, Vicenç";
@@ -3073,19 +3096,24 @@
       }); //object or null
 
       if(!sage) return;
+
       if(!sage.response_rebuda){
-        indicador.years[year].status="esperant request sagepub";
-        return;
+        indicador.years[year].status="requesting...";
+        let cites = await fetch_sage_user(sage.id_user);
+        sage.cites = cites;
+        sage.response_rebuda = true;
+        console.log(`[ok] sage response | id:${sage.id_user}`);
       }
 
-      let cites = sage.cites[year]||0; //number
+      let n_cites = sage.cites[year]||0; //number
 
       if(indicador){
-        indicador.years[year].valor  = cites;
-        indicador.years[year].llista = [{nom_ip,year,cites}];
+        indicador.years[year].valor  = n_cites;
+        indicador.years[year].llista = [{nom_ip,year,n_cites}];
+        indicador.years[year].status=null; //reset status
       }
 
-      return cites;
+      return n_cites;
     },
 
     ips_estudiants_acollits(year,indicador){
@@ -3142,7 +3170,6 @@
       return tesis.length;
     },
 
-    //TODO
     ips_projectes_coordinats_5_socis_2M(year,indicador){
       let nom_ip=app.ip_seleccionat?.nom||"Acuña Salazar, Vicenç";
 
@@ -3162,30 +3189,30 @@
 
       let joined=[];
 
-      //busca la columna "ImportTotalOtorgat"
+      //busca budget total i comprova nº de socis
       projectes.forEach(pro=>{
-        let codi        = pro["Código Identificativo"];
-        let pro_icranet = busca_projecte(codi,app.taules.projectes_icranet.taula,"Codi");
-        if(!pro_icranet) return;
+        let codi       = pro["Código Identificativo"];
+        let pro_import = busca_projecte(codi,app.taules.projectes_imports.taula,"Código Identificativo");
+        if(!pro_import) return;
 
-        //comprova si pressupost >= 2M€ TODO aquest es nomes ICRA
-        let pressupost = parseFloat(pro_icranet.ImportTotalOtorgat);
+        //comprova budget
+        let pressupost = parseFloat(pro_import["Importe Base"]);
         if(!pressupost || pressupost<2e6) return;
 
-        //comprova que el nº de socis és 5 o més
+        //comprova nº de socis
         let stakeholders = app.taules.stakeholders.taula.filter(row=>{
           return row["Proyecto Código Identificativo"]==codi;
-        }); //array
+        }).map(e=>e.Tercero); //array
 
         let socis = stakeholders.length; //number
-
-        if(socis<5) return;
+        if(socis<4) return; //4 socis + icra = 5 socis
 
         //guarda resultat
         let new_row={
           codi,
+          nom_projecte:pro["Título Abreviado"],
           pressupost,
-          socis,
+          stakeholders,
         };
 
         joined.push(new_row);
@@ -3203,7 +3230,65 @@
       return joined.length;
     },
 
-    ips_projectes_coordinats_5_socis_2M:null,
+    ips_projectes_coordinats_4_socis_1M(year,indicador){
+      let nom_ip=app.ip_seleccionat?.nom||"Acuña Salazar, Vicenç";
+
+      let tr = app.treu_accents; //function
+      nom_ip = tr(nom_ip);       //"acunasalazarvicenc";
+
+      //filtra per competitius coordinats taula projectes fundanet
+      let projectes = app.taules.projectes.taula.filter(row=>{
+        return(
+          nom_ip == tr(row["Director del Proyecto"])&&
+          row["Concurrencia"]=="FONS COMPETITIUS"&&
+          row["Iniciativa"]=="COORDINAT / COORDINADOR"&&
+          new Date(row["Fecha Comienzo"]).getFullYear()<=year&&
+          new Date(row["Fecha Fin Real"]).getFullYear()>=year
+        );
+      });
+
+      let joined=[];
+
+      //busca budget total i comprova nº de socis
+      projectes.forEach(pro=>{
+        let codi       = pro["Código Identificativo"];
+        let pro_import = busca_projecte(codi,app.taules.projectes_imports.taula,"Código Identificativo");
+        if(!pro_import) return;
+
+        //filtra per budget 1M
+        let pressupost = parseFloat(pro_import["Importe Base"]);
+        if(!pressupost || pressupost<1e6) return;
+
+        //comprova nº de socis
+        let stakeholders = app.taules.stakeholders.taula.filter(row=>{
+          return row["Proyecto Código Identificativo"]==codi;
+        }).map(e=>e.Tercero); //array
+
+        let socis = stakeholders.length; //number
+        if(socis<3) return; //3 socis + icra = 4 socis
+
+        //guarda resultat
+        let new_row={
+          codi,
+          nom_projecte:pro["Título Abreviado"],
+          pressupost,
+          stakeholders,
+        };
+
+        joined.push(new_row);
+
+        //app.taules.projectes.columnes_actives.forEach(key=>{
+          //new_row[key] = row.projecte[key];
+        //});
+      });
+
+      if(indicador){
+        indicador.years[year].valor  = joined.length;
+        indicador.years[year].llista = joined;
+      }
+
+      return joined.length;
+    },
 
     async ips_articles_Q1(year,indicador){
       if(!app.ip_seleccionat) return;
@@ -3252,7 +3337,6 @@
   };
 
   let funcions_calculadores_ips={
-    //ordi ips_projectes_coordinats_4_socis_1M(year,indicador){}, //TODO pendent resposta jaume
     //scop ips_articles_FWCI_10(year,indicador){},               //TODO pendent accés scopus api
     //scop ips_articles_amb_socis_industrials(year,indicador){}, //TODO impossible
   };
@@ -3693,7 +3777,7 @@
       filtre_responsable:false, //string || "RRHH","ordi",...
 
       //veure botó detalls
-      veure_boto_detalls:true,
+      veure_boto_detalls:false,
 
       //veure percentatge indicador
       veure_percentatge:true,
@@ -3713,6 +3797,7 @@
         sage:                new Conf_Taula("origen: 'sage_profiles.txt'       (fet manualment per lbosch, consultes fetes a temps real)"),
         projectes_icranet:   new Conf_Taula("origen: SQL Server ICRA           (icranet db per rdiaz)"),
         tesis:               new Conf_Taula("origen: SQL Server ICRA           (icranet db per rdiaz)"),
+        projectes_imports:   new Conf_Taula("origen: 'Projectes_Imports.xlsx'  (export fundanet per rdiaz. en un futur estarà integrat a 'projectes')"),
       },
 
       //opcions indicadors per IPs
@@ -4034,29 +4119,52 @@
 
       taula_resum_esdeveniments(){
         if(!this.tot_carregat) return false;
-        let taula=[];//retval
-        let ips = this.get_ips();
 
+        let taula=[];//resultat final (ret val)
+
+        let ips = this.get_ips(); //array
         let tr = this.treu_accents; //function
 
+        //filtra els esdeveniments dels ips
         ips.forEach(ip=>{
-          let nom           = tr(ip.nom);
+          let nom = tr(ip.nom);
           let esdeveniments = this.taules.esdeveniments.taula.filter(row=>tr(row.Persona)==nom);
           esdeveniments.sort((a,b)=>{
             return a.DataInici_Esdeveniment<b.DataInici_Esdeveniment?1:-1;
           });
-          let new_row = {
+          let new_row={
             ip,
             esdeveniments,
           };
           taula.push(new_row);
         });
 
+        //ordena ips de més esdeveniments a menys
         taula.sort((a,b)=>{
           return b.esdeveniments.length-a.esdeveniments.length;
-        })
+        });
 
         return taula;
+      },
+
+      //esdeveniments no associats a cap IP
+      taula_esdeveniments_orfes(){
+        if(!this.tot_carregat) return false;
+
+        let ips = this.get_ips(); //array
+        let tr  = this.treu_accents; //function
+
+        //copia taula esdeveniments
+        let esd_orfes = [...this.taules.esdeveniments.taula];
+
+        //itera cada ip, treu els seus esdeveniments
+        //la taula resultant és el resultat
+        ips.forEach(ip=>{
+          let nom   = tr(ip.nom);
+          esd_orfes = esd_orfes.filter(row=>tr(row.Persona)!=nom);
+        });
+
+        return esd_orfes;
       },
     },
   }).mount("#app");
@@ -4213,6 +4321,7 @@
   llegir_excel("stakeholders",       "csv/export-fundanet/Stakeholders3.xlsx");
   llegir_excel("xarxes_socials",     "csv/export-fundanet/xarxes_socials.xlsx");
   llegir_excel("scopus",             "csv/export-fundanet/scopus.xlsx");
+  llegir_excel("projectes_imports",  "csv/export-fundanet/Projectes_Imports.xlsx");
 </script>
 
 <script>/*seccio sagepub (cites en documents legislació)*/
@@ -4235,16 +4344,6 @@
 
     app.taules.sage.taula=taula;
     console.log(`OK "sage_profiles.txt" (fetch)`);
-
-    taula.forEach(async row=>{
-      let cites = await fetch_sage_user(row.id_user); //async
-      row.cites = cites;
-      row.response_rebuda = true;
-
-      let N = app.taules.sage.taula.length;
-      let n = app.taules.sage.taula.filter(row=>row.response_rebuda).length;
-      console.log(`OK sage id:${row.id_user} (${n}/${N})`);
-    });
   });
 
   async function fetch_sage_user(id_user){
@@ -4551,7 +4650,7 @@
       n_requests, //number of requests
     };
 
-    console.log(`[ok] scopus request | year:${year} orcid:${orcid}`);
+    console.log(`[ok] scopus response | year:${year} orcid:${orcid}`);
     return cache_scopus_requests[cache_key];
   }
 </script>
