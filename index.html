@@ -265,6 +265,31 @@
           </details>
         </td>
       </tr>
+
+      <tr v-if="false && get_publications_array">
+        <td colspan=2>
+          <table border=1 small>
+            <tbody v-for="entry in get_publications_array">
+              <tr>
+                <td nowrap>{{entry["prism:coverDate"]}}</td>
+                <td>
+                  <div v-if="entry['prism:doi']">
+                    <a target=_blank :href="`https://doi.org/${entry['prism:doi']}`">
+                      {{entry['prism:doi']}}
+                    </a>
+                  </div>
+                </td>
+                <td>
+                  <b>{{entry["dc:creator"]}}&nbsp;</b>
+                </td>
+                <td>
+                  <small><i>{{entry["dc:title"]}}</i></small>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </td>
+      </tr>
     </table>
   </fieldset>
 
@@ -542,6 +567,13 @@
         API_KEY:"006782f7796da6b38899e0c889fa3c80", //clau mireia
 
         query:query||`AF-ID(60110375) AND PUBYEAR IS ${new Date().getFullYear()}`,//default query
+        //query:query||`AF-ID(60002612) AND PUBYEAR IS ${new Date().getFullYear()}`,//eawag
+        //query:query||`AF-ID(60032543) AND PUBYEAR IS ${new Date().getFullYear()}`,//IGB      – the Leibniz Institute of Freshwater Ecology and Inland Fisheries, Berlin, Germany
+        //query:query||`AF-ID(60030012) AND PUBYEAR IS ${new Date().getFullYear()}`,//WETSUS   - European centre of excellence for sustainable water technology, Leeuwarden, The Netherland
+        //query:query||`AF-ID(60102148) AND PUBYEAR IS ${new Date().getFullYear()}`,//IRSA-CNR – Water Research Institute (Consiglio Nazionale delle Ricerche), Rome, Italy
+        //query:query||`AF-ID(60026169) AND PUBYEAR IS ${new Date().getFullYear()}`,//NIVA     – Norwegian Institute for Water Research, Oslo, Norway
+        //query:query||`AF-ID(60104394) AND PUBYEAR IS ${new Date().getFullYear()}`,//KWR      - Water Research Institute, Nieuwegein, The Netherlands
+
         response:null,           //cache
         result:null,             //cache
         result_is_loading:false, //is the query in process?
@@ -549,7 +581,8 @@
         number_of_requests:null,
         current_request_number:0,
 
-        sort_publications_by:"citedby-count",
+        //sort_publications_by:"citedby-count",
+        sort_publications_by:"prism:coverDate",
 
         //cache for queries
         cache:{
@@ -1212,10 +1245,16 @@
         arr.sort((a,b)=>{
           let aa = a[camp];
           let bb = b[camp];
+
           let naa = parseFloat(aa);
           let nbb = parseFloat(bb);
-          if(isNaN(naa) || isNaN(nbb)){
-            return bb>aa?1:-1;
+
+          if(camp=="prism:coverDate"){
+            return aa<bb?-1:1;
+          }
+
+          if(isNaN(naa)||isNaN(nbb)){
+            return aa<bb?1:-1;
           }else{
             return nbb-naa;
           }
