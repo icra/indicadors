@@ -5,8 +5,8 @@ Possibles:
 
   - [ ] demanar elisabet ips dels articles amb socis industrials
   - [ ] insistir home scopus adriano -- està on leave
-  - [ ] carregar CSV scimago 2024 (journalrank) a index.php
 
+  - [fet] carregar CSV scimago 2024 (journalrank) a index.php
   - [fet] indicadors que necessiten càlcul budget
   - [fet] calcular Q2 Q3 i Q4
   - [fet] botó exportar CSV taula indicadors per ip

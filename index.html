@@ -303,7 +303,7 @@
   </fieldset>
 
   <fieldset>
-    <legend>Journals in the results</legend>
+    <legend>Journals dels resultats</legend>
     <details>
       <summary sticky>
         Journals
@@ -332,8 +332,21 @@
             </div>
           </th>
           <th>Scimago Journal Rank CSV metrics
-            <div v-if="!scimagocsv">
-              (loading...)
+            <div v-if="!scimagojr">
+              (loading scimagojr csvs...)
+            </div>
+
+            <div v-if="scimagojr">
+              <table style="font-size:smaller;font-weight:normal;margin:auto" border=1>
+                <tr v-for="key in Object.keys(scimagojr)">
+                  <td>ranking {{key}}</td>
+                  <td>loaded</td>
+                </tr>
+                <tr v-for="key in scimagojr_years_not_available">
+                  <td>ranking {{key}}</td>
+                  <td style="color:#aaa">not available</td>
+                </tr>
+              </table>
             </div>
           </th>
         </tr>
@@ -407,16 +420,16 @@
               </button>
             </div>
           </td>
-          <td v-if="scimagocsv">
-            <div v-for="sjr in [busca_a_scimagocsv(key,val.issn,val.eIssn)]">
-              <table border=1 xsmall v-if="sjr">
+          <td v-if="scimagojr">
+            <div v-for="sjr in [busca_a_scimagocsv(key, val.issn, val.eIssn, val.articles[0]['prism:coverDate']?.split('-')[0])]">
+              <table v-if="sjr" border=1 xsmall>
                 <tbody>
                   <tr><th nowrap>SJR              <td>{{sjr.SJR}}</tr>
                   <tr><th nowrap>SJR Best Quartile<th>{{sjr["SJR Best Quartile"]}}</th>
                   <tr><th nowrap>H index          <td>{{sjr["H index"]}}</tr>
                 </tbody>
               </table>
-              <details xsmall v-if="sjr">
+              <details v-if="sjr" xsmall>
                 <summary>see all ScimagoJR metrics</summary>
                 <table border=2 xsmall>
                   <tr v-for="val2,key2 in sjr">
@@ -430,8 +443,8 @@
               </div>
             </div>
           </td>
-          <td v-if="!scimagocsv">
-            (loading scimago csv...)
+          <td v-if="!scimagojr">
+            (loading scimago csvs...)
           </td>
         </tr>
       </table>
@@ -457,7 +470,7 @@
   </fieldset>
 
   <fieldset>
-    <legend>Indicadors</legend>
+    <legend>Indicadors dels resultats</legend>
     <table border=1>
       <tbody v-if="get_articles_quartils">
         <tr v-for="arr,key in get_articles_quartils">
@@ -623,8 +636,6 @@
         //"doi":abstract_object
       },
 
-      scimagocsv:null, //fetch *.csv
-
       /*utils*/
       //http requests error code descriptions
       errors:{
@@ -780,8 +791,8 @@
         //cache result and return
         this.journal_metrics[journal_name]=data;
 
-        //get issn and eissn
-        console.log(data);
+        //get issn and eissn 
+        //console.log(data);
 
         return data;
       },
@@ -1020,134 +1031,6 @@
         alert(str);
       },
       /*</utils>*/
-
-      async get_scimagocsv(){
-        if(this.scimagocsv) return;
-
-        let res = await fetch("csv/scimagojr 2023.csv");
-        if(!res.ok) throw("error reading csv file");
-        let text = await res.text();
-
-        let csv = text.split("\n").map(line=>{
-          let row = line.split(";"); //array
-
-          let indexs_to_delete=[];
-
-          //arregla camps entre cometes
-          for(let i=0;i<row.length;i++){
-            let val = row[i];
-            if(val[0]=="\"" && val.at(-1)!="\""){
-              let new_val = val;
-              let index = 1;
-              while(true){
-                let next_cell = row[i+index]; //value
-                indexs_to_delete.push(i+index);
-                new_val += ";"+next_cell; //join values
-                if(next_cell.at(-1)=="\""){
-                  break;
-                }else{
-                  index++;
-                }
-              }
-              row[i] = new_val;
-            }
-          }
-
-          indexs_to_delete.forEach(index=>{
-            row[index]="";
-          });
-
-          row = row.filter(cell=>cell!="");
-
-          return row;
-        });
-
-        csv.forEach(row=>{
-          row.forEach((cell,i)=>{
-            if(cell.at(0)=="\"" && cell.at(-1)=="\""){
-              row[i] = cell.replaceAll("\"","");
-            }
-          });
-        });
-
-        //delete last row
-        csv.pop();
-
-        let csv_dictionary={};
-        csv.forEach((row,i)=>{
-          if(i==0) return;
-          let obj={};
-          csv[0].forEach((field,j)=>{
-            obj[field] = row[j];
-          });
-
-          csv_dictionary[obj.Title] = obj;
-        });
-
-        this.scimagocsv = csv_dictionary;
-
-        this.calcula_percentils_ambits_scimago();
-      },
-
-      busca_a_scimagocsv(nom_revista,issn,eIssn){
-        if(!this.scimagocsv) return false;
-
-        let csv = this.scimagocsv; //dictionary to search
-
-        //search by name
-        let obj = csv[nom_revista]; //object or undefined
-        if(obj) return obj;
-
-        //search by issn
-        obj = Object.entries(csv).find(en=>en[1].Issn.includes(issn)); //object or null
-        if(obj) return obj[1];
-
-        //search by eIssn
-        obj = Object.entries(csv).find(en=>en[1].Issn.includes(eIssn)); //object or null
-        if(obj) return obj[1];
-
-        return false; //not found
-      },
-
-      //calcula percentils dels rankings
-      calcula_percentils_ambits_scimago(){
-        let ambits = {};
-        let csv = this.scimagocsv;
-
-        //classifica journals dins dels ambits
-        Object.values(csv).forEach(journal=>{
-          journal.Categories.split(";").forEach(cat=>{
-            cat = cat.trim();
-            cat = cat.replace(" (Q1)","");
-            cat = cat.replace(" (Q2)","");
-            cat = cat.replace(" (Q3)","");
-            cat = cat.replace(" (Q4)","");
-
-            if(ambits[cat]==undefined){
-              ambits[cat]=[];
-            }
-            ambits[cat].push(journal);
-          });
-        });
-
-        //recorre els ambits i calcula el ranking de cada revista
-        Object.entries(ambits).forEach(([key,val])=>{
-          let cat      = key; //string
-          let journals = val; //array
-          let n        = journals.length; //number
-
-          journals.forEach((jou,i)=>{
-            let percentil = 100*(i+1)/n; //number
-            if(jou.percentils==undefined){
-              jou.percentils={};
-            }
-            jou.percentils[cat]={
-              rank:i+1, n,
-              percentil,
-            }
-          });
-        });
-      },
     },
 
     computed:{
@@ -1313,7 +1196,7 @@
           this.scopus.response  == null  ||
           this.scopus.result    == null  ||
           this.scopus.result_ok == false ||
-          this.scimagocsv       == null
+          this.scimagojr        == null
         ){
           return ret;
         }
@@ -1325,7 +1208,8 @@
             let nom_revista = entry["prism:publicationName"];
             let issn        = entry["prism:issn"];
             let eIssn       = entry["prism:eIssn"];
-            let sjr         = this.busca_a_scimagocsv(nom_revista,issn,eIssn);
+            let year        = entry["prism:coverDate"]?.split("-")[0];
+            let sjr         = this.busca_a_scimagocsv(nom_revista, issn, eIssn, year);
 
             if(!sjr) return;
             if(!sjr.percentils) return;
@@ -1348,13 +1232,20 @@
     mounted(){
       document.querySelector("textarea[query]").focus();
 
-      //get scimago csv 2023
-      this.get_scimagocsv();
-
       //if query is in the url, start search immediately
       if(query){
         this.get_publications();
       }
     },
   }).mount("#app");
+</script>
+
+<!--modul scimago-->
+<!--TODO fer servir "import"-->
+<script src="modul-scimago.js"></script>
+<script>
+  //importa modul scimago a vue app
+  app.scimagojr                     = scimagojr; //diccionari
+  app.scimagojr_years_not_available = scimagojr_years_not_available; //set
+  app.busca_a_scimagocsv            = busca_a_scimagocsv; //function
 </script>

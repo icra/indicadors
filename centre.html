@@ -148,16 +148,23 @@
 
   <!--avís certificat-->
   <div v-if="!tot_carregat"><hr>
-    Carregant...<hr>
-    Perquè tot funcioni cal:<ol>
-      <li>
-        Estar dins la xarxa de l'ICRA (o a la VPN)
-      </li>
-      <li>
-        Descarregar i importar aquest certificat:
-        <a href="https://undarius.icra.local:50000/server.cert">certificat HTTPS Undarius</a>
-      </li>
-    </ol><hr>
+    <div v-if="carregant">
+      Carregant...
+      <hr>
+    </div>
+    <div v-if="!carregant">
+      ERROR! Perquè la web funcioni:
+      <ol>
+        <li>
+          Cal ser dins la xarxa de l'ICRA (o VPN), ja que la web es comunica amb el clúster "Undarius", ja que aquest fa consultes a la base de dades d'icranet.
+        </li>
+        <li>
+          Cal descarregar aquest certificat (caduca cada dia):
+          <a href="https://undarius.icra.local:50000/server.cert">certificat HTTPS Undarius</a>
+          (no cal obrir-lo, només que sigui dins la carpeta "Descàrregues")
+        </li>
+      </ol><hr>
+    </div>
   </div>
 
   <!--finestra detalls indicador-->
@@ -3756,7 +3763,7 @@
       selected_years:{
         "2023":true,
         "2024":true,
-        "2025":false,
+        "2025":true,
         "2026":false,
         "2027":false,
         "2028":false,
@@ -3766,21 +3773,21 @@
       ambits,                 //indicadors
       funcions_calculadores,  //taula helper funcions dels indicadors
       carregant:true,         //status
-      ambit_actual:ambits[3], //objecte
+      ambit_actual:ambits[0], //objecte
 
       //veure detalls d'un sol indicador
       vista_detalls_indicador:false,
       html_detalls_indicador:false,
 
       //columna responsable indicador
-      veure_responsable:true,
+      veure_responsable:false,
       filtre_responsable:false, //string || "RRHH","ordi",...
 
       //veure botó detalls
-      veure_boto_detalls:false,
+      veure_boto_detalls:true,
 
       //veure percentatge indicador
-      veure_percentatge:true,
+      veure_percentatge:false,
 
       //taules des d'on es calculen els indicadors: origens diversos (SQL icra, excels, ...)
       taules:{
@@ -4324,7 +4331,7 @@
   llegir_excel("projectes_imports",  "csv/export-fundanet/Projectes_Imports.xlsx");
 </script>
 
-<script>/*seccio sagepub (cites en documents legislació)*/
+<script>/*modul sagepub (cites en documents legislació)*/
   fetch("sage_profiles.txt").then(r=>r.text()).then(txt=>{
     let taula=[];
     let linies = txt.split("\n").filter(e=>e);
@@ -4369,158 +4376,11 @@
   }
 </script>
 
-<script>/*seccio scimago*/
-  /*
-    scimago permet tenir ranking de journals
-  */
+<!--modul scimago-->
+<!--TODO fer servir "import"-->
+<script src="modul-scimago.js"></script>
 
-  //cache year=>obj
-  let scimagojr={};
-
-  //llegir csv i convertir en diccionari
-  async function fetch_scimagocsv(year){
-    year=year||"2023";
-    if(scimagojr[year]) return;
-
-    let res = await fetch(`csv/scimagojr ${year}.csv`);
-    if(!res.ok) throw("error reading scimago csv file");
-    let text = await res.text();
-    let csv = text.split("\n").map(line=>{
-      let row = line.split(";"); //array
-
-      let indexs_to_delete=[];
-
-      //arregla camps entre cometes
-      for(let i=0;i<row.length;i++){
-        let val = row[i];
-        if(val[0]=="\"" && val.at(-1)!="\""){
-          let new_val = val;
-          let index = 1;
-          while(true){
-            let next_cell = row[i+index]; //value
-            indexs_to_delete.push(i+index);
-            new_val += ";"+next_cell; //join values
-            if(next_cell.at(-1)=="\""){
-              break;
-            }else{
-              index++;
-            }
-          }
-          row[i] = new_val;
-        }
-      }
-
-      indexs_to_delete.forEach(index=>{
-        row[index]="";
-      });
-
-      row = row.filter(cell=>cell!="");
-
-      return row;
-    });
-    csv.forEach(row=>{
-      row.forEach((cell,i)=>{
-        if(cell.at(0)=="\"" && cell.at(-1)=="\""){
-          row[i] = cell.replaceAll("\"","");
-        }
-      });
-    });
-    csv.pop();//delete last row
-
-    //result dictionary to be cached
-    let csv_dictionary={};
-    csv.forEach((row,i)=>{
-      if(i==0) return;
-      let obj={};
-      csv[0].forEach((field,j)=>{
-        obj[field] = row[j];
-      });
-
-      csv_dictionary[obj.Title] = obj;
-    });
-
-    //save result to cache
-    scimagojr[year] = csv_dictionary;
-
-    //calcula els percentils dins de cada journal object
-    calcula_percentils_ambits_scimago(csv_dictionary);
-
-    console.log(`[ok] scimago ${year} csv`);
-  }
-
-  //calcula percentils de cada revista i categoria
-  function calcula_percentils_ambits_scimago(csv){
-    let ambits={};
-
-    //classifica journals dins dels ambits
-    Object.values(csv).forEach(journal=>{
-      journal.Categories.split(";").forEach(cat=>{
-        cat = cat.trim();
-        cat = cat.replace(" (Q1)","");
-        cat = cat.replace(" (Q2)","");
-        cat = cat.replace(" (Q3)","");
-        cat = cat.replace(" (Q4)","");
-
-        if(ambits[cat]==undefined){
-          ambits[cat]=[];
-        }
-        ambits[cat].push(journal);
-      });
-    });
-
-    //recorre els ambits i calcula el ranking de cada revista
-    Object.entries(ambits).forEach(([key,val])=>{
-      let cat      = key; //string
-      let journals = val; //array
-      let n        = journals.length; //number
-
-      journals.forEach((jou,i)=>{
-        let percentil = 100*(i+1)/n; //number
-        if(jou.percentils==undefined){
-          jou.percentils={};
-        }
-        jou.percentils[cat]={
-          rank:i+1, n,
-          percentil,
-        }
-      });
-    });
-  }
-
-  //buscar revista dins un ranking
-  function busca_a_scimagocsv(nom_revista, issn, eIssn, year){
-    if(!year) throw new Error("year not defined");
-
-    let csv = scimagojr[year]; //dictionary to search
-
-    if(!csv){
-      let max_year = Math.max(...Object.keys(scimagojr));
-      max_year = String(max_year);
-      csv = scimagojr[max_year];
-    }
-    if(!csv) return;
-
-    //search by name
-    let obj = csv[nom_revista]; //object or undefined
-    if(obj) return obj;
-
-    //search by issn
-    obj = Object.entries(csv).find(en=>en[1].Issn.includes(issn)); //object or null
-    if(obj) return obj[1];
-
-    //search by eIssn
-    obj = Object.entries(csv).find(en=>en[1].Issn.includes(eIssn)); //object or null
-    if(obj) return obj[1];
-
-    return false; //not found
-  }
-
-  //llegeix rankings disponibles (descarregats manualment)
-  fetch_scimagocsv("2023");
-  fetch_scimagocsv("2024");
-</script>
-
-<script>/*seccio scopus (request per investigador)*/
+<script>/*modul scopus (request per investigador)*/
   let cache_scopus_requests={
     //"year-orcid":{response},
   };
@@ -4654,4 +4514,3 @@
     return cache_scopus_requests[cache_key];
   }
 </script>
-
