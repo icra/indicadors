@@ -14,6 +14,9 @@
       font-size:smaller;
       white-space:nowrap;
     }
+    [xsmall]{
+      font-size:x-small;
+    }
     summary{
       font-weight:bold;
       cursor:pointer;
@@ -24,11 +27,29 @@
     table{
       border-collapse:collapse;
     }
+    [first_or_last]{
+      color:#666;
+      border-radius:5px;
+      border:1px solid #ccc;
+      font-size:smaller;
+    }
     [first_or_last=true]{
       background:#af0;
+      box-shadow:inset 1px 1px 10px lightgreen;
     }
     [is_corresponding=true]{
       background:#af0;
+      box-shadow:inset 1px 1px 10px lightgreen;
+      color:#666;
+      border-radius:5px;
+      border:1px solid #ccc;
+      font-size:smaller;
+    }
+    [gender]{
+      color:#666;
+      border-radius:5px;
+      border:1px solid #ccc;
+      font-size:smaller;
     }
     div[selector_dataset] button{
       padding:1em 1.618em;
@@ -59,7 +80,7 @@
           <th>total</th>
           <th>{{works.length}}</th>
           <th>{{get_works_amb_lideratge.length}}</th>
-          <th>wip</th>
+          <th>{{get_works_amb_lideratge_femeni.length}}</th>
         </tr>
         <tr v-for="tipus in get_tipus_publicacions">
           <td>
@@ -75,7 +96,7 @@
             {{get_works_amb_lideratge.filter(w=>w.type==tipus).length}}
           </td>
           <td center>
-            wip
+            {{get_works_amb_lideratge_femeni.filter(w=>w.type==tipus).length}}
           </td>
         </tr>
         <tr>
@@ -91,22 +112,33 @@
     </details><hr>
 
     <div selector_dataset>
-      <button @click="array_works_visible=works"                  >Publicacions totals</button>
-      <button @click="array_works_visible=get_works_amb_lideratge">Publicacions amb lideratge</button>
-      <!--
-      <button @click="array_works_visible=get_works_amb_lideratge_femeni">Publicacions amb lideratge femeni</button>
-      -->
-    </div>
+      Selecciona dataset:
+      <button @click="array_works_visible=works;                          array_works_seleccionat='Publicacions totals'">          Publicacions totals</button>
+      <button @click="array_works_visible=get_works_amb_lideratge;        array_works_seleccionat='Publicacions lideratge'">       Publicacions lideratge ICRA</button>
+      <button @click="array_works_visible=get_works_amb_lideratge_femeni; array_works_seleccionat='Publicacions lideratge femení'">Publicacions lideratge femení</button>
+    </div><hr>
 
-    <div>
-      noms no classificats per gènere: {{names_not_found}}
+    <div v-if="array_works_visible">
+      <details>
+        <summary>noms no classificats per gènere ({{names_not_found.size}})</summary>
+        <div>
+          <div v-for="nom in Array.from(names_not_found)">
+            {{nom}}
+          </div>
+        </div>
+      </details><hr>
     </div>
 
     <div v-if="get_works_filtrats_per_tipus">
-      <b>({{get_works_filtrats_per_tipus.length}} publicacions)</b>
+      <b style="font-size:larger">
+        {{array_works_seleccionat}}
+        {{Object.entries(work_types).filter(en=>en[1]).map(en=>en[0])}}
+        ({{get_works_filtrats_per_tipus.length}} publicacions)
+      </b>
       <table border=1 >
         <thead>
           <tr>
+            <th>Index</th>
             <th>Data</th>
             <th>Tipus</th>
             <th>Títol</th>
@@ -117,8 +149,9 @@
             <th>Detalls</th>
           </tr>
         </thead>
-        <tbody v-for="work in get_works_filtrats_per_tipus">
+        <tbody v-for="work,i in get_works_filtrats_per_tipus">
           <tr>
+            <td>{{i}}</td>
             <td data>{{work.publication_date}}</td>
             <td center>{{work.type}}</td>
             <td>
@@ -128,22 +161,36 @@
             <td>
               <table border=1>
                 <tr v-for="authorship in work.authorships.filter(a=>a.institutions.some(i=>i.id==id_icra)&&(a.is_corresponding||a.author_position!='middle'))">
-                  <td nowrap>
-                    {{authorship.author.display_name}}<br>
-                    {{authorship.raw_author_name}}
-                  </td>
-                  <td :first_or_last="['first','last'].includes(authorship.author_position)">
-                    {{authorship.author_position}}
-                  </td>
-                  <td :is_corresponding="authorship.is_corresponding">
-                    <div v-if="authorship.is_corresponding" is_corresponding="true">
-                      corresponding
+                  <td nowrap :title="authorship.raw_author_name">
+                    <span>
+                      {{authorship.author.display_name}}
+                    </span>
+                    <div>
+                      <span :first_or_last="['first','last'].includes(authorship.author_position)">
+                        {{authorship.author_position}}
+                      </span>
+                      <span :is_corresponding="authorship.is_corresponding">
+                        <span v-if="authorship.is_corresponding">
+                          corresponding
+                        </span>
+                      </span>
+                      <span v-for="gen in [gender_authorship(authorship)]">
+                        <span :gender="gen">
+                          {{gen}}
+                        </span>
+                      </span>
                     </div>
                   </td>
                   <td>
-                    {{
-                      gender_authorship(authorship)
-                    }}
+                    <div v-for="ins in [authorship.institutions.find(i=>i.id==id_icra)]">
+                      <div v-if="ins">
+                        <table xsmall border=1>
+                          <tr v-for="str in authorship.raw_affiliation_strings">
+                            <td>{{str}}</td>
+                          </tr>
+                        </table>
+                      </div>
+                    </div>
                   </td>
                 </tr>
               </table>
@@ -221,6 +268,7 @@
       },
 
       //set de resultats visible usuari
+      array_works_seleccionat:null,
       array_works_visible:null,
 
       names_not_found:new Set(),
@@ -280,6 +328,28 @@
         return works;
       },
 
+      get_works_amb_lideratge_femeni(){
+        if(!this.get_works_amb_lideratge) return [];
+
+        let works = this.get_works_amb_lideratge.filter(work=>{
+          //filtra authorships icra
+          let authorships = work.authorships.filter(a=>a.institutions.some(i=>i.id==this.id_icra));
+
+          //mira si algun authorship té lideratge
+          return authorships.some(a=>{
+            let gender = this.gender_authorship(a);
+            return gender=="female" && (a.is_corresponding || a.author_position!='middle');
+          });
+        });
+
+        works.sort((a,b)=>{
+          let aa = a.publication_date;
+          let bb = b.publication_date;
+          return bb<aa?-1:1;
+        });
+        return works;
+      },
+
       get_works_filtrats_per_tipus(){
         if(!this.array_works_visible) return false;
         return this.array_works_visible.filter(work=>{
@@ -292,6 +362,19 @@
       fetch("query-result-works-2021-2024-icra.json")
       .then(r=>r.json())
       .then(arr=>{
+        arr = arr.filter(work=>{
+          return work.authorships.some(auth=>{
+            return auth.raw_affiliation_strings.some(str=>{
+              return (
+                str.includes("ICRA")||
+                str.includes("Catalan Institute for Water Research")||
+                str.includes("Catalan Institute of Water Research")||
+                str.includes("Institut Catala de Recerca de l'Aigua")||
+                str.includes("Institut Català de Recerca de l'Aigua")
+              );
+            });
+          });
+        });
         this.works=arr;
         console.log("[ok] query-result-works-2021-2024-icra.json");
       });
