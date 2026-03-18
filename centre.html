@@ -429,17 +429,24 @@
       [dev] Taules desenvolupament
     </summary>
     <!--itera taules-->
-    <div v-for="taula in Object.keys(taules)">
+    <div v-for="taula in Object.keys(taules).sort()">
       <details :id="`container_taula_${taula}`">
         <summary large bold style="margin-left:1em;color:#555">
           Taula {{taula}}
           <span v-if="taules[taula].taula" small>
             ({{taules[taula].files_filtrades.length}}/{{taules[taula].taula.length}} items)
           </span>
+          <span small>
+            <span
+              :style="{background:taules[taula].origen!='sql'?'red':''}"
+              :title="taules[taula].origen=='sql'?'taula automatitzada':'taula pendent automatitzar'"
+            >[{{taules[taula].origen}}]
+            </span>
+          </span>
         </summary>
 
         <div v-if="!taules[taula].taula">carregant "{{taula}}"...</div>
-        <div v-if="!taules[taula].taula && !carregant">error consulta SQL Server ICRA</div>
+        <div v-if="!taules[taula].taula && !carregant">error carregant taula</div>
 
         <code v-if="taules[taula].comentaris" style="margin-left:1em">
           {{taules[taula].comentaris}}
@@ -3726,12 +3733,13 @@
 <script>
   //configuracio columnes visibles i filtres per taules origen de dades
   class Conf_Taula{
-    constructor(comentaris){
+    constructor(comentaris,origen){
       this.taula    = null; //Array objectes | fetch_taula_undarius(nom_taula)
       this.columnes = {};   //objecte        | "nom_columna" => true/false
       this.filtres  = {};   //objecte        | "nom_columna" => valor (string o number) a filtrar
 
       this.comentaris = comentaris || "";
+      this.origen     = origen     || "";
 
       this.error_loading = null; //TODO
     }
@@ -3791,20 +3799,20 @@
 
       //taules des d'on es calculen els indicadors: origens diversos (SQL icra, excels, ...)
       taules:{
-        projectes:           new Conf_Taula("origen: 'projectes.xlsx'          (export fundanet per rdiaz)"),
-        personal:            new Conf_Taula("origen: SQL Server ICRA           (icranet db per rdiaz)"),
-        esdeveniments:       new Conf_Taula("origen: SQL Server ICRA           (icranet db per rdiaz)"),
-        tipus_esdeveniments: new Conf_Taula("origen: SQL Server ICRA           (icranet db per rdiaz)"),
-        ingressos:           new Conf_Taula("origen: SQL Server ICRA           (icranet db per rdiaz)"),
-        taula_aigua:         new Conf_Taula("origen: SQL Server ICRA           (icranet db per rdiaz)"),
-        projectes_personal:  new Conf_Taula("origen: 'projectes_personal.xlsx' (export fundanet per rdiaz)"),
-        stakeholders:        new Conf_Taula("origen: 'stakeholders.xlsx'       (export fundanet per rdiaz)"),
-        xarxes_socials:      new Conf_Taula("origen: 'xarxes_socials.xlsx'     (fet manualment per sdrammeh)"),
-        scopus:              new Conf_Taula("origen: 'scopus.xlsx'             (fet manualment per etornes)"),
-        sage:                new Conf_Taula("origen: 'sage_profiles.txt'       (fet manualment per lbosch, consultes fetes a temps real)"),
-        projectes_icranet:   new Conf_Taula("origen: SQL Server ICRA           (icranet db per rdiaz)"),
-        tesis:               new Conf_Taula("origen: SQL Server ICRA           (icranet db per rdiaz)"),
-        projectes_imports:   new Conf_Taula("origen: 'Projectes_Imports.xlsx'  (export fundanet per rdiaz. en un futur estarà integrat a 'projectes')"),
+        projectes:           new Conf_Taula("origen: 'projectes.xlsx'          (export fundanet per rdiaz)",'xlsx'),
+        personal:            new Conf_Taula("origen: SQL Server ICRA           (icranet db per rdiaz)",'sql'),
+        esdeveniments:       new Conf_Taula("origen: SQL Server ICRA           (icranet db per rdiaz)",'sql'),
+        tipus_esdeveniments: new Conf_Taula("origen: SQL Server ICRA           (icranet db per rdiaz)",'sql'),
+        ingressos:           new Conf_Taula("origen: SQL Server ICRA           (icranet db per rdiaz)",'sql'),
+        taula_aigua:         new Conf_Taula("origen: SQL Server ICRA           (icranet db per rdiaz)",'sql'),
+        projectes_personal:  new Conf_Taula("origen: 'projectes_personal.xlsx' (export fundanet per rdiaz)",'xlsx'),
+        stakeholders:        new Conf_Taula("origen: 'stakeholders.xlsx'       (export fundanet per rdiaz)",'xlsx'),
+        xarxes_socials:      new Conf_Taula("origen: 'xarxes_socials.xlsx'     (fet manualment per sdrammeh)",'xlsx'),
+        scopus:              new Conf_Taula("origen: 'scopus.xlsx'             (fet manualment per etornes)",'xlsx'),
+        sage:                new Conf_Taula("origen: 'sage_profiles.txt'       (fet manualment per lbosch, però consultes automàtiques)",'txt'),
+        projectes_icranet:   new Conf_Taula("origen: SQL Server ICRA           (icranet db per rdiaz)",'sql'),
+        tesis:               new Conf_Taula("origen: SQL Server ICRA           (icranet db per rdiaz)",'sql'),
+        projectes_imports:   new Conf_Taula("origen: 'Projectes_Imports.xlsx'  (export fundanet rdiaz. futur: integrat a 'projectes')",'xlsx'),
       },
 
       //opcions indicadors per IPs
