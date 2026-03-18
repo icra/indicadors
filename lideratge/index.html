@@ -30,6 +30,9 @@
     [is_corresponding=true]{
       background:#af0;
     }
+    div[selector_dataset] button{
+      padding:1em 1.618em;
+    }
   </style>
 </head><body>
 
@@ -45,91 +48,118 @@
     <!--taules context-->
     <details open>
       <summary>Metadades resultats</summary>
-      <div>
-        PREGUNTAR QUINS TIPUS DE PUBLICACIONS INCLOURE EN ELS RESULTATS
-      </div>
-      <div
-        style="
-          display:flex;
-          gap:10px;
-        "
-      >
-        <div>
-          <table border=1>
-            <tr v-for="tipus in get_tipus_publicacions">
-              <td>
-                <label>
-                  <input type=checkbox checked>
-                  {{tipus}}
-                </label>
-              </td>
-              <td>
-                {{get_works_amb_lideratge.filter(w=>w.type==tipus).length}}
-              </td>
-            </tr>
-          </table>
-        </div>
-        <div>
-          <table border=1>
-            <tr><td>Publicacions                      <td> {{works.length}}                  </tr>
-            <tr><td><b>Publicacions amb lideratge</b> <td> {{get_works_amb_lideratge.length}}</tr>
-            <tr><td>Publicacions amb lideratge femení <td> WIP                               </tr>
-          </table>
-        </div>
-      </div>
+      <table border=1>
+        <tr>
+          <th>Tipus publicació</th>
+          <th>Publicacions<br>totals</th>
+          <th>Publicacions<br>lideratge</th>
+          <th>Publicacions<br>lideratge<br>femení</th>
+        </tr>
+        <tr>
+          <th>total</th>
+          <th>{{works.length}}</th>
+          <th>{{get_works_amb_lideratge.length}}</th>
+          <th>wip</th>
+        </tr>
+        <tr v-for="tipus in get_tipus_publicacions">
+          <td>
+            <label>
+              <input type=checkbox v-model="work_types[tipus]">
+              {{tipus}}
+            </label>
+          </td>
+          <td center>
+            {{works.filter(w=>w.type==tipus).length}}
+          </td>
+          <td center>
+            {{get_works_amb_lideratge.filter(w=>w.type==tipus).length}}
+          </td>
+          <td center>
+            wip
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <button @click="function(){
+                Object.keys(work_types).forEach(t=>work_types[t]=false)
+              }"
+              :disabled="Object.values(work_types).every(val=>!val)"
+            >deselecciona tots</button>
+          </td>
+        </tr>
+      </table>
     </details><hr>
 
-    <b>Publicacions amb lideratge ({{get_works_amb_lideratge.length}})</b>
-    <table border=1>
-      <thead>
-        <tr>
-          <th>Data</th>
-          <th>Tipus</th>
-          <th>Títol</th>
-          <th>
-            Autors ICRA lideratge
-            <div>(nom, posició, corresponding, gènere)</div>
-          </th>
-          <th>Detalls</th>
-        </tr>
-      </thead>
-      <tbody v-for="work in get_works_amb_lideratge">
-        <tr>
-          <td data>{{work.publication_date}}</td>
-          <td center>{{work.type}}</td>
-          <td>
-            <div><i>{{work.title}}</i></div>
-            <div><a :href="work.doi" target=_blank>{{work.doi}}</a></div>
-          </td>
-          <td>
-            <table border=1>
-              <tr v-for="authorship in work.authorships.filter(a=>a.institutions.some(i=>i.id==id_icra)&&(a.is_corresponding||a.author_position!='middle'))">
-                <td nowrap>{{authorship.author.display_name}}</td>
-                <td :first_or_last="['first','last'].includes(authorship.author_position)">
-                  {{authorship.author_position}}
-                </td>
-                <td :is_corresponding="authorship.is_corresponding">
-                  <div v-if="authorship.is_corresponding" is_corresponding="true">
-                    corresponding
-                  </div>
-                </td>
-                <td>
-                  gènere (pendent)
-                </td>
-              </tr>
-            </table>
-          </td>
-          <td nowrap>
-            <details>
-              <summary>detalls</summary>
-              <div>
-                <code><pre>{{JSON.stringify(work,null,'  ')}}</pre></code>
-              </div>
-            </details>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <div selector_dataset>
+      <button @click="array_works_visible=works"                  >Publicacions totals</button>
+      <button @click="array_works_visible=get_works_amb_lideratge">Publicacions amb lideratge</button>
+      <!--
+      <button @click="array_works_visible=get_works_amb_lideratge_femeni">Publicacions amb lideratge femeni</button>
+      -->
+    </div>
+
+    <div>
+      noms no classificats per gènere: {{names_not_found}}
+    </div>
+
+    <div v-if="get_works_filtrats_per_tipus">
+      <b>({{get_works_filtrats_per_tipus.length}} publicacions)</b>
+      <table border=1 >
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Tipus</th>
+            <th>Títol</th>
+            <th>
+              Autors ICRA lideratge
+              <div>(nom, posició, corresponding, gènere)</div>
+            </th>
+            <th>Detalls</th>
+          </tr>
+        </thead>
+        <tbody v-for="work in get_works_filtrats_per_tipus">
+          <tr>
+            <td data>{{work.publication_date}}</td>
+            <td center>{{work.type}}</td>
+            <td>
+              <div><i>{{work.title}}</i></div>
+              <div><a :href="work.doi" target=_blank>{{work.doi}}</a></div>
+            </td>
+            <td>
+              <table border=1>
+                <tr v-for="authorship in work.authorships.filter(a=>a.institutions.some(i=>i.id==id_icra)&&(a.is_corresponding||a.author_position!='middle'))">
+                  <td nowrap>
+                    {{authorship.author.display_name}}<br>
+                    {{authorship.raw_author_name}}
+                  </td>
+                  <td :first_or_last="['first','last'].includes(authorship.author_position)">
+                    {{authorship.author_position}}
+                  </td>
+                  <td :is_corresponding="authorship.is_corresponding">
+                    <div v-if="authorship.is_corresponding" is_corresponding="true">
+                      corresponding
+                    </div>
+                  </td>
+                  <td>
+                    {{
+                      gender_authorship(authorship)
+                    }}
+                  </td>
+                </tr>
+              </table>
+            </td>
+            <td nowrap v-if="false">
+              <details>
+                <summary>detalls</summary>
+                <div>
+                  <code><pre>{{JSON.stringify(work,null,'  ')}}</pre></code>
+                </div>
+              </details>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -167,16 +197,57 @@
     return results;
   }
   //let results = query_oa_api(); //debug mode
+</script>
 
-  //carrega presaved results
+<script src="genders.js"></script>
+
+<script>
   let app=Vue.createApp({
     data(){return{
+      genders, //from genders.js
+
       year_inici:2021,
       year_final:2024,
       codi_icra:                   "I2799562678", //codi openAlex institution ICRA
       id_icra:"https://openalex.org/I2799562678", //id   openAlex institution ICRA
       works:null,
+
+      //tipus de works mostrats (configurable per usuari)
+      work_types:{
+        "article":true,
+        "review":true,
+        "letter":true,
+        "editorial":true,
+      },
+
+      //set de resultats visible usuari
+      array_works_visible:null,
+
+      names_not_found:new Set(),
     }},
+
+    methods:{
+      gender_authorship(authorship){
+        let g = this.gender(authorship.author.display_name);
+        if(g) return g;
+        g = this.gender(authorship.raw_author_name);
+        if(g) return g;
+        return false;
+      },
+      gender(name){
+        let nom_pila = name
+          .split("‐")[0] //guio1
+          .split("-")[0] //guio2
+          .split(" ")[0] //espai
+          .toLowerCase(); //minuscula
+
+        let g = genders[nom_pila];
+        if(g) return g;
+        this.names_not_found.add(nom_pila);
+        return false;
+      },
+    },
+
     computed:{
       get_tipus_publicacions(){
         if(!this.works) return [];
@@ -187,6 +258,7 @@
         //url consultable manualment
         return `https://openalex.org/works?filter=institutions.id:${this.codi_icra},publication_year:${this.year_inici}-${this.year_final}`;
       },
+
       get_works_amb_lideratge(){
         if(!this.works) return [];
 
@@ -207,13 +279,21 @@
         });
         return works;
       },
+
+      get_works_filtrats_per_tipus(){
+        if(!this.array_works_visible) return false;
+        return this.array_works_visible.filter(work=>{
+          return this.work_types[work.type];
+        });
+      },
     },
     mounted(){
+      //carrega presaved results
       fetch("query-result-works-2021-2024-icra.json")
       .then(r=>r.json())
       .then(arr=>{
         this.works=arr;
-        console.log(arr);
+        console.log("[ok] query-result-works-2021-2024-icra.json");
       });
     },
   }).mount("#app");
