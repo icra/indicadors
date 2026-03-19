@@ -3,6 +3,12 @@
   <title>lideratge</title>
   <script src="../lib/vue.global.prod.js"></script>
   <style>
+    #taula_metadades tr:hover{
+      background:lightblue;
+    }
+    button[seleccionat=true]{
+      background:gold;
+    }
     [center]{
       text-align:center;
     }
@@ -51,6 +57,15 @@
       border:1px solid #ccc;
       font-size:smaller;
     }
+    [gender=male]{
+      background:lightblue;
+    }
+    [gender=female]{
+      background:pink;
+    }
+    [gender=false]{
+      background:red;
+    }
     div[selector_dataset] button{
       padding:1em 1.618em;
     }
@@ -61,7 +76,7 @@
 <h2>Càlcul automàtic lideratge &amp; gènere</h2><hr>
 
 <div id=app>
-  Resultats web Open Alex:
+  Resultats web OpenAlex:
   <a :href="get_openalex_url" target=_blank>{{get_openalex_url}}</a>
 
   <div v-if="!works"><p>Carregant...</p></div>
@@ -69,18 +84,24 @@
     <!--taules context-->
     <details open>
       <summary>Metadades resultats</summary>
-      <table border=1>
+      <table border=1 id=taula_metadades>
         <tr>
-          <th>Tipus publicació</th>
+          <th>Tipus</th>
           <th>Publicacions<br>totals</th>
           <th>Publicacions<br>lideratge</th>
           <th>Publicacions<br>lideratge<br>femení</th>
         </tr>
         <tr>
-          <th>total</th>
+          <th>tots els tipus</th>
           <th>{{works.length}}</th>
           <th>{{get_works_amb_lideratge.length}}</th>
           <th>{{get_works_amb_lideratge_femeni.length}}</th>
+        </tr>
+        <tr>
+          <th>sel·lecció actual</th>
+          <th>{{works.filter(w=>work_types[w.type]).length}}</th>
+          <th>{{get_works_amb_lideratge.filter(w=>work_types[w.type]).length}}</th>
+          <th>{{get_works_amb_lideratge_femeni.filter(w=>work_types[w.type]).length}}</th>
         </tr>
         <tr v-for="tipus in get_tipus_publicacions">
           <td>
@@ -112,18 +133,20 @@
     </details><hr>
 
     <div selector_dataset>
-      Selecciona dataset:
-      <button @click="array_works_visible=works;                          array_works_seleccionat='Publicacions totals'">          Publicacions totals</button>
-      <button @click="array_works_visible=get_works_amb_lideratge;        array_works_seleccionat='Publicacions lideratge'">       Publicacions lideratge ICRA</button>
-      <button @click="array_works_visible=get_works_amb_lideratge_femeni; array_works_seleccionat='Publicacions lideratge femení'">Publicacions lideratge femení</button>
+      Veure taula:
+      <button @click="array_works_visible=works;                          array_works_seleccionat='P'"   :seleccionat="array_works_seleccionat=='P'"  >Publicacions totals</button>
+      <button @click="array_works_visible=get_works_amb_lideratge;        array_works_seleccionat='PL'"  :seleccionat="array_works_seleccionat=='PL'" >Publicacions lideratge ICRA</button>
+      <button @click="array_works_visible=get_works_amb_lideratge_femeni; array_works_seleccionat='PLF'" :seleccionat="array_works_seleccionat=='PLF'">Publicacions lideratge ICRA femení</button>
     </div><hr>
 
     <div v-if="array_works_visible">
       <details>
-        <summary>noms no classificats per gènere ({{names_not_found.size}})</summary>
+        <summary>Noms no classificats en gènere ({{names_not_found.size}})</summary>
         <div>
           <div v-for="nom in Array.from(names_not_found)">
             {{nom}}
+            <button @click="genders[nom]='male'"   :disabled="genders[nom]=='male'">male</button>
+            <button @click="genders[nom]='female'" :disabled="genders[nom]=='female'">female</button>
           </div>
         </div>
       </details><hr>
@@ -131,27 +154,32 @@
 
     <div v-if="get_works_filtrats_per_tipus">
       <b style="font-size:larger">
-        {{array_works_seleccionat}}
+        {{
+          {
+            "P":"Publicacions",
+            "PL":"Publicacions lideratge",
+            "PLF":"Publicacions lideratge femení",
+          }[array_works_seleccionat]
+        }}
         {{Object.entries(work_types).filter(en=>en[1]).map(en=>en[0])}}
         ({{get_works_filtrats_per_tipus.length}} publicacions)
       </b>
       <table border=1 >
         <thead>
           <tr>
-            <th>Index</th>
+            <th>Nº</th>
             <th>Data</th>
             <th>Tipus</th>
             <th>Títol</th>
             <th>
-              Autors ICRA lideratge
+              Autors ICRA
               <div>(nom, posició, corresponding, gènere)</div>
             </th>
-            <th>Detalls</th>
           </tr>
         </thead>
         <tbody v-for="work,i in get_works_filtrats_per_tipus">
           <tr>
-            <td>{{i}}</td>
+            <td>{{i+1}}</td>
             <td data>{{work.publication_date}}</td>
             <td center>{{work.type}}</td>
             <td>
@@ -160,10 +188,13 @@
             </td>
             <td>
               <table border=1>
-                <tr v-for="authorship in work.authorships.filter(a=>a.institutions.some(i=>i.id==id_icra)&&(a.is_corresponding||a.author_position!='middle'))">
+                <tr v-for="authorship in filtra_authorships(work)">
                   <td nowrap :title="authorship.raw_author_name">
                     <span>
                       {{authorship.author.display_name}}
+                    </span>
+                    <span v-if="authorship.author.display_name!=authorship.raw_author_name">
+                      ({{authorship.raw_author_name}})
                     </span>
                     <div>
                       <span :first_or_last="['first','last'].includes(authorship.author_position)">
@@ -252,6 +283,7 @@
   let app=Vue.createApp({
     data(){return{
       genders, //from genders.js
+      real_people, //from genders.js
 
       year_inici:2021,
       year_final:2024,
@@ -271,17 +303,25 @@
       array_works_seleccionat:null,
       array_works_visible:null,
 
+      //guardar aquí noms no trobats
       names_not_found:new Set(),
     }},
 
     methods:{
       gender_authorship(authorship){
-        let g = this.gender(authorship.author.display_name);
+        //check real name
+        let g = this.real_people[authorship.author.display_name];
+        if(g) return g;
+        g = this.real_people[authorship.raw_author_name];
+        if(g) return g;
+        //guess first name
+        g = this.gender(authorship.author.display_name);
         if(g) return g;
         g = this.gender(authorship.raw_author_name);
         if(g) return g;
         return false;
       },
+
       gender(name){
         let nom_pila = name
           .split("‐")[0] //guio1
@@ -291,8 +331,41 @@
 
         let g = genders[nom_pila];
         if(g) return g;
+
+        //si un nom de pila acaba amb "," probablement és un cognom
+        if(nom_pila.at(-1)==",") return false;
+
+        //evita noms tipus "E.", "L.",...
+        if(nom_pila.length==1)                                         return false; //"a"
+        if(nom_pila.length==2 && nom_pila[1]==".")                     return false; //"a."
+        if(nom_pila.length==4 && nom_pila[1]=="." && nom_pila[3]==".") return false; //"a.b."
+
+        //posa el nom a la llista de no trobats per classificar-los manualment
         this.names_not_found.add(nom_pila);
         return false;
+      },
+
+      filtra_authorships(work){
+        if(this.array_works_seleccionat=="P"){
+          return work.authorships.filter(a=>a.institutions.some(i=>i.id==this.id_icra));
+        }else if(this.array_works_seleccionat=="PL"){
+          return work.authorships.filter(a=>{
+            let lideratge = a.is_corresponding || a.author_position!='middle';
+            if(!lideratge) return false;
+            return a.institutions.some(i=>i.id==this.id_icra);
+          });
+        }else if(this.array_works_seleccionat=="PLF"){
+          return work.authorships.filter(a=>{
+            let lideratge = a.is_corresponding || a.author_position!='middle';
+            if(!lideratge) return false;
+            let icra = a.institutions.some(i=>i.id==this.id_icra);
+            if(!icra) return false;
+            let gender = this.gender_authorship(a);
+            return gender=="female";
+          });
+        }else{
+          return [];
+        }
       },
     },
 
@@ -320,11 +393,6 @@
           });
         });
 
-        works.sort((a,b)=>{
-          let aa = a.publication_date;
-          let bb = b.publication_date;
-          return bb<aa?-1:1;
-        });
         return works;
       },
 
@@ -335,18 +403,13 @@
           //filtra authorships icra
           let authorships = work.authorships.filter(a=>a.institutions.some(i=>i.id==this.id_icra));
 
-          //mira si algun authorship té lideratge
+          //check lideratge i gènere
           return authorships.some(a=>{
             let gender = this.gender_authorship(a);
             return gender=="female" && (a.is_corresponding || a.author_position!='middle');
           });
         });
 
-        works.sort((a,b)=>{
-          let aa = a.publication_date;
-          let bb = b.publication_date;
-          return bb<aa?-1:1;
-        });
         return works;
       },
 
@@ -375,6 +438,12 @@
             });
           });
         });
+        arr.sort((a,b)=>{
+          let aa = a.publication_date;
+          let bb = b.publication_date;
+          return bb<aa?-1:1;
+        });
+
         this.works=arr;
         console.log("[ok] query-result-works-2021-2024-icra.json");
       });
