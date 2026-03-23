@@ -20,6 +20,9 @@
       font-size:smaller;
       white-space:nowrap;
     }
+    [small]{
+      font-size:smaller;
+    }
     [xsmall]{
       font-size:x-small;
     }
@@ -81,6 +84,7 @@
 
   <div v-if="!works"><p>Carregant...</p></div>
   <div v-if="works"><hr>
+    
     <!--taules context-->
     <details open>
       <summary>Metadades resultats</summary>
@@ -132,12 +136,25 @@
       </table>
     </details><hr>
 
+    <!--seleccionar filtre-->
     <div selector_dataset>
       Veure taula:
       <button @click="array_works_visible=works;                          array_works_seleccionat='P'"   :seleccionat="array_works_seleccionat=='P'"  >Publicacions totals</button>
       <button @click="array_works_visible=get_works_amb_lideratge;        array_works_seleccionat='PL'"  :seleccionat="array_works_seleccionat=='PL'" >Publicacions lideratge ICRA</button>
       <button @click="array_works_visible=get_works_amb_lideratge_femeni; array_works_seleccionat='PLF'" :seleccionat="array_works_seleccionat=='PLF'">Publicacions lideratge ICRA femení</button>
     </div><hr>
+
+    <!--seleccionar any-->
+    <div v-if="array_works_visible">
+      Període seleccionat:
+      <span v-for="y in get_publication_years">
+        <button @click="year_inici=y;year_final=y">{{y}}</button>
+      </span>
+      <span>
+        <label> de <input type=number v-model.number="year_inici" placeholder="any inici"></label>
+        <label> a  <input type=number v-model.number="year_final" placeholder="any final"></label>
+      </span><hr>
+    </div>
 
     <div v-if="array_works_visible">
       <details>
@@ -152,6 +169,7 @@
       </details><hr>
     </div>
 
+    <!--taula principal resultats-->
     <div v-if="get_works_filtrats_per_tipus">
       <b style="font-size:larger">
         {{
@@ -164,6 +182,7 @@
         {{Object.entries(work_types).filter(en=>en[1]).map(en=>en[0])}}
         ({{get_works_filtrats_per_tipus.length}} publicacions)
       </b>
+
       <table border=1 >
         <thead>
           <tr>
@@ -174,6 +193,10 @@
             <th>
               Autors ICRA
               <div>(nom, posició, corresponding, gènere)</div>
+            </th>
+            <th>FWCI</th>
+            <th>
+              Cites
             </th>
           </tr>
         </thead>
@@ -223,6 +246,21 @@
                       </div>
                     </div>
                   </td>
+                </tr>
+              </table>
+            </td>
+            <td center>
+              {{work.fwci}}
+            </td>
+            <td center>
+              <table border=1 small>
+                <tr>
+                  <td>total</td>
+                  <td>{{work.cited_by_count}}</td>
+                </tr>
+                <tr v-for="ye in work.counts_by_year">
+                  <td>{{ye.year}}</td>
+                  <td>{{ye.cited_by_count}}</td>
                 </tr>
               </table>
             </td>
@@ -416,8 +454,22 @@
       get_works_filtrats_per_tipus(){
         if(!this.array_works_visible) return false;
         return this.array_works_visible.filter(work=>{
-          return this.work_types[work.type];
+          let y = work.publication_year;
+          return (
+            this.year_inici <= y&&y <= this.year_final
+            &&
+            this.work_types[work.type]
+          );
         });
+      },
+
+      get_publication_years(){
+        if(!this.works) return [];
+        let s = new Set();
+        this.works.forEach(w=>{
+          s.add(w.publication_year);
+        });
+        return Array.from(s);
       },
     },
     mounted(){
@@ -428,12 +480,13 @@
         arr = arr.filter(work=>{
           return work.authorships.some(auth=>{
             return auth.raw_affiliation_strings.some(str=>{
+              let str_lc = str.toLowerCase();
               return (
-                str.includes("ICRA")||
-                str.includes("Catalan Institute for Water Research")||
-                str.includes("Catalan Institute of Water Research")||
-                str.includes("Institut Catala de Recerca de l'Aigua")||
-                str.includes("Institut Català de Recerca de l'Aigua")
+                str_lc.includes("icra")||
+                str_lc.includes("catalan institute for water research")||
+                str_lc.includes("catalan institute of water research")||
+                str_lc.includes("institut catala de recerca de l'aigua")||
+                str_lc.includes("institut català de recerca de l'aigua")
               );
             });
           });
@@ -441,9 +494,8 @@
         arr.sort((a,b)=>{
           let aa = a.publication_date;
           let bb = b.publication_date;
-          return bb<aa?-1:1;
+          return bb<aa?1:-1;
         });
-
         this.works=arr;
         console.log("[ok] query-result-works-2021-2024-icra.json");
       });
