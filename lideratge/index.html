@@ -184,9 +184,14 @@
             <td center>{{work.type}}</td>
             <td>
               <div><i>{{work.title}}</i></div>
-              <div><a :href="work.doi" target=_blank>{{work.doi}}</a></div>
+              <div v-if="work.doi">
+                <a :href="work.doi" target=_blank>{{work.doi}}</a>
+              </div>
+              <div v-else-if="work.primary_location && work.primary_location.landing_page_url">
+                <a :href="work.primary_location.landing_page_url" target=_blank>{{work.primary_location.landing_page_url}}</a>
+              </div>
             </td>
-            <td>
+            <td v-if="true">
               <table border=1>
                 <tr v-for="authorship in filtra_authorships(work)">
                   <td nowrap :title="authorship.raw_author_name">
@@ -212,7 +217,7 @@
                       </span>
                     </div>
                   </td>
-                  <td>
+                  <td v-if="false">
                     <div v-for="ins in [authorship.institutions.find(i=>i.id==id_icra)]">
                       <div v-if="ins">
                         <table xsmall border=1>
@@ -226,7 +231,7 @@
                 </tr>
               </table>
             </td>
-            <td nowrap v-if="false">
+            <td nowrap v-if="true">
               <details>
                 <summary>detalls</summary>
                 <div>
@@ -297,6 +302,15 @@
         "review":true,
         "letter":true,
         "editorial":true,
+      },
+      columnes_visibles:{
+        "numero":true,
+        "data":true,
+        "tipus":true,
+        "titol":true,
+        "titol":true,
+        "autors_icra":true,
+        "detalls":true,
       },
 
       //set de resultats visible usuari
