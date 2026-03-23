@@ -20,6 +20,9 @@
       font-size:smaller;
       white-space:nowrap;
     }
+    [small]{
+      font-size:smaller;
+    }
     [xsmall]{
       font-size:x-small;
     }
@@ -86,7 +89,7 @@
       <summary>Metadades resultats</summary>
       <table border=1 id=taula_metadades>
         <tr>
-          <th>Tipus</th>
+          <th>Tipus publicació</th>
           <th>Publicacions<br>totals</th>
           <th>Publicacions<br>lideratge</th>
           <th>Publicacions<br>lideratge<br>femení</th>
@@ -132,6 +135,7 @@
       </table>
     </details><hr>
 
+    <!--seleccionar filtre-->
     <div selector_dataset>
       Veure taula:
       <button @click="array_works_visible=works;                          array_works_seleccionat='P'"   :seleccionat="array_works_seleccionat=='P'"  >Publicacions totals</button>
@@ -139,6 +143,36 @@
       <button @click="array_works_visible=get_works_amb_lideratge_femeni; array_works_seleccionat='PLF'" :seleccionat="array_works_seleccionat=='PLF'">Publicacions lideratge ICRA femení</button>
     </div><hr>
 
+    <!--opcions-->
+    <div v-if="array_works_visible">
+      <table border=1>
+        <!--seleccionar any-->
+        <tr>
+          <td>Període seleccionat</td>
+          <td>
+            <span v-for="y in get_publication_years">
+              <button @click="year_inici=y;year_final=y">{{y}}</button>
+            </span>
+            <span>
+              <label> de <input type=number v-model.number="year_inici" placeholder="any inici"></label>
+              <label> a  <input type=number v-model.number="year_final" placeholder="any final"></label>
+            </span>
+          </td>
+        </tr>
+        <!--seleccionar columnes visibles-->
+        <tr>
+          <td>Columnes visibles</td>
+          <td>
+            <label v-for="key in Object.keys(columnes_visibles)" small>
+              <input type=checkbox v-model="columnes_visibles[key]">
+              {{key}}
+            </label>
+          </td>
+        </tr>
+      </table><hr>
+    </div>
+
+    <!--veure noms que no s'han pogut classificar bé (gènere)-->
     <div v-if="array_works_visible">
       <details>
         <summary>Noms no classificats en gènere ({{names_not_found.size}})</summary>
@@ -152,6 +186,7 @@
       </details><hr>
     </div>
 
+    <!--taula principal resultats-->
     <div v-if="get_works_filtrats_per_tipus">
       <b style="font-size:larger">
         {{
@@ -164,26 +199,30 @@
         {{Object.entries(work_types).filter(en=>en[1]).map(en=>en[0])}}
         ({{get_works_filtrats_per_tipus.length}} publicacions)
       </b>
+
       <table border=1 >
         <thead>
           <tr>
-            <th>Nº</th>
-            <th>Data</th>
-            <th>Tipus</th>
-            <th>Títol</th>
-            <th>
+            <th v-if="columnes_visibles.numero">Nº</th>
+            <th v-if="columnes_visibles.data">Data</th>
+            <th v-if="columnes_visibles.tipus">Tipus publicació</th>
+            <th v-if="columnes_visibles.titol">Títol</th>
+            <th v-if="columnes_visibles.doi">DOI</th>
+            <th v-if="columnes_visibles.autors_icra">
               Autors ICRA
               <div>(nom, posició, corresponding, gènere)</div>
             </th>
+            <th v-if="columnes_visibles.fwci">FWCI</th>
+            <th v-if="columnes_visibles.cites">Cites</th>
           </tr>
         </thead>
         <tbody v-for="work,i in get_works_filtrats_per_tipus">
           <tr>
-            <td>{{i+1}}</td>
-            <td data>{{work.publication_date}}</td>
-            <td center>{{work.type}}</td>
-            <td>
-              <div><i>{{work.title}}</i></div>
+            <td v-if="columnes_visibles.numero">{{i+1}}</td>
+            <td v-if="columnes_visibles.data" data>{{work.publication_date}}</td>
+            <td v-if="columnes_visibles.tipus" center>{{work.type}}</td>
+            <td v-if="columnes_visibles.titol"><i>{{work.title}}</i></td>
+            <td v-if="columnes_visibles.doi">
               <div v-if="work.doi">
                 <a :href="work.doi" target=_blank>{{work.doi}}</a>
               </div>
@@ -191,7 +230,7 @@
                 <a :href="work.primary_location.landing_page_url" target=_blank>{{work.primary_location.landing_page_url}}</a>
               </div>
             </td>
-            <td v-if="true">
+            <td v-if="columnes_visibles.autors_icra">
               <table border=1>
                 <tr v-for="authorship in filtra_authorships(work)">
                   <td nowrap :title="authorship.raw_author_name">
@@ -231,7 +270,22 @@
                 </tr>
               </table>
             </td>
-            <td nowrap v-if="true">
+            <td v-if="columnes_visibles.fwci" center>
+              {{work.fwci}}
+            </td>
+            <td v-if="columnes_visibles.cites" center>
+              <table border=1 small>
+                <tr>
+                  <td>total</td>
+                  <td>{{work.cited_by_count}}</td>
+                </tr>
+                <tr v-for="ye in work.counts_by_year">
+                  <td>{{ye.year}}</td>
+                  <td>{{ye.cited_by_count}}</td>
+                </tr>
+              </table>
+            </td>
+            <td nowrap v-if="columnes_visibles.detalls">
               <details>
                 <summary>detalls</summary>
                 <div>
@@ -247,7 +301,7 @@
 </div>
 
 <script>
-  //TODO
+  //TODO api calls sota demanda
   async function query_oa_api(){
     let year_inici = 2021;
     let year_final = 2024;
@@ -282,6 +336,7 @@
   //let results = query_oa_api(); //debug mode
 </script>
 
+<!--llibreria gender-->
 <script src="genders.js"></script>
 
 <script>
@@ -308,16 +363,18 @@
         "data":true,
         "tipus":true,
         "titol":true,
-        "titol":true,
+        "doi":true,
         "autors_icra":true,
-        "detalls":true,
+        "fwci":true,
+        "cites":true,
+        "detalls":false,
       },
 
       //set de resultats visible usuari
-      array_works_seleccionat:null,
-      array_works_visible:null,
+      array_works_seleccionat:null, //string
+      array_works_visible:null,     //objecte
 
-      //guardar aquí noms no trobats
+      //set per guardar noms no trobats
       names_not_found:new Set(),
     }},
 
@@ -430,8 +487,22 @@
       get_works_filtrats_per_tipus(){
         if(!this.array_works_visible) return false;
         return this.array_works_visible.filter(work=>{
-          return this.work_types[work.type];
+          let y = work.publication_year;
+          return (
+            this.year_inici <= y&&y <= this.year_final
+            &&
+            this.work_types[work.type]
+          );
         });
+      },
+
+      get_publication_years(){
+        if(!this.works) return [];
+        let s = new Set();
+        this.works.forEach(w=>{
+          s.add(w.publication_year);
+        });
+        return Array.from(s);
       },
     },
     mounted(){
@@ -442,12 +513,13 @@
         arr = arr.filter(work=>{
           return work.authorships.some(auth=>{
             return auth.raw_affiliation_strings.some(str=>{
+              let str_lc = str.toLowerCase();
               return (
-                str.includes("ICRA")||
-                str.includes("Catalan Institute for Water Research")||
-                str.includes("Catalan Institute of Water Research")||
-                str.includes("Institut Catala de Recerca de l'Aigua")||
-                str.includes("Institut Català de Recerca de l'Aigua")
+                str_lc.includes("icra")||
+                str_lc.includes("catalan institute for water research")||
+                str_lc.includes("catalan institute of water research")||
+                str_lc.includes("institut catala de recerca de l'aigua")||
+                str_lc.includes("institut català de recerca de l'aigua")
               );
             });
           });
@@ -455,9 +527,8 @@
         arr.sort((a,b)=>{
           let aa = a.publication_date;
           let bb = b.publication_date;
-          return bb<aa?-1:1;
+          return bb<aa?1:-1;
         });
-
         this.works=arr;
         console.log("[ok] query-result-works-2021-2024-icra.json");
       });
