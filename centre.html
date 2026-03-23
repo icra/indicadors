@@ -300,7 +300,9 @@
       </tr>
       <tbody v-for="bloc,i in ambit_actual.blocs">
         <tr style="background:#eee;">
-          <td right small><b>{{bloc.pes_percent}}%</b></td>
+          <td right small>
+            <b v-if="bloc.pes_percent">{{bloc.pes_percent}}%</b>
+          </td>
 
           <!--bloc nom-->
           <td>
@@ -330,7 +332,11 @@
           v-if="bloc.visible"
           :marcat="indi.marcat"
         >
-          <td xsmall right>{{indi.pes_percent}}%</td>
+          <td xsmall right>
+            <span v-if="indi.pes_percent">
+              {{indi.pes_percent}}%
+            </span>
+          </td>
 
           <!--text indicador-->
           <td small @click="indi.marcat^=1" indicador_text>
@@ -416,7 +422,7 @@
               >
               calcular indicador
             </button>
-            <span v-else xsmall style="color:#bbb">pendent</span>
+            <span v-else xsmall style="color:red" title="implementació pendent">pendent</span>
           </td>
         </tr>
       </tbody>
@@ -591,12 +597,12 @@
       valor_basal = valor_basal ||[]; //array valors precalculats
 
       this.id          = id;               //string
-      this.text        = textos[id];       //string
+      this.text        = textos[id]||id;   //string
       this.unit        = unitats[id];      //string
       this.pes_percent = pes_percent || 0; //number
       this.responsable = responsables[id]; //string
 
-      if(!this.text) throw(`no text for ${id}`)
+      if(!this.text) throw(`no text for ${id}`);
 
       this.base_year="2023"; //String
 
@@ -621,7 +627,7 @@
         "2029":{valor:valor_basal[6]||0, llista:null, objectiu:objectius[5]||0, status:null},
       };
 
-      //visual: veure text en groc
+      //visual: text marcat en groc
       this.marcat=false;
     }
 
@@ -778,6 +784,34 @@
     "ips_actes_disseminacio_participats_o_organitzats"    :"Actes de disseminació participats o organitzats",
     "ips_aparicions_mitjans_comunicacio_nacionals"        :"Aparicions en mitjans de comunicació regionals o estatals",
     "ips_aparicions_mitjans_comunicacio_internacionals"   :"Aparicions en mitjans de comunicació internacionals",
+
+    //textos indicadors dreu
+    "repositori_institucional_dades_recerca_1_dataset"        :"Repositori institucional de dades de recerca creat i amb, com a mínim, un dataset",
+    "politica_de_ciencia_oberta_aprovada"                     :"Política de ciència oberta aprovada",
+    "proces_acollida_gestionar_conflicte_integritat_recerca"  :"Procés d’acollida i comunicació del procediment per gestionar conflictes d’integritat en la recerca",
+    "codi_integritat_recerca_gestionar_casos_manca_integritat":"Codi d’integritat a la recerca publicat inclou un comitè per gestionar i fer seguiment de casos de manca d'integritat",
+    "segell_excellence_hr4r"                                  :"Segell Excellence HR4R",
+
+    "finançament_basal_provinent_entitats_que_aporten_fons_basals":"Finançament basal provinent de totes les entitats que aporten fons basals (€)",
+    "finançament_per_actuacions_finalistes_a_petició_patronat"    :"Finançament per a actuacions finalistes a petició dels departaments/o entitats que formen part del patronat",
+    "despeses_de_lloguer_espais"                                  :"Despeses de lloguer d’espais (€)",
+    "despeses_de_subministraments"                                :"Despeses de subministraments (€)",
+    "despeses_de_manteniment_edificis"                            :"Despeses de manteniment edificis (€)",
+    "despeses_de_impostos_relacionats_amb_edificis"               :"Despeses d’impostos relacionats amb els edificis (€)",
+    "altres_despeses_similars_relacionades_amb_edificis"          :"Altres despeses similars relacionades amb els edificis (€)",
+
+    "nombre_persones_curs_formacio_integritat_recerca" :"Nombre de persones que han fet curs de formació d’integritat a la recerca",
+    "nombre_homes_scientific_advisory_board"           :"Nombre d'homes que formen part de la Scientific Advisory Board",
+    "nombre_dones_scientific_advisory_board"           :"Nombre de dones que formen part de la Scientific Advisory Board",
+    "salari_mitja_minim_personal_contracte_predoctoral":"Salari mitjà mínim del personal amb contracte predoctoral",
+    "salari_mitja_persona_tecnic_centre"               :"Salari mitjà del personal tècnic del centre",
+    "personal_total_centre"                            :"Personal total del centre (investigadors, tècnics i incloent adscrits)",
+
+    "projectes_ciencia_ciutadana_o_divulgacio_cientifica_liderats":"Projectes de ciència ciutadana o de divulgació científica liderats",
+    "projectes_institucionals_liderats"                           :"Projects institucionals liderats",
+    "tesis_doctorals_llegides"                                    :"Tesis doctorals llegides",
+    "publicacions_totals"                                         :"Publicacions totals",
+    "percentatge_publicacions_lideratge_femeni"                   :"Percentatge de publicacions liderades per una dona del centre",
   };
 
   //taula: "id_indicador"=>"unitat indicador"
@@ -3727,6 +3761,45 @@
         new Indicador("ips_aparicions_mitjans_comunicacio_internacionals"   ),
       ]),
     ]),
+    new Ambit("DREU",[
+      new Bloc("Ciència Oberta i Integritat en la recerca",0,[
+        new Indicador("repositori_institucional_dades_recerca_1_dataset"),
+        new Indicador("politica_de_ciencia_oberta_aprovada"),
+        new Indicador("proces_acollida_gestionar_conflicte_integritat_recerca"),
+        new Indicador("codi_integritat_recerca_gestionar_casos_manca_integritat"),
+        new Indicador("segell_excellence_hr4r"),
+      ]),
+      new Bloc("Finançament del centre",0,[
+        new Indicador("finançament_basal_provinent_entitats_que_aporten_fons_basals"),
+        new Indicador("finançament_per_actuacions_finalistes_a_petició_patronat"    ),
+        new Indicador("despeses_de_lloguer_espais"                                  ),
+        new Indicador("despeses_de_subministraments"                                ),
+        new Indicador("despeses_de_manteniment_edificis"                            ),
+        new Indicador("despeses_de_impostos_relacionats_amb_edificis"               ),
+        new Indicador("altres_despeses_similars_relacionades_amb_edificis"          ),
+      ]),
+      new Bloc("Temes de personal a data d'entrega del document",0,[
+        new Indicador("nombre_persones_curs_formacio_integritat_recerca" ),
+        new Indicador("nombre_homes_scientific_advisory_board"           ),
+        new Indicador("nombre_dones_scientific_advisory_board"           ),
+        new Indicador("salari_mitja_minim_personal_contracte_predoctoral"),
+        new Indicador("salari_mitja_persona_tecnic_centre"               ),
+        new Indicador("personal_total_centre"                            ),
+      ]),
+      new Bloc("Projectes de divulgació",0,[
+        new Indicador("projectes_ciencia_ciutadana_o_divulgacio_cientifica_liderats"),
+      ]),
+      new Bloc("Projectes institucionals",0,[
+        new Indicador("projectes_institucionals_liderats"),
+      ]),
+      new Bloc("Tesis doctorals llegides",0,[
+        new Indicador("tesis_doctorals_llegides"),
+      ]),
+      new Bloc("Publicacions",0,[
+        new Indicador("publicacions_totals"),
+        new Indicador("percentatge_publicacions_lideratge_femeni"),
+      ]),
+    ]),
   ];
 </script>
 
@@ -3781,7 +3854,7 @@
       ambits,                 //indicadors
       funcions_calculadores,  //taula helper funcions dels indicadors
       carregant:true,         //status
-      ambit_actual:ambits[0], //objecte
+      ambit_actual:ambits[5], //objecte //TODO
 
       //veure detalls d'un sol indicador
       vista_detalls_indicador:false,
