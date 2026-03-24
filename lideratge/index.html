@@ -72,14 +72,26 @@
     div[selector_dataset] button{
       padding:1em 1.618em;
     }
+    [field_sort]{
+      cursor:pointer;
+      color:royalblue;
+    }
+    [field_sort]:hover{
+      text-decoration:underline;
+    }
+    [field_sort=true]{
+      color:blue;
+    }
   </style>
 </head><body>
 
-<h1>ICRA publicacions 2021-2024 (segons OpenAlex)</h1>
-<h2>Càlcul automàtic lideratge &amp; gènere</h2><hr>
+<a href="../centre.html">&larr; Inici</a>
+<h1>ICRA publicacions (segons OpenAlex)</h1>
+<h2>Càlcul automàtic lideratge &amp; gènere</h2>
+<h3>2021-2024 (nota: quan la web estigui acabada es podrà consultar qualsevol any)</h3><hr>
 
 <div id=app>
-  Resultats web OpenAlex:
+  Link web OpenAlex:
   <a :href="get_openalex_url" target=_blank>{{get_openalex_url}}</a>
 
   <div v-if="!works"><p>Carregant...</p></div>
@@ -151,11 +163,11 @@
           <td>Període seleccionat</td>
           <td>
             <span v-for="y in get_publication_years">
-              <button @click="year_inici=y;year_final=y">{{y}}</button>
+              <button @click="year_inici=y;year_final=y" :disabled="year_inici==y && year_final==y">{{y}}</button>
             </span>
             <span>
-              <label> de <input type=number v-model.number="year_inici" placeholder="any inici"></label>
-              <label> a  <input type=number v-model.number="year_final" placeholder="any final"></label>
+              <label> de <input type=number v-model.number="year_inici" placeholder="any inici" :min="get_publication_years.at(0)" :max="get_publication_years.at(-1)"></label>
+              <label> a  <input type=number v-model.number="year_final" placeholder="any final" :min="get_publication_years.at(0)" :max="get_publication_years.at(-1)"></label>
             </span>
           </td>
         </tr>
@@ -173,7 +185,7 @@
     </div>
 
     <!--veure noms que no s'han pogut classificar bé (gènere)-->
-    <div v-if="array_works_visible">
+    <div v-if="array_works_visible && names_not_found.size">
       <details>
         <summary>Noms no classificats en gènere ({{names_not_found.size}})</summary>
         <div>
@@ -203,19 +215,27 @@
       <table border=1 >
         <thead>
           <tr>
-            <th v-if="columnes_visibles.numero">Nº</th>
-            <th v-if="columnes_visibles.data">Data</th>
-            <th v-if="columnes_visibles.tipus">Tipus publicació</th>
-            <th v-if="columnes_visibles.titol">Títol</th>
-            <th v-if="columnes_visibles.doi">DOI</th>
-            <th v-if="columnes_visibles.autors_icra">
-              Autors ICRA
-              <div>(nom, posició, corresponding, gènere)</div>
+            <th v-for="key in Object.entries(columnes_visibles).filter(en=>en[1]).map(en=>en[0])" nowrap>
+              <div v-if="columnes_visibles[key]">
+                <div v-if="columnes_ordenables[key]">
+                  <span
+                    @click="set_field_sort_resultats(key)"
+                    :field_sort="field_sort_resultats==key"
+                  >
+                    <span v-html="noms_columnes[key]"></span>
+                    <span v-if="field_sort_resultats==key">
+                      {{field_sort_inv==-1?"&darr;":"&uarr;"}}
+                    </span>
+                  </span>
+                </div>
+                <div v-else>
+                  <div v-html="noms_columnes[key]"></div>
+                </div>
+              </div>
             </th>
-            <th v-if="columnes_visibles.fwci">FWCI</th>
-            <th v-if="columnes_visibles.cites">Cites</th>
           </tr>
         </thead>
+
         <tbody v-for="work,i in get_works_filtrats_per_tipus">
           <tr>
             <td v-if="columnes_visibles.numero">{{i+1}}</td>
@@ -369,10 +389,36 @@
         "cites":true,
         "detalls":false,
       },
+      noms_columnes:{
+        "numero"      : "Nº",
+        "data"        : "Data",
+        "tipus"       : "Tipus publicació",
+        "titol"       : "Títol",
+        "doi"         : "DOI",
+        "autors_icra" : "Autors ICRA<br>(nom, posició, corresponding, gènere)",
+        "fwci"        : "FWCI",
+        "cites"       : "Cites",
+        "detalls"     : "",
+      },
+      columnes_ordenables:{
+        "numero":false,
+        "data":true,
+        "tipus":true,
+        "titol":true,
+        "doi":true,
+        "autors_icra":false,
+        "fwci":true,
+        "cites":true,
+        "detalls":false,
+      },
 
       //set de resultats visible usuari
       array_works_seleccionat:null, //string
       array_works_visible:null,     //objecte
+
+      //ordenar resultats
+      field_sort_resultats:null, //string
+      field_sort_inv      :1,    //number (es multiplica per -1 per invertir ordre)
 
       //set per guardar noms no trobats
       names_not_found:new Set(),
@@ -438,6 +484,13 @@
           return [];
         }
       },
+
+      set_field_sort_resultats(new_value){
+        if(this.field_sort_resultats == new_value){
+          this.field_sort_inv *= -1;
+        }
+        this.field_sort_resultats = new_value;
+      },
     },
 
     computed:{
@@ -484,9 +537,10 @@
         return works;
       },
 
+      //aplicar filtres any, tipus i ordenar
       get_works_filtrats_per_tipus(){
         if(!this.array_works_visible) return false;
-        return this.array_works_visible.filter(work=>{
+        let works = this.array_works_visible.filter(work=>{
           let y = work.publication_year;
           return (
             this.year_inici <= y&&y <= this.year_final
@@ -494,8 +548,56 @@
             this.work_types[work.type]
           );
         });
+
+        //ordena
+        let inv = this.field_sort_inv;
+        if(this.field_sort_resultats=="data"){
+          works.sort((a,b)=>{
+            let aa = a.publication_date;
+            let bb = b.publication_date;
+            return bb<aa?1*inv:-1*inv;
+          });
+        }
+        if(this.field_sort_resultats=="tipus"){
+          works.sort((a,b)=>{
+            let aa = a.type;
+            let bb = b.type;
+            return bb<aa?1*inv:-1*inv;
+          });
+        }
+        if(this.field_sort_resultats=="titol"){
+          works.sort((a,b)=>{
+            let aa = a.title;
+            let bb = b.title;
+            return bb<aa?1*inv:-1*inv;
+          });
+        }
+        if(this.field_sort_resultats=="doi"){
+          works.sort((a,b)=>{
+            let aa = a.doi;
+            let bb = b.doi;
+            return bb<aa?1*inv:-1*inv;
+          });
+        }
+        if(this.field_sort_resultats=="fwci"){
+          works.sort((a,b)=>{
+            let aa = a.fwci;
+            let bb = b.fwci;
+            return bb<aa?1*inv:-1*inv;
+          });
+        }
+        if(this.field_sort_resultats=="cites"){
+          works.sort((a,b)=>{
+            let aa = a.cited_by_count;
+            let bb = b.cited_by_count;
+            return bb<aa?1*inv:-1*inv;
+          });
+        }
+
+        return works;
       },
 
+      //tots els anys sense filtres
       get_publication_years(){
         if(!this.works) return [];
         let s = new Set();
