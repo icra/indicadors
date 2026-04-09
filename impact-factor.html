@@ -1,5 +1,5 @@
 <!doctype html><html><head>
-  <title>ICRA indicadors</title>
+  <title>ICRA impact factor</title>
   <meta charset="utf8">
   <script src="lib/vue.global.prod.js"></script>
   <style>
@@ -14,33 +14,232 @@
       text-decoration:underline;
       background:#ccc;
     }
-    [xsmall]{
-      font-size:x-small;
+    [small]{
+      font-size:smaller;
+    }
+    hr{
+      border:none;
+      border-top:1px solid black;
+    }
+    [center]{
+      text-align:center;
+    }
+    [nowrap]{
+      white-space:nowrap;
+    }
+    [data]{
+      font-family:monospace;
+      font-size:smaller;
+      white-space:nowrap;
     }
   </style>
 </head><body>
 
 <!--nav--><div id=nav></div><hr><script src="nav.js"></script>
-<h2>Impact Factor (openAlex)</h2>
+<h2>Impact Factor (segons OpenAlex)</h2>
 
-<b>en construcció</b>
+<h3>2025 (nota: quan la web estigui acabada es podrà consultar qualsevol any)</h3><hr>
 
-<table style="border:1px solid #ccc">
-  <tr>
-    <td>
-      Impact Factor 2024 =
-    </td>
-    <td>
-      A/B =
-    </td>
-    <td>
-      <div>
-        A = number of times articles published in [2022,2023] were cited by indexed journals during [2024].
-      </div>
-      <hr>
-      <div>
-        B = total number of "citable items" published in [2022,2023]
-      </div>
-    </td>
-  </tr>
-</table>
+<div id=app>
+  <div>
+    <a :href="get_openalex_url" target="_blank">{{get_openalex_url}}</a>
+  </div><hr>
+
+  <table>
+    <tr>
+      <th>Impact Factor ({{year_selected}}) =</th>
+      <td>A/B</td>
+      <td>=</td>
+      <td>
+        <div>
+          A = {{get_A}}
+        </div>
+        <hr>
+        <div>
+          B = {{get_B}}
+        </div>
+      </td>
+      <td>=</td>
+      <td small>
+        <div>
+          A = number of times that the articles published in <b>{{get_2_years_anteriors}}</b> were cited by indexed journals during <b>[{{year_selected}}]</b>.
+        </div>
+        <hr>
+        <div>
+          B = total number of "citable items" published in <b>{{get_2_years_anteriors}}</b>
+        </div>
+      </td>
+      <td>=</td>
+      <th>
+        {{get_IF}}
+      </th>
+    </tr>
+  </table><hr>
+
+  <div v-if="works">
+    <b>Citable items published during {{get_2_years_anteriors}}: {{works.length}}</b>
+    <table border=1>
+      <tr>
+        <th>n</th>
+        <th>data</th>
+        <th>tipus</th>
+        <th>títol</th>
+        <th>doi</th>
+        <th>fwci</th>
+        <th>cites totals</th>
+        <th>cites {{year_selected}}</th>
+      </tr>
+      <tr v-for="work,i in works">
+        <td center small>{{i+1}}</td>
+        <td nowrap data>{{work.publication_date}}</td>
+        <td small center>{{work.type}}</td>
+        <td small><i>{{work.title}}</i></td>
+        <td small>
+          <div v-if="work.doi">
+            <a :href="work.doi" target=_blank>{{work.doi}}</a>
+          </div>
+          <div v-else-if="work.primary_location && work.primary_location.landing_page_url">
+            <a :href="work.primary_location.landing_page_url" target=_blank>{{work.primary_location.landing_page_url}}</a>
+          </div>
+        </td>
+        <td center small>{{work.fwci || 0}}</td>
+        <td center small>{{work.cited_by_count}}</td>
+        <td center>
+          <div v-for="cby in [work.counts_by_year.find(obj=>obj.year==year_selected)]">
+            <div v-if="cby">
+              {{cby.cited_by_count}}
+            </div>
+            <div v-else>0</div>
+          </div>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+</div>
+
+<script>
+let app=Vue.createApp({
+  data(){return{
+    //any seleccionat - per defecte: l'anterior
+    year_selected: new Date().getFullYear()-1,
+
+    codi_icra:"I2799562678",//codi openAlex institution ICRA
+
+    works:null, //fetch oa api
+  }},
+
+  methods:{
+    //pp
+  },
+
+  computed:{
+    //calcula els 2 anys anteriors al seleccionat
+    get_2_years_anteriors(){
+      return[
+        this.year_selected-2,
+        this.year_selected-1,
+      ];
+    },
+
+    //genera url amb anys anteriors
+    get_openalex_url(){
+      let years   = this.get_2_years_anteriors; //array
+      let y_inici = years[0]; //number
+      let y_final = years[1]; //number
+      return `https://openalex.org/works?filter=institutions.id:${this.codi_icra},publication_year:${y_inici}-${y_final}`;
+    },
+
+    get_B(){
+      if(!this.works) return false;
+      return this.works.length;
+    },
+    get_A(){
+      if(!this.works) return false;
+
+      let n=0;
+      this.works.forEach(work=>{
+        let obj = work.counts_by_year.find(obj=>obj.year==this.year_selected);
+        if(obj){
+          n += obj.cited_by_count;
+        }
+      });
+      return n;
+    },
+    get_IF(){
+      let A = this.get_A;
+      let B = this.get_B;
+      return A&&B ? A/B : 0;
+    },
+  },
+}).mount("#app");
+</script>
+
+<script type=module>
+  //query 2023-2024
+  async function query_oa_api(){
+    //inputs
+    let year_inici = 2023;
+    let year_final = 2024;
+    let codi_icra  = "I2799562678"; //institution code
+    let api_key    = "tGXbKHpYBXs5jv8YOFteH5";
+
+    //utils
+    let page     = 1;
+    let per_page = 200;
+    let results  = [];
+
+    while(true){
+      let url=`https://api.openalex.org/works?api_key=${api_key}&filter=institutions.id:${codi_icra},publication_year:${year_inici}-${year_final}&per_page=${per_page}&page=${page}`;
+
+      //fetch openalex api
+      console.log(`[openalex] Fetching page ${page}...`);
+      const res  = await fetch(url);
+      const data = await res.json();
+
+      //append results
+      results = results.concat(data.results);
+
+      //next page
+      if(data.results.length < per_page){
+        break;
+      }else{
+        page++;
+      }
+    }
+
+    return results;
+  }
+  //TODO
+  //let results = await query_oa_api(); //debug mode 
+  //console.log(results);
+
+  //carrega presaved results
+  fetch("query-2023-2024.json")
+  .then(r=>r.json())
+  .then(arr=>{
+    arr = arr.filter(work=>{
+      return work.authorships.some(auth=>{
+        return auth.raw_affiliation_strings.some(str=>{
+          let str_lc = str.toLowerCase();
+          return (
+            str_lc.includes("icra")||
+            str_lc.includes("catalan institute for water research")||
+            str_lc.includes("catalan institute of water research")||
+            str_lc.includes("institut catala de recerca de l'aigua")||
+            str_lc.includes("institut català de recerca de l'aigua")
+          );
+        });
+      });
+    });
+    arr.sort((a,b)=>{
+      let aa = a.publication_date;
+      let bb = b.publication_date;
+      return bb<aa?1:-1;
+    });
+
+    app.works=arr;
+    console.log("[ok] query-2023-2024.json");
+  });
+</script>
+
