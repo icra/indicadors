@@ -32,6 +32,24 @@
       font-size:smaller;
       white-space:nowrap;
     }
+    [first_or_last]{
+      color:#666;
+      border-radius:5px;
+      border:1px solid #ccc;
+      font-size:smaller;
+    }
+    [first_or_last=true]{
+      background:#af0;
+      box-shadow:inset 1px 1px 10px lightgreen;
+    }
+    [is_corresponding=true]{
+      background:#af0;
+      box-shadow:inset 1px 1px 10px lightgreen;
+      color:#666;
+      border-radius:5px;
+      border:1px solid #ccc;
+      font-size:smaller;
+    }
   </style>
 </head><body>
 
@@ -70,7 +88,7 @@
         </div>
       </td>
       <td>=</td>
-      <th>
+      <th style="font-size:x-large">
         {{get_IF}}
       </th>
     </tr>
@@ -85,6 +103,7 @@
         <th>tipus</th>
         <th>títol</th>
         <th>doi</th>
+        <th>autors icra</th>
         <th>fwci</th>
         <th>cites totals</th>
         <th>cites {{year_selected}}</th>
@@ -101,6 +120,30 @@
           <div v-else-if="work.primary_location && work.primary_location.landing_page_url">
             <a :href="work.primary_location.landing_page_url" target=_blank>{{work.primary_location.landing_page_url}}</a>
           </div>
+        </td>
+        <td>
+          <table border=1 small>
+            <tr v-for="authorship in work.authorships.filter(a=>a.institutions.some(i=>i.id==id_icra))">
+              <td nowrap :title="authorship.raw_author_name">
+                <span>
+                  {{authorship.author.display_name}}
+                </span>
+                <span v-if="authorship.author.display_name!=authorship.raw_author_name">
+                  ({{authorship.raw_author_name}})
+                </span>
+                <div>
+                  <span :first_or_last="['first','last'].includes(authorship.author_position)">
+                    {{authorship.author_position}}
+                  </span>
+                  <span :is_corresponding="authorship.is_corresponding">
+                    <span v-if="authorship.is_corresponding">
+                      corresponding
+                    </span>
+                  </span>
+                </div>
+              </td>
+            </tr>
+          </table>
         </td>
         <td center small>{{work.fwci || 0}}</td>
         <td center small>{{work.cited_by_count}}</td>
@@ -125,6 +168,7 @@ let app=Vue.createApp({
     year_selected: new Date().getFullYear()-1,
 
     codi_icra:"I2799562678",//codi openAlex institution ICRA
+    id_icra:"https://openalex.org/I2799562678", //id   openAlex institution ICRA
 
     works:null, //fetch oa api
   }},
