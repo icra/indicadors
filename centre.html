@@ -430,7 +430,7 @@
   </details>
 
   <!--taules dev "Conf_Taula"-->
-  <details v-if="debug" open>
+  <details v-if="debug">
     <summary large bold>
       [dev] Taules desenvolupament
     </summary>
@@ -451,8 +451,11 @@
           </span>
         </summary>
 
-        <div v-if="!taules[taula].taula">carregant "{{taula}}"...</div>
-        <div v-if="!taules[taula].taula && !carregant">error carregant taula</div>
+        <div v-if="carregant">carregant "{{taula}}"...</div>
+        <div v-if="taules[taula].error">
+          error carregant taula:
+          {{taules[taula].error}}
+        </div>
 
         <code v-if="taules[taula].comentaris" style="margin-left:1em">
           {{taules[taula].comentaris}}
@@ -562,6 +565,42 @@
       </table>
     </div>
   </details>
+
+  <!--taula_resum_taules_utilitzades_i_columnes-->
+  <details v-if="debug" open>
+    <summary large bold>
+      [dev] Taules i columnes utilitzades per calcular indicadors provinents d'excels carregats manualment (proporcionats per rdiaz)
+    </summary>
+    <div v-if="tot_carregat && get_taules_i_columnes_utilitzades_des_dexcels">
+      <table border=1>
+        <tr>
+          <th>nom fitxer excel</th>
+          <th small>comentaris</th>
+          <th>noms columnes utilitzades per calcular indicadors</th>
+        </tr>
+        <tr v-for="([key,val]) in Object.entries(get_taules_i_columnes_utilitzades_des_dexcels)">
+          <td>"{{key}}.xlsx"</td>
+          <td small>{{taules[key].comentaris}}</td>
+          <td style="vertical-align:top">
+            <table border=1 small>
+              <tr>
+                <th></th>
+                <th v-for="nom_columna in Array.from(val)">
+                  {{nom_columna}}
+                </th>
+              </tr>
+              <tr xsmall v-if="taules[key].taula.length">
+                <th>fila<br>exemple</th>
+                <td v-for="nom_columna in Array.from(val)">
+                  {{taules[key].taula[0][nom_columna]}}
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </details>
 </div>
 
 <script>//classes i dades
@@ -662,8 +701,10 @@
         return false;
       }
 
+      //calcula pels anys seleccionats
       Object.entries(this.years)
-        .filter(e=>!e[1].excloure).map(e=>e[0])
+        .filter(e=>!e[1].excloure)
+        .map(e=>e[0])
         .forEach(year=>{
           if(app.selected_years[year]){
             app.funcions_calculadores[id](year, this);
@@ -678,7 +719,7 @@
 
   /*taules helper*/
 
-  //taula: "id_indicador"=>"text indicador"
+  //diccionari: "id_indicador"=>"text indicador"
   let textos={
     "euros_recerca"                                         : `Aportació econòmica total a través de projectes o contractes de recerca`,
     "euros_recerca_horizon"                                 : `Aportació econòmica de projectes de recerca competitius Europeus (Horizon)`,
@@ -727,7 +768,6 @@
     "actes_disseminacio_participats_o_organitzats"          : `Actes de disseminació participats o organitzats per ICRA`,
     "aparicions_mitjans_comunicacio_nacionals"              : `Aparicions en els mitjans de comunicació escrits i audiovisuals regionals o estatals`,
     "aparicions_mitjans_comunicacio_internacionals"         : `Aparicions en els mitjans de comunicació escrits i audiovisuals internacionals`,
-    "reunions_taula_aigua_ACA"                              : `Reunions de la Taula de l'Aigua amb l'ACA`,
     "hores_tasques_taula_aigua_ACA"                         : `Hores computades per IPs a tasques associades a la taula de l'Aigua`,
     "euros_projectes_KTT_ACA"                               : `Aportacions de projectes o contractes de KTT amb l'ACA, via contracte programa o licitació`,
     "tallers_UdG_ICRA"                                      : `Organitzacions i participacions en tallers UdG-ICRA per enfortir col·laboració en marc de l'aigua`,
@@ -814,7 +854,7 @@
     "percentatge_publicacions_lideratge_femeni"                   :"Percentatge de publicacions liderades per una dona del centre",
   };
 
-  //taula: "id_indicador"=>"unitat indicador"
+  //diccionari: "id_indicador"=>"unitat indicador"
   let unitats={
     "euros_recerca"                                         : `k€`,
     "euros_recerca_horizon"                                 : `k€`,
@@ -863,7 +903,6 @@
     "actes_disseminacio_participats_o_organitzats"          : `actes`,
     "aparicions_mitjans_comunicacio_nacionals"              : `aparicions`,
     "aparicions_mitjans_comunicacio_internacionals"         : `aparicions`,
-    "reunions_taula_aigua_ACA"                              : `reunions`,
     "hores_tasques_taula_aigua_ACA"                         : `hores`,
     "euros_projectes_KTT_ACA"                               : `k€`,
     "tallers_UdG_ICRA"                                      : `tallers`,
@@ -921,8 +960,8 @@
     "ips_aparicions_mitjans_comunicacio_internacionals"   :"aparicions",
   };
 
-  //funcions calculadores
-  //taula: "id_indicador"=> function
+  //funcions calculadores dels indicadors
+  //diccionari: "id_indicador"=> function
   let funcions_calculadores={
     euros_recerca(year,indicador){
       //taula ingressos filtra per year
@@ -967,6 +1006,18 @@
           return new_row;
         });
       }
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.euros_recerca={
+        "ingressos":[
+          "Any",
+          "Codi",
+          "Ingressos",
+        ],
+        "projectes":[
+          "Código Identificativo",
+        ],
+      };
 
       return keuros;
     },
@@ -1021,6 +1072,21 @@
         });
         return new_row;
       });
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.euros_recerca_horizon={
+        "ingressos":[
+          "Any",
+          "Codi",
+          "Ingressos",
+        ],
+        "projectes":[
+          "Código Identificativo",
+          "Concurrencia",
+          "Naturaleza del Proyecto",
+          "Financiador Convocatoria",
+        ],
+      };
     },//OK
 
     euros_recerca_erc_eic(year,indicador){
@@ -1068,6 +1134,21 @@
         });
         return new_row;
       });
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.euros_recerca_erc_eic={
+        "ingressos":[
+          "Any",
+          "Codi",
+          "Ingressos",
+        ],
+        "projectes":[
+          "Código Identificativo",
+          "Concurrencia",
+          "Naturaleza del Proyecto",
+          "Financiador Convocatoria",
+        ],
+      };
     },//OK
 
     euros_recerca_estatal(year, indicador){
@@ -1109,6 +1190,20 @@
         });
         return new_row;
       });
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.euros_recerca_estatal={
+        "ingressos":[
+          "Any",
+          "Codi",
+          "Ingressos",
+        ],
+        "projectes":[
+          "Código Identificativo",
+          "Concurrencia",
+          "Naturaleza del Proyecto",
+        ],
+      };
     },
 
     euros_recerca_regional(year, indicador){
@@ -1150,6 +1245,20 @@
         });
         return new_row;
       });
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.euros_recerca_regional={
+        "ingressos":[
+          "Any",
+          "Codi",
+          "Ingressos",
+        ],
+        "projectes":[
+          "Código Identificativo",
+          "Concurrencia",
+          "Naturaleza del Proyecto",
+        ],
+      };
     },
 
     projectes_horizon(year, indicador){
@@ -1182,6 +1291,18 @@
         });
         return new_row;
       });
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.projectes_horizon={
+        "projectes":[
+          "Código Identificativo",
+          "Concurrencia",
+          "Naturaleza del Proyecto",
+          "Iniciativa",
+          "Fecha Comienzo",
+          "Fecha Fin Real",
+        ],
+      };
     },
 
     projectes_erc_eic(year, indicador){
@@ -1206,6 +1327,18 @@
         });
         return new_row;
       });
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.projectes_erc_eic={
+        "projectes":[
+          "Código Identificativo",
+          "Concurrencia",
+          "Naturaleza del Proyecto",
+          "Financiador Convocatoria",
+          "Fecha Comienzo",
+          "Fecha Fin Real",
+        ],
+      };
     },
 
     congressos_tallers_escoles_estiu_organitzats(year,indicador){
@@ -1223,6 +1356,16 @@
         indicador.years[year].valor  = n_actes;
         indicador.years[year].llista = esdeveniments;
       }
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.congressos_tallers_escoles_estiu_organitzats={
+        "esdeveniments":[
+          "ID_Esdeveniment",
+          "Tipus_Esdeveniment",
+          "DataInici_Esdeveniment",
+          "DataFi_Esdeveniment",
+        ],
+      };
 
       return n_actes;
     },
@@ -1243,6 +1386,16 @@
         indicador.years[year].llista = esdeveniments;
       }
 
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.sessions_especials_organitzades={
+        "esdeveniments":[
+          "ID_Esdeveniment",
+          "Tipus_Esdeveniment",
+          "DataInici_Esdeveniment",
+          "DataFi_Esdeveniment",
+        ],
+      };
+
       return n_actes;
     },
 
@@ -1262,45 +1415,104 @@
         indicador.years[year].llista = esdeveniments;
       }
 
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.comites_internacionals_participats={
+        "esdeveniments":[
+          "ID_Esdeveniment",
+          "Tipus_Esdeveniment",
+          "DataInici_Esdeveniment",
+          "DataFi_Esdeveniment",
+        ],
+      };
+
       return n_actes;
     },
 
     //bloc scopus
+    //TODO aquest bloc ja es poden reimplementar fent servir modul scopus/open alex
     articles_Q1(year,indicador){
       let scopus = app.taules.scopus.taula.filter(row=>row.year==year);
       let n      = scopus.length ? scopus[0].articles_Q1 : 0;
       indicador.years[year].valor  = n;
       indicador.years[year].llista = scopus;
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.articles_Q1={
+        "scopus":[
+          "year",
+          "articles_Q1",
+        ],
+      };
     },
     articles_Q1_amb_lideratge(year,indicador){
       let scopus = app.taules.scopus.taula.filter(row=>row.year==year);
       let n      = scopus.length ? scopus[0].articles_Q1_amb_lideratge : 0;
       indicador.years[year].valor  = n;
       indicador.years[year].llista = scopus;
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.articles_Q1_amb_lideratge={
+        "scopus":[
+          "year",
+          "articles_Q1_amb_lideratge",
+        ],
+      };
     },
     articles_D1(year,indicador){
       let scopus = app.taules.scopus.taula.filter(row=>row.year==year);
       let n      = scopus.length ? scopus[0].articles_D1 : 0;
       indicador.years[year].valor  = n;
       indicador.years[year].llista = scopus;
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.articles_D1={
+        "scopus":[
+          "year",
+          "articles_D1",
+        ],
+      };
     },
     articles_FWCI_10(year,indicador){
       let scopus = app.taules.scopus.taula.filter(row=>row.year==year);
       let n      = scopus.length ? scopus[0].articles_FWCI_10 : 0;
       indicador.years[year].valor  = n;
       indicador.years[year].llista = scopus;
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.articles_FWCI_10={
+        "scopus":[
+          "year",
+          "articles_FWCI_10",
+        ],
+      };
     },
     cites_articles(year,indicador){
       let scopus = app.taules.scopus.taula.filter(row=>row.year==year);
       let n      = scopus.length ? scopus[0].cites_articles : 0;
       indicador.years[year].valor  = n;
       indicador.years[year].llista = scopus;
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.cites_articles={
+        "scopus":[
+          "year",
+          "cites_articles",
+        ],
+      };
     },
     impact_factor(year,indicador){
       let scopus = app.taules.scopus.taula.filter(row=>row.year==year);
       let n      = scopus.length ? scopus[0].impact_factor : 0;
       indicador.years[year].valor  = n;
       indicador.years[year].llista = scopus;
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.impact_factor={
+        "scopus":[
+          "year",
+          "impact_factor",
+        ],
+      };
     },
     //bloc scopus end
 
@@ -1334,6 +1546,16 @@
         indicador.years[year].llista = personal;
       }
 
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.estades_recercaires_acollits={
+        "personal":[
+          "Categoria",
+          "Titulacio",
+          "Datainicicontracte",
+          "DataFiContracte",
+        ],
+      };
+
       return personal.length;
     },
 
@@ -1352,6 +1574,16 @@
         indicador.years[year].valor  = n_actes;
         indicador.years[year].llista = esdeveniments;
       }
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.estades_recercaires_en_altres_centres={
+        "esdeveniments":[
+          "ID_Esdeveniment",
+          "Tipus_Esdeveniment",
+          "DataInici_Esdeveniment",
+          "DataFi_Esdeveniment",
+        ],
+      };
 
       return n_actes;
     },
@@ -1384,6 +1616,18 @@
 
       indicador.years[year].valor  = rati;
       indicador.years[year].llista = [estats];
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.rati_exit_propostes_europa={
+        "projectes":[
+          "Código Identificativo",
+          "Concurrencia",
+          "Naturaleza del Proyecto",
+          "Fecha Comienzo",
+          "Fecha Fin Real",
+          "Situación del Proyecto",
+        ],
+      };
     },
 
     euros_recerca_L17_L18(year,indicador){
@@ -1440,6 +1684,19 @@
         });
       }
 
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.euros_recerca_L17_L18={
+        "ingressos":[
+          "Any",
+          "Codi",
+          "Ingressos",
+        ],
+        "projectes":[
+          "Código Identificativo",
+          "Unidad de Gestión",
+        ],
+      };
+
       return keuros;
     },
 
@@ -1448,24 +1705,13 @@
       let n      = scopus.length ? scopus[0].articles_Q1_L17_L18 : 0;
       indicador.years[year].valor  = n;
       indicador.years[year].llista = scopus;
-    },
 
-    euros_projectes_KTT_respecte_total(year, indicador){
-      let keuros_projectes_KTT = this.euros_projectes_KTT(year);
-      let keuros_recerca       = this.euros_recerca(year);
-
-      if(keuros_recerca){
-        percentatge = 100*keuros_projectes_KTT/keuros_recerca;
-      }else{
-        percentatge = 0;
-      }
-
-      indicador.years[year].valor = percentatge;
-      indicador.years[year].llista = [
-        {keuros_projectes_KTT, keuros_recerca},
-      ];
-
-      return percentatge;
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.articles_Q1_L17_L18={
+        "scopus":[
+          "articles_Q1_L17_L18",
+        ],
+      };
     },
 
     euros_projectes_KTT(year, indicador){
@@ -1510,7 +1756,51 @@
         });
       }
 
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.euros_projectes_KTT={
+        "ingressos":[
+          "Any",
+          "Codi",
+          "Ingressos",
+        ],
+        "projectes":[
+          "Código Identificativo",
+          "Concurrencia",
+        ],
+      };
+
       return keuros;
+    },
+
+    euros_projectes_KTT_respecte_total(year, indicador){
+      let keuros_projectes_KTT = this.euros_projectes_KTT(year);
+      let keuros_recerca       = this.euros_recerca(year);
+
+      if(keuros_recerca){
+        percentatge = 100*keuros_projectes_KTT/keuros_recerca;
+      }else{
+        percentatge = 0;
+      }
+
+      indicador.years[year].valor = percentatge;
+      indicador.years[year].llista = [
+        {keuros_projectes_KTT, keuros_recerca},
+      ];
+
+      return percentatge;
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.euros_projectes_KTT_respecte_total={
+        "ingressos":[
+          "Any",
+          "Codi",
+          "Ingressos",
+        ],
+        "projectes":[
+          "Código Identificativo",
+          "Concurrencia",
+        ],
+      };
     },
 
     projectes_KTT(year, indicador){
@@ -1542,6 +1832,15 @@
         return new_row;
       });
 
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.projectes_KTT={
+        "projectes":[
+          "Tipo de Financiación Contracte Programa",
+          "Fecha Comienzo",
+          "Fecha Fin Real",
+        ],
+      };
+
       return n_projectes;
     },
 
@@ -1560,6 +1859,16 @@
         indicador.years[year].valor  = n_actes;
         indicador.years[year].llista = esdeveniments;
       }
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.formacions_per_empreses_organitzades={
+        "esdeveniments":[
+          "ID_Esdeveniment",
+          "Tipus_Esdeveniment",
+          "DataInici_Esdeveniment",
+          "DataFi_Esdeveniment",
+        ],
+      };
 
       return n_actes;
     },
@@ -1605,6 +1914,16 @@
         return new_row;
       });
 
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.projectes_llavor_producte_innovadors={
+        "projectes":[
+          "Título Abreviado",
+          "Situación del Proyecto",
+          "Fecha Comienzo",
+          "Fecha Fin Real",
+        ],
+      };
+
       return n_projectes;
     },
 
@@ -1625,6 +1944,15 @@
         indicador.years[year].valor  = personal.length;
         indicador.years[year].llista = personal;
       }
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.doctorats_industrials={
+        "personal":[
+          "Categoria",
+          "Datainicicontracte",
+          "DataFiContracte",
+        ],
+      };
 
       return personal.length;
     },
@@ -1670,6 +1998,19 @@
         });
       }
 
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.euros_mecenatge={
+        "ingressos":[
+          "Any",
+          "Codi",
+          "Ingressos",
+        ],
+        "projectes":[
+          "Código Identificativo",
+          "Concurrencia",
+        ],
+      };
+
       return keuros;
     },
 
@@ -1687,6 +2028,15 @@
 
       indicador.years[year].valor  = n_projectes; //number
       indicador.years[year].llista = llista; //array
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.projectes_mecenatge={
+        "projectes":[
+          "Concurrencia",
+          "Fecha Comienzo",
+          "Fecha Fin Real",
+        ],
+      };
     },
 
     patents_i_secrets_industrials(year,indicador){
@@ -1704,6 +2054,16 @@
 
       indicador.years[year].valor  = n_projectes; //number
       indicador.years[year].llista = llista; //array
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.patents_i_secrets_industrials={
+        "projectes":[
+          "Título Abreviado",
+          "Situación del Proyecto",
+          "Fecha Comienzo",
+          "Fecha Fin Real",
+        ],
+      };
     },
 
     spinoffs_i_startups(year,indicador){
@@ -1721,6 +2081,16 @@
 
       indicador.years[year].valor  = n_projectes; //number
       indicador.years[year].llista = llista; //array
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.spinoffs_i_startups={
+        "projectes":[
+          "Título Abreviado",
+          "Situación del Proyecto",
+          "Fecha Comienzo",
+          "Fecha Fin Real",
+        ],
+      };
     },
 
     articles_amb_socis_industrials(year,indicador){
@@ -1728,6 +2098,14 @@
       let n      = scopus.length ? scopus[0].articles_amb_socis_industrials : 0; //percentatge
       indicador.years[year].valor  = n;
       indicador.years[year].llista = scopus;
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.articles_amb_socis_industrials={
+        "scopus":[
+          "year",
+          "articles_amb_socis_industrials",
+        ],
+      };
     },
 
     estudiants_acollits(year,indicador){
@@ -1752,14 +2130,35 @@
         indicador.years[year].llista = personal;
       }
 
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.estudiants_acollits={
+        "personal":[
+          "Categoria",
+          "Titulacio",
+          "Datainicicontracte",
+          "DataFiContracte",
+        ],
+      };
+
       return personal.length;
     },
 
+    //es pot calcular amb modul sage TODO
     cites_en_legislacio(year,indicador){
       let scopus = app.taules.scopus.taula.filter(row=>row.year==year);
       let n      = scopus.length ? scopus[0].cites_en_legislacio : 0;
       indicador.years[year].valor  = n;
       indicador.years[year].llista = scopus;
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.cites_en_legislacio={
+        "scopus":[
+          "year",
+          "cites_en_legislacio",
+        ],
+      };
+
+      return n;
     },
 
     participacions_comites_experts_ambit_legislatiu(year,indicador){
@@ -1777,6 +2176,16 @@
         indicador.years[year].valor  = n_actes;
         indicador.years[year].llista = esdeveniments;
       }
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.participacions_comites_experts_ambit_legislatiu={
+        "esdeveniments":[
+          "ID_Esdeveniment",
+          "Tipus_Esdeveniment",
+          "DataInici_Esdeveniment",
+          "DataFi_Esdeveniment",
+        ],
+      };
 
       return n_actes;
     },
@@ -1797,6 +2206,16 @@
         indicador.years[year].llista = esdeveniments;
       }
 
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.premis_nacionals={
+        "esdeveniments":[
+          "ID_Esdeveniment",
+          "Tipus_Esdeveniment",
+          "DataInici_Esdeveniment",
+          "DataFi_Esdeveniment",
+        ],
+      };
+
       return n_actes;
     },
 
@@ -1815,6 +2234,16 @@
         indicador.years[year].valor  = n_actes;
         indicador.years[year].llista = esdeveniments;
       }
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.premis_internacionals={
+        "esdeveniments":[
+          "ID_Esdeveniment",
+          "Tipus_Esdeveniment",
+          "DataInici_Esdeveniment",
+          "DataFi_Esdeveniment",
+        ],
+      };
 
       return n_actes;
     },
@@ -1835,6 +2264,16 @@
         indicador.years[year].llista = esdeveniments;
       }
 
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.narratives_impacte_CERCA={
+        "esdeveniments":[
+          "ID_Esdeveniment",
+          "Tipus_Esdeveniment",
+          "DataInici_Esdeveniment",
+          "DataFi_Esdeveniment",
+        ],
+      };
+
       return n_actes;
     },
 
@@ -1853,6 +2292,16 @@
         indicador.years[year].valor  = n_actes;
         indicador.years[year].llista = esdeveniments;
       }
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.contribucions_gestio_aigua={
+        "esdeveniments":[
+          "ID_Esdeveniment",
+          "Tipus_Esdeveniment",
+          "DataInici_Esdeveniment",
+          "DataFi_Esdeveniment",
+        ],
+      };
 
       return n_actes;
     },
@@ -1873,6 +2322,16 @@
         indicador.years[year].llista = esdeveniments;
       }
 
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.llocs_de_treball_generats_llicencies={
+        "esdeveniments":[
+          "ID_Esdeveniment",
+          "Tipus_Esdeveniment",
+          "DataInici_Esdeveniment",
+          "DataFi_Esdeveniment",
+        ],
+      };
+
       return n_actes;
     },
 
@@ -1892,9 +2351,20 @@
         indicador.years[year].llista = esdeveniments;
       }
 
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.aliances_solides_entitats_socials={
+        "esdeveniments":[
+          "ID_Esdeveniment",
+          "Tipus_Esdeveniment",
+          "DataInici_Esdeveniment",
+          "DataFi_Esdeveniment",
+        ],
+      };
+
       return n_actes;
     },
 
+    //TODO substituir per api calls (youtube, instagram, twitter) en un futur
     xxss_seguidors(year,indicador){
       let xarxes = app.taules.xarxes_socials.taula.find(row=>{
         return row["any"]==year;
@@ -1903,6 +2373,14 @@
 
       indicador.years[year].valor  = xarxes["seguidors"];
       indicador.years[year].llista = [xarxes];
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.xxss_seguidors={
+        "xarxes_socials":[
+          "any",
+          "seguidors",
+        ],
+      };
     },
 
     xxss_shares(year,indicador){
@@ -1913,6 +2391,14 @@
 
       indicador.years[year].valor  = xarxes["shares"];
       indicador.years[year].llista = [xarxes];
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.xxss_shares={
+        "xarxes_socials":[
+          "any",
+          "shares",
+        ],
+      };
     },
 
     xxss_streams(year,indicador){
@@ -1923,6 +2409,14 @@
 
       indicador.years[year].valor  = xarxes["streams"];
       indicador.years[year].llista = [xarxes];
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.xxss_streams={
+        "xarxes_socials":[
+          "any",
+          "streams",
+        ],
+      };
     },
 
     actes_disseminacio_participats_o_organitzats(year,indicador){
@@ -1940,6 +2434,16 @@
         indicador.years[year].valor  = n_actes;
         indicador.years[year].llista = esdeveniments;
       }
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.actes_disseminacio_participats_o_organitzats={
+        "esdeveniments":[
+          "ID_Esdeveniment",
+          "Tipus_Esdeveniment",
+          "DataInici_Esdeveniment",
+          "DataFi_Esdeveniment",
+        ],
+      };
 
       return n_actes;
     },
@@ -1960,6 +2464,16 @@
         indicador.years[year].llista = esdeveniments;
       }
 
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.aparicions_mitjans_comunicacio_nacionals={
+        "esdeveniments":[
+          "ID_Esdeveniment",
+          "Tipus_Esdeveniment",
+          "DataInici_Esdeveniment",
+          "DataFi_Esdeveniment",
+        ],
+      };
+
       return n_actes;
     },
 
@@ -1979,10 +2493,18 @@
         indicador.years[year].llista = esdeveniments;
       }
 
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.aparicions_mitjans_comunicacio_internacionals={
+        "esdeveniments":[
+          "ID_Esdeveniment",
+          "Tipus_Esdeveniment",
+          "DataInici_Esdeveniment",
+          "DataFi_Esdeveniment",
+        ],
+      };
+
       return n_actes;
     },
-
-    reunions_taula_aigua_ACA:null, //TBD s'ha demanat amagar-lo
 
     hores_tasques_taula_aigua_ACA(year,indicador){
       let taula_aigua = app.taules.taula_aigua.taula.filter(row=>{
@@ -1999,6 +2521,14 @@
         indicador.years[year].valor  = hores;
         indicador.years[year].llista = taula_aigua;
       }
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.hores_tasques_taula_aigua_aca={
+        "taula_aigua":[
+          "DataAlta",
+          "Horas",
+        ],
+      };
 
       return hores;
     },
@@ -2055,6 +2585,23 @@
         return new_row;
       });
 
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.euros_projectes_KTT_ACA={
+        "ingressos":[
+          "Any",
+          "Codi",
+          "Ingressos",
+        ],
+        "stakeholders":[
+          "Proyecto Código Identificativo",
+          "Tercero Id",
+          "Tercero",
+        ],
+        "projectes":[
+          "Código Identificativo",
+        ],
+      };
+
       return keuros;
     },
 
@@ -2073,6 +2620,16 @@
         indicador.years[year].valor  = n_actes;
         indicador.years[year].llista = esdeveniments;
       }
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.tallers_UdG_ICRA={
+        "esdeveniments":[
+          "ID_Esdeveniment",
+          "Tipus_Esdeveniment",
+          "DataInici_Esdeveniment",
+          "DataFi_Esdeveniment",
+        ],
+      };
 
       return n_actes;
     },
@@ -2122,6 +2679,20 @@
         });
         return new_row;
       });
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.iniciatives_udg_icra={
+        "stakeholders":[
+          "Proyecto Código Identificativo",
+          "Tercero Id",
+          "Tercero",
+        ],
+        "projectes":[
+          "Código Identificativo",
+          "Fecha Comienzo",
+          "Fecha Fin Real",
+        ],
+      };
 
       return n_projectes;
     },
@@ -2176,6 +2747,25 @@
         return new_row;
       });
 
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.euros_projectes_KTT_UdG={
+        "stakeholders":[
+          "Proyecto Código Identificativo",
+          "Tercero Id",
+          "Tercero",
+        ],
+        "projectes":[
+          "Código Identificativo",
+          "Fecha Comienzo",
+          "Fecha Fin Real",
+        ],
+        "ingressos":[
+          "Any",
+          "Codi",
+          "Ingressos",
+        ],
+      };
+
       return keuros;
     },
 
@@ -2194,6 +2784,16 @@
         indicador.years[year].valor  = n_actes;
         indicador.years[year].llista = esdeveniments;
       }
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.participacions_activitats_JEDI_organitzades_per_CERCA={
+        "esdeveniments":[
+          "ID_Esdeveniment",
+          "Tipus_Esdeveniment",
+          "DataInici_Esdeveniment",
+          "DataFi_Esdeveniment",
+        ],
+      };
 
       return n_actes;
     },
@@ -2224,6 +2824,16 @@
         indicador.years[year].llista = esdeveniments;
       }
 
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.aliances_solides_empreses_i_administracio_publica={
+        "esdeveniments":[
+          "ID_Esdeveniment",
+          "Tipus_Esdeveniment",
+          "DataInici_Esdeveniment",
+          "DataFi_Esdeveniment",
+        ],
+      };
+
       return n_actes;
     },
 
@@ -2246,6 +2856,16 @@
         indicador.years[year].valor  = n_participants;
         indicador.years[year].llista = esdeveniments;
       }
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.participants_tallers_UdG_ICRA={
+        "esdeveniments":[
+          "Tipus_Esdeveniment",
+          "DataInici_Esdeveniment",
+          "DataFi_Esdeveniment",
+          "Participants",
+        ],
+      };
 
       return n_participants;
     },
@@ -2274,6 +2894,16 @@
         indicador.years[year].llista = esdeveniments;
       }
 
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.sessions_JEDI_formacio_interna={
+        "esdeveniments":[
+          "ID_Esdeveniment",
+          "Tipus_Esdeveniment",
+          "DataInici_Esdeveniment",
+          "DataFi_Esdeveniment",
+        ],
+      };
+
       return n_actes;
     },
 
@@ -2292,6 +2922,16 @@
         indicador.years[year].valor  = n_participants;
         indicador.years[year].llista = esdeveniments;
       }
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.participants_sessions_JEDI_formacio_interna={
+        "esdeveniments":[
+          "Tipus_Esdeveniment",
+          "DataInici_Esdeveniment",
+          "DataFi_Esdeveniment",
+          "Participants",
+        ],
+      };
 
       return n_participants;
     },
@@ -2347,6 +2987,20 @@
         return new_row;
       });
 
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.projectes_amb_administracio_central={
+        "stakeholders":[
+          "Proyecto Código Identificativo",
+          "Tercero Id",
+          "Tercero",
+        ],
+        "projectes":[
+          "Código Identificativo",
+          "Fecha Comienzo",
+          "Fecha Fin Real",
+        ],
+      };
+
       return n_projectes;
     },
 
@@ -2400,11 +3054,30 @@
         return new_row;
       });
 
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.euros_projectes_amb_administracio_central={
+        "stakeholders":[
+          "Proyecto Código Identificativo",
+          "Tercero Id",
+          "Tercero",
+        ],
+        "projectes":[
+          "Código Identificativo",
+          "Fecha Comienzo",
+          "Fecha Fin Real",
+        ],
+        "ingressos":[
+          "Any",
+          "Codi",
+          "Ingressos",
+        ],
+      };
+
       return keuros;
     },
 
     ips_euros_recerca(year, indicador){
-      year = year   || "2023";
+      year = year || "2023";
 
       let nom_ip = app.ip_seleccionat?.nom || "Acuña Salazar, Vicenç";
 
@@ -2465,6 +3138,28 @@
           return new_row;
         });
       }
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.ips_euros_recerca={
+        "projectes_personal":[
+          "Persona",
+          "EnQualitatde",
+          "Tipo de Financiación Contracte Programa",
+          "DataInici",
+          "DataFi",
+          "CodiProjecte",
+        ],
+        "projectes":[
+          "Código Identificativo",
+          "Fecha Comienzo",
+          "Fecha Fin Real",
+        ],
+        "ingressos":[
+          "Any",
+          "Codi",
+          "Ingressos",
+        ],
+      };
 
       return keuros;
     },
@@ -2529,6 +3224,26 @@
           return new_row;
         });
       }
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.ips_euros_projectes_KTT={
+        "projectes_personal":[
+          "Persona",
+          "EnQualitatde",
+          "Tipo de Financiación Contracte Programa",
+          "DataInici",
+          "DataFi",
+          "CodiProjecte",
+        ],
+        "projectes":[
+          "Código Identificativo",
+        ],
+        "ingressos":[
+          "Any",
+          "Codi",
+          "Ingressos",
+        ],
+      };
 
       return keuros;
     },
@@ -2602,6 +3317,25 @@
           return new_row;
         });
       }
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.ips_projectes_erc_eic={
+        "projectes_personal":[
+          "Persona",
+          "EnQualitatde",
+          "DataInici",
+          "DataFi",
+          "CodiProjecte",
+        ],
+        "projectes":[
+          "Código Identificativo",
+          "Concurrencia",
+          "Naturaleza del Proyecto",
+          "Financiador Convocatoria",
+          "Fecha Comienzo",
+          "Fecha Fin Real",
+        ],
+      };
     },
 
     ips_projectes_IP_o_COIP(year,indicador){
@@ -2632,7 +3366,6 @@
 
       //diccionari codi=>projecte
       let joined={};
-
       personal.forEach(row=>{
         let codi = row.CodiProjecte; //string
 
@@ -2671,7 +3404,30 @@
           return new_row;
         });
       }
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.ips_projectes_IP_o_COIP={
+        "projectes_personal":[
+          "CodiProjecte",
+          "Persona",
+          "EnQualitatde",
+          "DataInici",
+          "DataFi",
+        ],
+        "projectes":[
+          "Código Identificativo",
+          "Concurrencia",
+          "Situación del Proyecto",
+          "Fecha Comienzo",
+          "Fecha Fin Real",
+        ],
+      };
     },
+
+    //continuar aqui 2025-03-25 TODO
+    //continuar aqui 2025-03-25 TODO
+    //continuar aqui 2025-03-25 TODO
+    //continuar aqui 2025-03-25 TODO
 
     ips_projectes_participant(year,indicador){
       let nom_ip = app.ip_seleccionat?.nom || "Acuña Salazar, Vicenç";
@@ -2701,13 +3457,10 @@
 
       //diccionari codi=>projecte
       let joined={};
-
       personal.forEach(row=>{
         let codi = row.CodiProjecte; //string
-
         let pro  = busca_projecte(codi,projectes);
         if(!pro) return;
-
         joined[codi]={
           Persona      : nom_ip,
           EnQualitatde : row.EnQualitatde,
@@ -2740,6 +3493,24 @@
           return new_row;
         });
       }
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.ips_projectes_participant={
+        "projectes":[
+          "Código Identificativo",
+          "Concurrencia",
+          "Situación del Proyecto",
+          "Fecha Comienzo",
+          "Fecha Fin Real",
+        ],
+        "projectes_personal":[
+          "CodiProjecte",
+          "Persona",
+          "EnQualitatde",
+          "DataInici",
+          "DataFi",
+        ],
+      };
     },
 
     ips_patents_i_secrets_industrials(year,indicador){
@@ -2761,6 +3532,17 @@
 
       indicador.years[year].valor  = n_projectes; //number
       indicador.years[year].llista = llista; //array
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.ips_patents_i_secrets_industrials={
+        "projectes_personal":[
+          "Persona",
+          "Projecte",
+          "Situación del Proyecto",
+          "DataInici",
+          "DataFi",
+        ],
+      };
     },
 
     ips_spinoffs_i_startups(year,indicador){
@@ -2782,6 +3564,17 @@
 
       indicador.years[year].valor  = n_projectes; //number
       indicador.years[year].llista = llista; //array
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.ips_spinoffs_i_startups={
+        "projectes_personal":[
+          "Persona",
+          "Projecte",
+          "Situación del Proyecto",
+          "DataInici",
+          "DataFi",
+        ],
+      };
     },
 
     ips_postdocs_supervisats(year,indicador){
@@ -2811,6 +3604,16 @@
 
       indicador.years[year].valor  = personal.length; //number
       indicador.years[year].llista = personal;        //array
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.ips_postdocs_supervisats={
+        "personal":[
+          "Responsable",
+          "Datainicicontracte",
+          "DataFiContracte",
+          "Categoria",
+        ],
+      };
     },
 
     ips_congressos_tallers_escoles_estiu_organitzats(year,indicador){
@@ -2834,6 +3637,17 @@
         indicador.years[year].valor  = n_actes;
         indicador.years[year].llista = esdeveniments;
       }
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.ips_congressos_tallers_escoles_estiu_organitzats={
+        "esdeveniments":[
+          "ID_Esdeveniment",
+          "Tipus_Esdeveniment",
+          "Persona",
+          "DataInici_Esdeveniment",
+          "DataFi_Esdeveniment",
+        ],
+      };
 
       return n_actes;
     },
@@ -2860,6 +3674,17 @@
         indicador.years[year].llista = esdeveniments;
       }
 
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.ips_conferencies_convidades={
+        "esdeveniments":[
+          "ID_Esdeveniment",
+          "Tipus_Esdeveniment",
+          "Persona",
+          "DataInici_Esdeveniment",
+          "DataFi_Esdeveniment",
+        ],
+      };
+
       return n_actes;
     },
 
@@ -2884,6 +3709,17 @@
         indicador.years[year].valor  = n_actes;
         indicador.years[year].llista = esdeveniments;
       }
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.ips_comites_internacionals_participats={
+        "esdeveniments":[
+          "ID_Esdeveniment",
+          "Tipus_Esdeveniment",
+          "Persona",
+          "DataInici_Esdeveniment",
+          "DataFi_Esdeveniment",
+        ],
+      };
 
       return n_actes;
     },
@@ -2910,6 +3746,17 @@
         indicador.years[year].llista = esdeveniments;
       }
 
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.ips_treball_editorial_Q1={
+        "esdeveniments":[
+          "ID_Esdeveniment",
+          "Tipus_Esdeveniment",
+          "Persona",
+          "DataInici_Esdeveniment",
+          "DataFi_Esdeveniment",
+        ],
+      };
+
       return n_actes;
     },
 
@@ -2934,6 +3781,17 @@
         indicador.years[year].valor  = n_actes;
         indicador.years[year].llista = esdeveniments;
       }
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.ips_narratives_impacte_CERCA={
+        "esdeveniments":[
+          "ID_Esdeveniment",
+          "Tipus_Esdeveniment",
+          "Persona",
+          "DataInici_Esdeveniment",
+          "DataFi_Esdeveniment",
+        ],
+      };
 
       return n_actes;
     },
@@ -2960,6 +3818,17 @@
         indicador.years[year].llista = esdeveniments;
       }
 
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.ips_formacions_per_empreses_organitzades={
+        "esdeveniments":[
+          "ID_Esdeveniment",
+          "Tipus_Esdeveniment",
+          "Persona",
+          "DataInici_Esdeveniment",
+          "DataFi_Esdeveniment",
+        ],
+      };
+
       return n_actes;
     },
 
@@ -2984,6 +3853,17 @@
         indicador.years[year].valor  = n_actes;
         indicador.years[year].llista = esdeveniments;
       }
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.ips_participacions_comites_experts_ambit_legislatiu={
+        "esdeveniments":[
+          "ID_Esdeveniment",
+          "Tipus_Esdeveniment",
+          "Persona",
+          "DataInici_Esdeveniment",
+          "DataFi_Esdeveniment",
+        ],
+      };
 
       return n_actes;
     },
@@ -3013,6 +3893,17 @@
         indicador.years[year].llista = esdeveniments;
       }
 
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.ips_premis_nacionals_i_internacionals={
+        "esdeveniments":[
+          "ID_Esdeveniment",
+          "Tipus_Esdeveniment",
+          "Persona",
+          "DataInici_Esdeveniment",
+          "DataFi_Esdeveniment",
+        ],
+      };
+
       return n_actes;
     },
 
@@ -3037,6 +3928,17 @@
         indicador.years[year].valor  = n_actes;
         indicador.years[year].llista = esdeveniments;
       }
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.ips_actes_disseminacio_participats_o_organitzats={
+        "esdeveniments":[
+          "ID_Esdeveniment",
+          "Tipus_Esdeveniment",
+          "Persona",
+          "DataInici_Esdeveniment",
+          "DataFi_Esdeveniment",
+        ],
+      };
 
       return n_actes;
     },
@@ -3063,6 +3965,17 @@
         indicador.years[year].llista = esdeveniments;
       }
 
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.ips_aparicions_mitjans_comunicacio_nacionals={
+        "esdeveniments":[
+          "ID_Esdeveniment",
+          "Tipus_Esdeveniment",
+          "Persona",
+          "DataInici_Esdeveniment",
+          "DataFi_Esdeveniment",
+        ],
+      };
+
       return n_actes;
     },
 
@@ -3087,6 +4000,17 @@
         indicador.years[year].valor  = n_actes;
         indicador.years[year].llista = esdeveniments;
       }
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.ips_aparicions_mitjans_comunicacio_internacionals={
+        "esdeveniments":[
+          "ID_Esdeveniment",
+          "Tipus_Esdeveniment",
+          "Persona",
+          "DataInici_Esdeveniment",
+          "DataFi_Esdeveniment",
+        ],
+      };
 
       return n_actes;
     },
@@ -3129,6 +4053,17 @@
         indicador.years[year].llista = personal;
       }
 
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.ips_estades_recercaires_acollits={
+        "personal":[
+          "Responsable",
+          "Datainicicontracte",
+          "DataFiContracte",
+          "Categoria",
+          "Titulacio",
+        ],
+      };
+
       return personal.length;
     },
 
@@ -3162,6 +4097,15 @@
         indicador.years[year].status=null; //reset status
       }
 
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.ips_cites_en_legislacio={
+        "sage":[
+          "nom",
+          "response_rebuda",
+          "cites",
+        ],
+      };
+
       return n_cites;
     },
 
@@ -3191,6 +4135,17 @@
         indicador.years[year].llista = personal;
       }
 
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.ips_estudiants_acollits={
+        "personal":[
+          "Responsable",
+          "Categoria",
+          "Titulacio",
+          "Datainicicontracte",
+          "DataFiContracte",
+        ],
+      };
+
       return personal.length;
     },
 
@@ -3215,6 +4170,16 @@
         indicador.years[year].valor  = tesis.length;
         indicador.years[year].llista = tesis;
       }
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.ips_tesis_doctorals={
+        "tesis":[
+          "Data",
+          "Director Tesi 1",
+          "Director tesi 2",
+          "Director tesi 3",
+        ],
+      };
 
       return tesis.length;
     },
@@ -3276,6 +4241,27 @@
         indicador.years[year].llista = joined;
       }
 
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.ips_projectes_coordinats_5_socis_2M={
+        "projectes":[
+          "Código Identificativo",
+          "Director del Proyecto",
+          "Concurrencia",
+          "Iniciativa",
+          "Fecha Comienzo",
+          "Fecha Fin Real",
+          "Título Abreviado",
+        ],
+        "projectes_imports":[
+          "Código Identificativo",
+          "Importe Base",
+        ],
+        "stakeholders":[
+          "Proyecto Código Identificativo",
+          "Tercero",
+        ],
+      };
+
       return joined.length;
     },
 
@@ -3297,7 +4283,6 @@
       });
 
       let joined=[];
-
       //busca budget total i comprova nº de socis
       projectes.forEach(pro=>{
         let codi       = pro["Código Identificativo"];
@@ -3325,16 +4310,33 @@
         };
 
         joined.push(new_row);
-
-        //app.taules.projectes.columnes_actives.forEach(key=>{
-          //new_row[key] = row.projecte[key];
-        //});
       });
 
       if(indicador){
         indicador.years[year].valor  = joined.length;
         indicador.years[year].llista = joined;
       }
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.ips_projectes_coordinats_4_socis_1M={
+        "projectes":[
+          "Código Identificativo",
+          "Director del Proyecto",
+          "Concurrencia",
+          "Iniciativa",
+          "Fecha Comienzo",
+          "Fecha Fin Real",
+          "Título Abreviado",
+        ],
+        "projectes_imports":[
+          "Código Identificativo",
+          "Importe Base",
+        ],
+        "stakeholders":[
+          "Proyecto Código Identificativo",
+          "Tercero",
+        ],
+      };
 
       return joined.length;
     },
@@ -3385,11 +4387,7 @@
     },
   };
 
-  let funcions_calculadores_ips={
-    //scop ips_articles_FWCI_10(year,indicador){},               //TODO pendent accés scopus api
-    //scop ips_articles_amb_socis_industrials(year,indicador){}, //TODO impossible
-  };
-
+  //diccionari: "id_indicador"=> "responsable icra"
   let responsables={
     "euros_recerca"                                         : `ecofin`,
     "euros_recerca_horizon"                                 : `ecofin`,
@@ -3438,7 +4436,6 @@
     "actes_disseminacio_participats_o_organitzats"          : `esdeveniments`,
     "aparicions_mitjans_comunicacio_nacionals"              : `esdeveniments`,
     "aparicions_mitjans_comunicacio_internacionals"         : `esdeveniments`,
-    "reunions_taula_aigua_ACA"                              : `esdeveniments`,
     "hores_tasques_taula_aigua_ACA"                         : `MWR`,
     "euros_projectes_KTT_ACA"                               : `ecofin`,
     "tallers_UdG_ICRA"                                      : `esdeveniments`,
@@ -3523,7 +4520,7 @@
     return false;
   }
 
-  /*DEFINICIÓ INDICADORS*/
+  /*DEFINICIÓ INDICADORS agrupats en àmbits*/
   let ambits=[
     new Ambit("Patronat",[
       new Bloc("Excel·lència en recerca",30,[                       /* pes  |24, 25, 26, 27, 28, 29| basal */
@@ -3587,7 +4584,6 @@
         new Indicador(`aparicions_mitjans_comunicacio_internacionals`, 20, [0,  10,  15,  20,  25,  30],[  11]),
       ]),
       new Bloc("Relació amb patrons",5,[
-        //new Indicador(`reunions_taula_aigua_ACA`,                             5, [0,  9,  9,  9,  9,  9],   0),
         new Indicador(`hores_tasques_taula_aigua_ACA`,                         10, [0,300,400,500,550,600],[  0]),
         new Indicador(`euros_projectes_KTT_ACA`,                               25, [0, 10, 20, 30, 40, 45],[ 50]),
         new Indicador(`tallers_UdG_ICRA`,                                      15, [0,  1,  1,  2,  2,  2],[  0]),
@@ -3660,7 +4656,6 @@
         new Indicador(`aparicions_mitjans_comunicacio_internacionals`, 20, [0,  10,  15,  20,  25,  30],[  11]),
       ]),
       new Bloc("Relació amb patrons",5,[
-        //new Indicador(`reunions_taula_aigua_ACA`,                             5, [0,  9,  9,  9,  9,  9], 0),
         new Indicador(`hores_tasques_taula_aigua_ACA`,                         10, [0,300,400,500,550,600],[  0]),
         new Indicador(`euros_projectes_KTT_ACA`,                               25, [0, 10, 20, 30, 40, 45],[ 50]),
         new Indicador(`tallers_UdG_ICRA`,                                      15, [0,  1,  1,  2,  2,  2],[  0]),
@@ -3802,6 +4797,8 @@
       ]),
     ]),
   ];
+
+  let taules_i_columnes_usades={};
 </script>
 
 <script>
@@ -3815,7 +4812,9 @@
       this.comentaris = comentaris || "";
       this.origen     = origen     || "";
 
-      this.error_loading = null; //TODO
+      //status lectura base de dades o excels
+      this.carregant = false;
+      this.error     = null;
     }
 
     get columnes_actives(){
@@ -3854,8 +4853,9 @@
 
       ambits,                 //indicadors
       funcions_calculadores,  //taula helper funcions dels indicadors
-      carregant:true,         //status
-      ambit_actual:ambits[5], //objecte //TODO
+
+      //paquet indicadors per defecte
+      ambit_actual:ambits[0], //objecte
 
       //veure detalls d'un sol indicador
       vista_detalls_indicador:false,
@@ -3892,9 +4892,13 @@
       //opcions indicadors per IPs
       mode_visualitzacio_indicadors_ips:"ip_vs_indicadors",
       ip_seleccionat:null,
+
+      //taules i columnes utilitzades (per enviar a rdiaz)
+      taules_i_columnes_usades,
     }},
 
     methods:{
+      //calcular ambit actual
       calcular_tots_els_indicadors(){
         this.ambit_actual.blocs.forEach(bloc=>{
           bloc.indicadors.forEach(indi=>{
@@ -4190,20 +5194,22 @@
     },
 
     computed:{
+      //boolea per saber si totes les taules auxiliars tenen valors
+      carregant(){
+        return Object.values(this.taules).some(t=>t.carregant);
+      },
+      tot_carregat(){
+        return Object.values(this.taules).every(obj=>obj.taula);
+      },
+
+      //retorna anys seleccionats
       years(){
         return Object.entries(this.selected_years).filter(en=>en[1]).map(en=>en[0]);
       },
 
-      //retorna valors únics del camp responsable per poder crear un filtre
+      //valors únics del diccionari responsables (per poder filtrar)
       get_responsables(){
         return Array.from(new Set(Object.values(responsables)));
-      },
-
-      //boolea per saber si totes les taules auxiliars tenen valors
-      tot_carregat(){
-        return (
-          Object.values(this.taules).every(obj=>obj.taula)
-        );
       },
 
       taula_resum_esdeveniments(){
@@ -4254,6 +5260,49 @@
         });
 
         return esd_orfes;
+      },
+
+      //calcula taules i columnes fetes servir per excels manuals
+      get_taules_i_columnes_utilitzades_des_dexcels(){
+        //1. calcula tots els indicadors per poblar la variable "taules_i_columnes_usades"
+        this.ambits.forEach(ambit=>{
+          ambit.blocs.forEach(bloc=>{
+            bloc.indicadors.forEach(indi=>{
+              indi.calcula();
+            });
+          });
+        });
+
+        //2. crea col·lecció taules i columnes usades
+        let retval={};
+
+        //3. itera indicadors
+        Object.entries(this.taules_i_columnes_usades).forEach(en=>{
+          let key = en[0]; //nom indicador
+          let val = en[1]; //diccionari "nom_taula"=>[noms_columnes]
+
+          //itera taules
+          Object.entries(val).forEach(enn=>{
+            let nom_taula     = enn[0];
+            let noms_columnes = enn[1];
+
+            //només taules origen xlsx i rdiaz
+            let taula = this.taules[nom_taula];
+            if(taula.origen!="xlsx") return;
+            if(!taula.comentaris.includes("rdiaz")) return;
+
+            //crea un nou set buit
+            if(retval[nom_taula]==undefined){
+              retval[nom_taula]=new Set();
+            }
+
+            noms_columnes.forEach(nom_col=>{
+              retval[nom_taula].add(nom_col);
+            });
+          });
+        });
+
+        return retval;
       },
     },
   }).mount("#app");
@@ -4329,10 +5378,11 @@
   //consulta SQL SERVER via node express instalat al cluster que consulta el server "srv-apps-03.icra.local"
   //pq funcioni cal estar connectat a la VPN icra
   async function fetch_taula_undarius(nom_taula_sql, nom_taula_desti){
-    //nom_taula_sql: String
+    //nom_taula_sql:   String
     //nom_taula_desti: String
-
     nom_taula_desti = nom_taula_desti || nom_taula_sql;
+
+    app.taules[nom_taula_desti].carregant = true;
 
     try{
       //console.log(`llegint SQL server /${nom_taula}...`);
@@ -4344,10 +5394,12 @@
 
       let data = await response.json();
       app.taules[nom_taula_desti].taula = data;
-      console.log(`OK GET /${nom_taula_sql} (MSSQL)`);
+      console.log(`[SQL] OK GET /${nom_taula_sql}`);
     }catch(err){
       console.error('Error fetching data:', err);
-      app.carregant = false;
+      app.taules[nom_taula_desti].error = err;
+    }finally{
+      app.taules[nom_taula_desti].carregant = false;
     }
   }
   fetch_taula_undarius("projectes","projectes_icranet");
@@ -4368,13 +5420,22 @@
     let reader = new FileReader();
     let wb     = new ExcelJS.Workbook();
 
+    app.taules[nom_taula].carregant = true;
+
     reader.readAsArrayBuffer(blob);
+
     reader.onload=async function(){
       let buffer = reader.result;
-      await wb.xlsx.load(buffer);
-      let taula = converteix_wb_a_taula_json(wb);
-      app.taules[nom_taula].taula = taula;
-      console.log(`OK excel "${nom_taula}.xlsx" (fetch)`)
+      try{
+        await wb.xlsx.load(buffer);
+        let taula = converteix_wb_a_taula_json(wb);
+        app.taules[nom_taula].taula = taula;
+        console.log(`OK excel "${nom_taula}.xlsx" (fetch)`)
+      }catch(err){
+        app.taules[nom_taula].error = err;
+      }finally{
+        app.taules[nom_taula].carregant = false;
+      }
       /*
         wb.worksheets (array)
         sheet.columns (array)

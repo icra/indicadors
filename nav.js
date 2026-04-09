@@ -14,6 +14,7 @@ function genera_nav(div_container_id){
     {href:"esdeveniments.html", nom:"esdeveniments"},
     {href:"iframe/index.html",  nom:"carta director"},
     {href:"lideratge",          nom:"lideratge"},
+    {href:"impact-factor.html", nom:"impact-factor"},
   ];
 
   let nav = document.createElement("nav");

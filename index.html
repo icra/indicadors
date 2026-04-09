@@ -184,6 +184,23 @@
                 {{scopus.result}}
               </div>
               <div v-if="scopus.result && scopus.result_ok">
+
+                <!--filtra subtypes-->
+                <div v-if="get_subtypes">
+                  <span>
+                    Viewing: {{get_publications_array_filtrat_per_subtipus.length}} items |
+                  </span>
+                  <span v-for="sub in get_subtypes">
+                    <label>
+                      <input type=checkbox v-model="subtypes_visibles[sub]">
+                      {{sub}}
+                      ({{
+                        get_publications_array.filter(p=>p.subtypeDescription==sub).length
+                      }})
+                    </label>
+                  </span>
+                </div>
+
                 <table border=1
                   style="
                     font-size:smaller;
@@ -196,14 +213,20 @@
                     <th>
                       <a href=# @click="scopus.sort_publications_by='citedby-count'">cited</a>
                     </th>
+                    <th>
+                      <a href=# @click="scopus.sort_publications_by='subtypeDescription'">subtype</a>
+                    </th>
                     <th style="text-align:left">
                       <a href=# @click="scopus.sort_publications_by='prism:coverDate'">publication</a>
                     </th>
                   </tr>
-                  <tbody v-for="entry,i in get_publications_array">
+                  <tbody v-for="entry,i in get_publications_array_filtrat_per_subtipus">
                     <tr>
                       <td style="font-size:smaller">{{i+1}}</td>
                       <td style="font-size:smaller" center>{{entry["citedby-count"]}}</td>
+                      <td nowrap>
+                        {{entry.subtypeDescription || entry.subtype}}
+                      </td>
                       <td>
                         <details>
                           <summary>
@@ -294,7 +317,11 @@
   </fieldset>
 
   <fieldset>
-    <legend>Total citations in the results</legend>
+    <legend>
+      Total citations in the
+      <span v-if="get_publications_array_filtrat_per_subtipus">({{get_publications_array_filtrat_per_subtipus.length}})</span>
+      results
+    </legend>
     <div v-if="scopus.result && scopus.result_ok">
       {{ calcula_cites_totals }}
     </div><div v-else style="color:#666">
@@ -303,7 +330,11 @@
   </fieldset>
 
   <fieldset>
-    <legend>Journals dels resultats</legend>
+    <legend>
+      Journals dels
+      <span v-if="get_publications_array_filtrat_per_subtipus">({{get_publications_array_filtrat_per_subtipus.length}})</span>
+      resultats
+    </legend>
     <details>
       <summary sticky>
         Journals
@@ -451,26 +482,12 @@
     </details>
   </fieldset>
 
-  <fieldset v-if="false">
-    <legend>ICRA affiliation metrics</legend>
-    <div v-if="institution">
-      <pre>{{
-        JSON.stringify(
-          institution,
-          null,
-          "  ",
-        )
-      }}</pre>
-    </div>
-    <div v-if="!institution">
-      <button @click="request_institution()">
-        request affiliation data
-      </button>
-    </div>
-  </fieldset>
-
   <fieldset>
-    <legend>Indicadors dels resultats</legend>
+    <legend>
+      Indicadors dels
+      <span v-if="get_publications_array_filtrat_per_subtipus">({{get_publications_array_filtrat_per_subtipus.length}})</span>
+      resultats
+    </legend>
     <table border=1>
       <tbody v-if="get_articles_quartils">
         <tr v-for="arr,key in get_articles_quartils">
@@ -539,23 +556,6 @@
           <p v-if="calcula_H_index">
             Results: {{calcula_H_index}} papers have been cited {{calcula_H_index}} times (or more).
           </p>
-        </td>
-      </tr>
-      <tr>
-        <td style="vertical-align:middle">
-          Impact Factor 2024
-        </td>
-        <td style="vertical-align:middle">
-          A/B =
-        </td>
-        <td>
-          <div>
-            A = number of times articles published in [2022,2023] were cited by indexed journals during [2024].
-          </div>
-          <hr>
-          <div>
-            B = total number of "citable items" published in [2022,2023]
-          </div>
         </td>
       </tr>
     </table>
@@ -644,6 +644,12 @@
         "403":"Forbidden",
         "404":"Not found",
         "429":"Too many requests",
+      },
+
+      //subtipus de publicacions filtrades
+      subtypes_visibles:{
+        //"Article":true, //exemple
+        //"Erratum":false, //exemple
       },
     }},
 
@@ -1034,31 +1040,37 @@
     },
 
     computed:{
+      get_subtypes(){
+        if(!this.get_publications_array) return false;
+        let subtypes=new Set();
+        this.get_publications_array.forEach(pub=>{
+          subtypes.add(pub.subtypeDescription||pub.subtype);
+        });
+        let subtypes_arr = Array.from(subtypes);
+
+        //reset subtypes_visibles
+        subtypes_arr.forEach(s=>this.subtypes_visibles[s]=true);
+
+        return subtypes_arr;
+      },
+
       get_revistes(){
-        if(
-          this.scopus.response  == null  ||
-          this.scopus.result    == null  ||
-          this.scopus.result_ok == false
-        ){
+        if(!this.get_publications_array_filtrat_per_subtipus){
           return false;
         }
 
         let revistes={}; //ret val
+        this.get_publications_array_filtrat_per_subtipus.forEach(entry=>{
+          let nom_revista = entry["prism:publicationName"];
+          let issn        = entry["prism:issn"];
+          let eIssn       = entry["prism:eIssn"];
+          let source_id   = entry["source-id"];
 
-        let pages = this.scopus.result;
-        pages.forEach(page=>{
-          page.forEach(entry=>{
-            let nom_revista = entry["prism:publicationName"];
-            let issn        = entry["prism:issn"];
-            let eIssn       = entry["prism:eIssn"];
-            let source_id   = entry["source-id"];
+          if(revistes[nom_revista]==undefined){
+            revistes[nom_revista]={issn,eIssn,source_id,articles:[]};
+          }
 
-            if(revistes[nom_revista]==undefined){
-              revistes[nom_revista]={issn,eIssn,source_id,articles:[]};
-            }
-
-            revistes[nom_revista].articles.push(entry);
-          });
+          revistes[nom_revista].articles.push(entry);
         });
 
         //ordena revistes segons opció triada usuari
@@ -1094,19 +1106,12 @@
       },
 
       calcula_cites_totals(){
-        if(
-          this.scopus.response  == null  ||
-          this.scopus.result    == null  ||
-          this.scopus.result_ok == false
-        ){
+        if(!this.get_publications_array_filtrat_per_subtipus){
           return 0;
         }
-
-        let cites = 0;
-        this.scopus.result.forEach(page=>{
-          page.forEach(entry=>{
-            cites += parseInt(entry["citedby-count"]);
-          });
+        let cites=0;//RV
+        this.get_publications_array_filtrat_per_subtipus.forEach(pub=>{
+          cites += parseInt(pub["citedby-count"]);
         });
         return cites;
       },
@@ -1129,13 +1134,12 @@
           let aa = a[camp];
           let bb = b[camp];
 
-          let naa = parseFloat(aa);
-          let nbb = parseFloat(bb);
-
-          if(camp=="prism:coverDate"){
+          if(camp=="prism:coverDate" || camp=="subtypeDescription"){
             return aa<bb?-1:1;
           }
 
+          let naa = parseFloat(aa);
+          let nbb = parseFloat(bb);
           if(isNaN(naa)||isNaN(nbb)){
             return aa<bb?1:-1;
           }else{
@@ -1146,23 +1150,22 @@
         return arr;
       },
 
+      get_publications_array_filtrat_per_subtipus(){
+        if(!this.get_publications_array) return false;
+        return this.get_publications_array.filter(pub=>this.subtypes_visibles[pub.subtypeDescription||pub.subtype]);
+      },
+
       calcula_H_index(){
-        if(
-          this.scopus.response  == null  ||
-          this.scopus.result    == null  ||
-          this.scopus.result_ok == false
-        ){
+        if(!this.get_publications_array_filtrat_per_subtipus){
           return 0;
         }
 
         let arr=[];
-        this.scopus.result.forEach(page=>{
-          page.forEach(entry=>{
-            let cites = parseInt(entry["citedby-count"]); //number
-            if(cites){
-              arr.push(cites);
-            }
-          });
+        this.get_publications_array_filtrat_per_subtipus.forEach(entry=>{
+          let cites = parseInt(entry["citedby-count"]); //number
+          if(cites){
+            arr.push(cites);
+          }
         });
 
         //inicia impact factor = number of publications amb cites
@@ -1192,37 +1195,30 @@
           D1:[],
         };
 
-        if(
-          this.scopus.response  == null  ||
-          this.scopus.result    == null  ||
-          this.scopus.result_ok == false ||
-          this.scimagojr        == null
-        ){
+        if(!this.get_publications_array_filtrat_per_subtipus){
           return ret;
         }
 
-        let pages = this.scopus.result;
+        this.get_publications_array_filtrat_per_subtipus.forEach(entry=>{
+          let nom_revista = entry["prism:publicationName"];
+          let issn        = entry["prism:issn"];
+          let eIssn       = entry["prism:eIssn"];
+          let year        = entry["prism:coverDate"]?.split("-")[0];
+          let sjr         = this.busca_a_scimagocsv(nom_revista, issn, eIssn, year);
 
-        pages.forEach(page=>{
-          page.forEach(entry=>{
-            let nom_revista = entry["prism:publicationName"];
-            let issn        = entry["prism:issn"];
-            let eIssn       = entry["prism:eIssn"];
-            let year        = entry["prism:coverDate"]?.split("-")[0];
-            let sjr         = this.busca_a_scimagocsv(nom_revista, issn, eIssn, year);
+          if(!sjr) return;
+          if(!sjr.percentils) return;
 
-            if(!sjr) return;
-            if(!sjr.percentils) return;
+          //Q1 Q2 Q3 Q4
+          if(sjr["SJR Best Quartile"]=="Q1") ret.Q1.push({pub:entry, sjr});
+          if(sjr["SJR Best Quartile"]=="Q2") ret.Q2.push({pub:entry, sjr});
+          if(sjr["SJR Best Quartile"]=="Q3") ret.Q3.push({pub:entry, sjr});
+          if(sjr["SJR Best Quartile"]=="Q4") ret.Q3.push({pub:entry, sjr});
 
-            //Q1 Q2 Q3 Q4
-            if(sjr["SJR Best Quartile"]=="Q1") ret.Q1.push({pub:entry, sjr});
-            if(sjr["SJR Best Quartile"]=="Q2") ret.Q2.push({pub:entry, sjr});
-            if(sjr["SJR Best Quartile"]=="Q3") ret.Q3.push({pub:entry, sjr});
-            if(sjr["SJR Best Quartile"]=="Q4") ret.Q3.push({pub:entry, sjr});
-
-            //D1
-            if(Object.values(sjr.percentils).some(per=>per.percentil<=10)) ret.D1.push({pub:entry, sjr});
-          });
+          //D1
+          if(Object.values(sjr.percentils).some(per=>per.percentil<=10)){
+            ret.D1.push({pub:entry, sjr});
+          }
         });
 
         return ret;
