@@ -1,0 +1,14 @@
+Article estudi gènere
+---------------------
+
+Traslladar codi JS al cluster
+
+PROBLEMA: aprox uns 450gb de metadades per cada any
+
+Començar amb un dataset petit per implementar els càlculs
+
+Camps interès:
+  INSTITUCIÓ:  país                            
+  AUTOR:       lideratge,      gènere,         institució->país
+  REVISTA:     disciplina/es,  factor_impacte  
+  ARTICLE:     autors,                         

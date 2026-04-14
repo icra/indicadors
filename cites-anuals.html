@@ -1,36 +1,14 @@
 <!doctype html><html><head>
-  <meta charset="utf8">
-  <title>ICRA impact factor</title>
+  <meta charset=utf8>
+  <title>cites anuals</title>
   <script src="lib/vue.global.prod.js"></script>
   <style>
-    body{
-      font-family:Eczar,IM Fell English,Georgia,serif;
-    }
     table{
       border-collapse:collapse;
     }
-    summary:hover{
-      cursor:pointer;
-      text-decoration:underline;
-      background:#ccc;
-    }
-    [small]{
-      font-size:smaller;
-    }
-    hr{
-      border:none;
-      border-top:1px solid black;
-    }
-    [center]{
-      text-align:center;
-    }
-    [nowrap]{
-      white-space:nowrap;
-    }
-    [data]{
-      font-family:monospace;
-      font-size:smaller;
-      white-space:nowrap;
+    button[selected=true]{
+      background:gold;
+      color:black;
     }
     [first_or_last]{
       color:#666;
@@ -50,52 +28,54 @@
       border:1px solid #ccc;
       font-size:smaller;
     }
+    [center]{ text-align:center; }
+    [data]{ font-family:monospace; font-size:smaller; white-space:nowrap; }
+    [nowrap]{ white-space:nowrap; }
+    [small]{ font-size:smaller; }
   </style>
 </head><body>
 
 <!--nav--><div id=nav></div><hr><script src="nav.js"></script>
-<h2>Impact Factor (segons OpenAlex)</h2>
+<h2>Cites Anuals (segons OpenAlex)</h2>
 
-<h3>2025 (nota: quan la web estigui acabada es podrà consultar qualsevol any)</h3><hr>
+<p>
+  Cites rebudes durant un any concret
+  a tots els articles publicats (2007-actualitat)
+</p>
 
 <div id=app>
-  <div>
-    <a :href="get_openalex_url" target="_blank">{{get_openalex_url}}</a>
-  </div><hr>
+  <div v-if="status_oa==null">
+    <button @click="query_oa_api()" style="padding:0.618em 1em">
+      Request publicacions [2007-actualitat] (api openAlex)
+    </button>
+  </div>
 
-  <table>
-    <tr>
-      <th>Impact Factor ({{year_selected}}) =</th>
-      <td>A/B</td>
-      <td>=</td>
-      <td>
-        <div>
-          A = {{get_A}}
-        </div>
-        <hr>
-        <div>
-          B = {{get_B}}
-        </div>
-      </td>
-      <td>=</td>
-      <td small>
-        <div>
-          A = number of times that the articles published in <b>{{get_2_years_anteriors}}</b> were cited by indexed journals during <b>[{{year_selected}}]</b>.
-        </div>
-        <hr>
-        <div>
-          B = total number of "citable items" published in <b>{{get_2_years_anteriors}}</b>
-        </div>
-      </td>
-      <td>=</td>
-      <th style="font-size:x-large">
-        {{get_IF}}
-      </th>
-    </tr>
-  </table><hr>
+  <div v-if="status_oa">
+    <p><code>{{status_oa}}</code></p>
+  </div>
 
   <div v-if="works">
-    <b>Citable items published during {{get_2_years_anteriors}}: {{works.length}}</b>
+    Selecciona any:
+    <button
+      v-for="y in get_all_years"
+      @click="year_selected=y"
+      :selected="y==year_selected"
+      :disabled="y==year_selected"
+    >{{y}}</button>
+  </div>
+
+  <div v-if="works"
+    style="
+      border:1px solid #ccc;
+      font-size:x-large;
+      padding:1em 1.618em;
+    "
+  >
+    Cites anuals ({{year_selected}}): <b>{{get_cites_anuals}}</b>
+  </div>
+
+  <div v-if="works">
+    <b>Publicacions [2007-{{year_current}}]: {{works.length}}</b>
     <table border=1>
       <tr>
         <th>n</th>
@@ -161,69 +141,48 @@
 </div>
 
 <script>
-let app=Vue.createApp({
-  data(){return{
-    //any seleccionat - per defecte: l'anterior
-    year_selected: new Date().getFullYear()-1,
+  let app=Vue.createApp({
+    data(){return{
+      works:null,
+      status_oa:null,
 
-    codi_icra:"I2799562678",//codi openAlex institution ICRA
-    id_icra:"https://openalex.org/I2799562678", //id   openAlex institution ICRA
+      year_current:new Date().getFullYear(),
+      year_selected:new Date().getFullYear()-1,
 
-    works:null, //fetch oa api
-  }},
-
-  methods:{
-    //pp
-  },
-
-  computed:{
-    //calcula els 2 anys anteriors al seleccionat
-    get_2_years_anteriors(){
-      return[
-        this.year_selected-2,
-        this.year_selected-1,
-      ];
-    },
-
-    //genera url amb anys anteriors
-    get_openalex_url(){
-      let years   = this.get_2_years_anteriors; //array
-      let y_inici = years[0]; //number
-      let y_final = years[1]; //number
-      return `https://openalex.org/works?filter=institutions.id:${this.codi_icra},publication_year:${y_inici}-${y_final}`;
-    },
-
-    get_B(){
-      if(!this.works) return false;
-      return this.works.length;
-    },
-    get_A(){
-      if(!this.works) return false;
-
-      let n=0;
-      this.works.forEach(work=>{
-        let obj = work.counts_by_year.find(obj=>obj.year==this.year_selected);
-        if(obj){
-          n += obj.cited_by_count;
+      id_icra:"https://openalex.org/I2799562678", //id   openAlex institution ICRA
+    }},
+    computed:{
+      get_all_years(){
+        let ini = this.year_current;
+        let fin = 2007;
+        let arr = [];
+        for(let y=ini;y>=fin;y--){
+          arr.push(y);
         }
-      });
-      return n;
+        return arr;
+      },
+
+      get_cites_anuals(){
+        if(!this.works) return 0;
+
+        let n=0;
+        this.works.forEach(work=>{
+          let obj = work.counts_by_year.find(obj=>obj.year==this.year_selected);
+          if(obj){
+            n += obj.cited_by_count;
+          }
+        });
+        return n;
+      },
     },
-    get_IF(){
-      let A = this.get_A;
-      let B = this.get_B;
-      return A&&B ? A/B : 0;
-    },
-  },
-}).mount("#app");
+  }).mount("#app");
 </script>
 
 <script type=module>
-  //query 2023-2024
   async function query_oa_api(){
     //inputs
-    let year_inici = 2023;
-    let year_final = 2024;
+    let year_inici = 2007;
+    let year_final = new Date().getFullYear();
     let codi_icra  = "I2799562678"; //institution code
     let api_key    = "tGXbKHpYBXs5jv8YOFteH5";
 
@@ -236,7 +195,10 @@ let app=Vue.createApp({
       let url=`https://api.openalex.org/works?api_key=${api_key}&filter=institutions.id:${codi_icra},publication_year:${year_inici}-${year_final}&per_page=${per_page}&page=${page}`;
 
       //fetch openalex api
-      console.log(`[openalex] Fetching page ${page}...`);
+      let msg = `[openalex] Fetching page ${page}... (items received:${results.length})`;
+      console.log(msg);
+      app.status_oa=msg;
+
       const res  = await fetch(url);
       const data = await res.json();
 
@@ -251,17 +213,8 @@ let app=Vue.createApp({
       }
     }
 
-    return results;
-  }
-  //TODO
-  //let results = await query_oa_api(); //debug mode 
-  //console.log(results);
-
-  //carrega presaved results
-  fetch("query-2023-2024.json")
-  .then(r=>r.json())
-  .then(arr=>{
-    arr = arr.filter(work=>{
+    //filta per ICRA i descarta ICFO, ICN, etc
+    results = results.filter(work=>{
       return work.authorships.some(auth=>{
         return auth.raw_affiliation_strings.some(str=>{
           let str_lc = str.toLowerCase();
@@ -275,13 +228,17 @@ let app=Vue.createApp({
         });
       });
     });
-    arr.sort((a,b)=>{
+
+    //ordena per data
+    results.sort((a,b)=>{
       let aa = a.publication_date;
       let bb = b.publication_date;
       return bb<aa?1:-1;
     });
 
-    app.works=arr;
-    console.log("[ok] query-2023-2024.json");
-  });
+    console.log(results);
+    app.works=results;
+    app.status_oa=`[openalex] done (items: ${results.length})`;
+  }
+  app.query_oa_api = query_oa_api;
 </script>
