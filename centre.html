@@ -223,13 +223,6 @@
 
     <!--opcions indicadors IPs-->
     <div v-if="ambit_actual.nom=='IPs' || ambit_actual.nom=='UdG professors'">
-      <p v-if="false">
-        Mode visualització indicadors IPs:
-        <label><input type=radio v-model="mode_visualitzacio_indicadors_ips" value="ip_vs_indicadors"> 1 IP vs indicadors</label>
-        <label><input type=radio v-model="mode_visualitzacio_indicadors_ips" value="indicador_vs_ips"> 1 indicador vs IPs</label>
-        <label><input type=radio v-model="mode_visualitzacio_indicadors_ips" value="tots_vs_tots">     tots vs tots</label>
-      </p>
-
       <details open style="margin-bottom:10px">
         <summary>
           <span v-if="!ip_seleccionat">Selecciona IP</span>
@@ -566,33 +559,70 @@
     </div>
   </details>
 
-  <!--taula_resum_taules_utilitzades_i_columnes-->
+  <!--taules i columnes utilitzades per calcular indicadors-->
   <details v-if="debug" open>
     <summary large bold>
-      [dev] Taules i columnes utilitzades per calcular indicadors provinents d'excels carregats manualment (proporcionats per rdiaz)
+      [dev] Taules i columnes utilitzades per indicadors
     </summary>
     <div v-if="tot_carregat && get_taules_i_columnes_utilitzades_des_dexcels">
+      <div>
+        <table border=1 small>
+          <tr>
+            <td>Filtrar taules per origen</td>
+            <td>
+              <input v-model="taules_i_columnes_usades_filtre_origen" placeholder="origen">
+              <button @click="taules_i_columnes_usades_filtre_origen=''"
+                  :disabled="!taules_i_columnes_usades_filtre_origen"
+              >X</button>
+            </td>
+          </tr>
+          <tr>
+            <td>Filtrar taules per comentaris</td>
+            <td>
+              <input v-model="taules_i_columnes_usades_filtre_comentaris" placeholder="comentaris">
+              <button @click="taules_i_columnes_usades_filtre_comentaris=''"
+                  :disabled="!taules_i_columnes_usades_filtre_comentaris"
+              >X</button>
+            </td>
+          </tr>
+        </table>
+      </div>
+      <div>
+        Resultats:
+        {{Object.entries(get_taules_i_columnes_utilitzades_des_dexcels_amb_filtres).length}}
+        de
+        {{Object.entries(get_taules_i_columnes_utilitzades_des_dexcels).length}}
+      </div>
       <table border=1>
         <tr>
-          <th>nom fitxer excel</th>
-          <th small>comentaris</th>
-          <th>noms columnes utilitzades per calcular indicadors</th>
+          <th>nom taula</th>
+          <th>origen</th>
+          <th>comentaris</th>
+          <th left>columnes utilitzades per indicadors</th>
         </tr>
-        <tr v-for="([key,val]) in Object.entries(get_taules_i_columnes_utilitzades_des_dexcels)">
-          <td>"{{key}}.xlsx"</td>
+        <tr v-for="([key,val]) in Object.entries(get_taules_i_columnes_utilitzades_des_dexcels_amb_filtres)">
+          <td center><i>{{key}}</i></td>
+          <td center>
+            <span :marcat="taules_i_columnes_usades_filtre_origen==taules[key].origen?1:0"
+              clicable
+              @click="taules_i_columnes_usades_filtre_origen=taules[key].origen"
+            >
+              {{taules[key].origen}}
+            </span>
+          </td>
           <td small>{{taules[key].comentaris}}</td>
           <td style="vertical-align:top">
             <table border=1 small>
               <tr>
-                <th></th>
-                <th v-for="nom_columna in Array.from(val)">
-                  {{nom_columna}}
-                </th>
+                <th>nom columna</th>
+                <th>valor exemple</th>
               </tr>
-              <tr xsmall v-if="taules[key].taula.length">
-                <th>fila<br>exemple</th>
-                <td v-for="nom_columna in Array.from(val)">
-                  {{taules[key].taula[0][nom_columna]}}
+              <tr v-for="nom_columna in Array.from(val)">
+                <td>"{{nom_columna}}"</td>
+                <td xsmall>
+                  <div v-if="taules[key].taula.length">
+                    {{taules[key].taula[0][nom_columna]}}
+                  </div>
                 </td>
               </tr>
             </table>
@@ -4080,13 +4110,13 @@
       }); //object or null
 
       if(!sage) return;
-
-      if(!sage.response_rebuda){
+      if(!sage.response_rebuda && !sage.request_feta){
         indicador.years[year].status="requesting...";
+        sage.request_feta = true;
         let cites = await fetch_sage_user(sage.id_user);
-        sage.cites = cites;
         sage.response_rebuda = true;
-        console.log(`[ok] sage response | id:${sage.id_user}`);
+        sage.cites           = cites;
+        console.log(`[sage] OK resposta rebuda id_user:${sage.id_user}`);
       }
 
       let n_cites = sage.cites[year]||0; //number
@@ -4680,8 +4710,8 @@
         new Indicador(`posicions_RS_estabilitzacio_RF`,                    0,[ 0,  0,  0,  1] ,[   0]),
         new Indicador(`canvis_tram_RS_o_RP`,                               0,[ 0,  0,  0,  8] ,[   0]),
         new Indicador(`sessions_JEDI_formacio_interna`,                    0,[ 0,  2,  4,  4] ,[   0]),
-        new Indicador(`participants_sessions_JEDI_formacio_interna`,	     0,[ 5, 50, 80, 80] ,[   5]),
-        new Indicador(`activitats_JEDI_organitzades`,	                     0,[ 0,  2,  5,  5] ,[   0]),
+        new Indicador(`participants_sessions_JEDI_formacio_interna`,       0,[ 5, 50, 80, 80] ,[   5]),
+        new Indicador(`activitats_JEDI_organitzades`,                      0,[ 0,  2,  5,  5] ,[   0]),
         new Indicador(`dones_categories_laborals_superiors`,               0,[37.5,37.5,40,42],[37.5]),
         new Indicador(`projectes_amb_administracio_central`,               0,[ 0,  2,  5,  5] ,[   0]),
         new Indicador(`euros_projectes_amb_administracio_central`,         0,[ 0,  5, 15, 30] ,[   0]),
@@ -4873,28 +4903,29 @@
 
       //taules des d'on es calculen els indicadors: origens diversos (SQL icra, excels, ...)
       taules:{
-        projectes:           new Conf_Taula("origen: 'projectes.xlsx'          (export fundanet per rdiaz)",'xlsx'),
-        personal:            new Conf_Taula("origen: SQL Server ICRA           (icranet db per rdiaz)",'sql'),
-        esdeveniments:       new Conf_Taula("origen: SQL Server ICRA           (icranet db per rdiaz)",'sql'),
-        tipus_esdeveniments: new Conf_Taula("origen: SQL Server ICRA           (icranet db per rdiaz)",'sql'),
-        ingressos:           new Conf_Taula("origen: SQL Server ICRA           (icranet db per rdiaz)",'sql'),
-        taula_aigua:         new Conf_Taula("origen: SQL Server ICRA           (icranet db per rdiaz)",'sql'),
-        projectes_personal:  new Conf_Taula("origen: 'projectes_personal.xlsx' (export fundanet per rdiaz)",'xlsx'),
-        stakeholders:        new Conf_Taula("origen: 'stakeholders.xlsx'       (export fundanet per rdiaz)",'xlsx'),
-        xarxes_socials:      new Conf_Taula("origen: 'xarxes_socials.xlsx'     (fet manualment per sdrammeh)",'xlsx'),
-        scopus:              new Conf_Taula("origen: 'scopus.xlsx'             (fet manualment per etornes)",'xlsx'),
-        sage:                new Conf_Taula("origen: 'sage_profiles.txt'       (fet manualment per lbosch, però consultes automàtiques)",'txt'),
-        projectes_icranet:   new Conf_Taula("origen: SQL Server ICRA           (icranet db per rdiaz)",'sql'),
-        tesis:               new Conf_Taula("origen: SQL Server ICRA           (icranet db per rdiaz)",'sql'),
-        projectes_imports:   new Conf_Taula("origen: 'Projectes_Imports.xlsx'  (export fundanet rdiaz. futur: integrat a 'projectes')",'xlsx'),
+        projectes:           new Conf_Taula("'projectes.xlsx'          | export fundanet rdiaz    | llista de projectes                    ",'xlsx'),
+        personal:            new Conf_Taula("SQL Server icranet        | rdiaz                    | llista de persones                     ",'sql'),
+        esdeveniments:       new Conf_Taula("SQL Server icranet        | rdiaz                    | participacions en esdeveniments per investigador ",'sql'),
+        tipus_esdeveniments: new Conf_Taula("SQL Server icranet        | rdiaz                    | tipus d'esdeveniments                            ",'sql'),
+        ingressos:           new Conf_Taula("SQL Server icranet        | rdiaz                    | aportacions econòmiques per projecte   ",'sql'),
+        taula_aigua:         new Conf_Taula("SQL Server icranet        | rdiaz                    | taula aigua                            ",'sql'),
+        projectes_personal:  new Conf_Taula("'projectes_personal.xlsx' | export fundanet rdiaz    | implicació personal en projectes       ",'xlsx'),
+        stakeholders:        new Conf_Taula("'stakeholders.xlsx'       | export fundanet rdiaz    | participacions de tercers en projectes ",'xlsx'),
+        xarxes_socials:      new Conf_Taula("'xarxes_socials.xlsx'     | fet manualment sdrammeh  | mètriques per any                      ",'xlsx'),
+        scopus:              new Conf_Taula("'scopus.xlsx'             | fet manualment etornes   | mètriques per any                      ",'xlsx'),
+        sage:                new Conf_Taula("'sage_profiles.txt'       | fet manualment lbosch    | perfils sagepub                        ",'txt'),
+        projectes_icranet:   new Conf_Taula("SQL Server icranet        | rdiaz                    | llista de projectes                    ",'sql'),
+        tesis:               new Conf_Taula("SQL Server icranet        | rdiaz                    | llista de tesis defensades             ",'sql'),
+        projectes_imports:   new Conf_Taula("'Projectes_Imports.xlsx'  | export fundanet rdiaz    | pressupostos dels projectes            ",'xlsx'),
       },
 
-      //opcions indicadors per IPs
-      mode_visualitzacio_indicadors_ips:"ip_vs_indicadors",
+      //opcions indicadors IPs
       ip_seleccionat:null,
 
-      //taules i columnes utilitzades (per enviar a rdiaz)
+      //taules i columnes utilitzades
       taules_i_columnes_usades,
+      taules_i_columnes_usades_filtre_origen:"xlsx",
+      taules_i_columnes_usades_filtre_comentaris:"rdiaz",
     }},
 
     methods:{
@@ -5264,6 +5295,8 @@
 
       //calcula taules i columnes fetes servir per excels manuals
       get_taules_i_columnes_utilitzades_des_dexcels(){
+        if(!this.tot_carregat) return false;
+
         //1. calcula tots els indicadors per poblar la variable "taules_i_columnes_usades"
         this.ambits.forEach(ambit=>{
           ambit.blocs.forEach(bloc=>{
@@ -5302,6 +5335,24 @@
           });
         });
 
+        return retval;
+      },
+
+      //aplica 2 filtres a get_taules_i_columnes_utilitzades_des_dexcels
+      get_taules_i_columnes_utilitzades_des_dexcels_amb_filtres(){
+        let dicc = this.get_taules_i_columnes_utilitzades_des_dexcels;
+        if(!dicc) return false;
+        let filtre_origen     = this.taules_i_columnes_usades_filtre_origen;
+        let filtre_comentaris = this.taules_i_columnes_usades_filtre_comentaris;
+        let retval={};
+        Object.entries(dicc).forEach(en=>{
+          let nom_taula     = en[0];
+          let noms_columnes = en[1];
+          let taula = this.taules[nom_taula];
+          if(filtre_origen     && taula.origen!=filtre_origen)                   return;
+          if(filtre_comentaris && !taula.comentaris.includes(filtre_comentaris)) return;
+          retval[nom_taula]=noms_columnes;
+        });
         return retval;
       },
     },
@@ -5487,6 +5538,7 @@
         nom,
         id_user,
         cites:{},
+        request_feta:false,
         response_rebuda:false,
       };
       taula.push(newrow);
