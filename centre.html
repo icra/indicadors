@@ -126,6 +126,10 @@
     [gris=true]{
       color:#ccc;
     }
+    [clicable]:hover{
+      cursor:pointer;
+      text-decoration:underline;
+    }
   </style>
   <script>
     Array.prototype.suma=function(){
@@ -149,8 +153,7 @@
   <!--avís certificat-->
   <div v-if="!tot_carregat"><hr>
     <div v-if="carregant">
-      Carregant...
-      <hr>
+      Carregant...<hr>
     </div>
     <div v-if="!carregant">
       ERROR! Perquè la web funcioni:
@@ -181,7 +184,7 @@
   </div>
 
   <!--secció indicadors-->
-  <details open>
+  <details open v-if="tot_carregat">
     <summary large bold>
       Indicadors "{{ambit_actual.nom}}"
       <small>
@@ -423,7 +426,7 @@
   </details>
 
   <!--taules dev "Conf_Taula"-->
-  <details v-if="debug">
+  <details v-if="debug && tot_carregat">
     <summary large bold>
       [dev] Taules desenvolupament
     </summary>
@@ -560,7 +563,7 @@
   </details>
 
   <!--taules i columnes utilitzades per calcular indicadors-->
-  <details v-if="debug" open>
+  <details v-if="debug && tot_carregat" open>
     <summary large bold>
       [dev] Taules i columnes utilitzades per indicadors
     </summary>
@@ -573,7 +576,11 @@
               <input v-model="taules_i_columnes_usades_filtre_origen" placeholder="origen">
               <button @click="taules_i_columnes_usades_filtre_origen=''"
                   :disabled="!taules_i_columnes_usades_filtre_origen"
-              >X</button>
+              >X</button> |
+              <button v-for="ori in get_origens_taules"
+                @click="taules_i_columnes_usades_filtre_origen=ori"
+                :disabled="taules_i_columnes_usades_filtre_origen==ori"
+              >{{ori}}</button>
             </td>
           </tr>
           <tr>
@@ -614,8 +621,8 @@
           <td style="vertical-align:top">
             <table border=1 small>
               <tr>
-                <th>nom columna</th>
-                <th>valor exemple</th>
+                <th left>nom columna</th>
+                <th left>valor exemple</th>
               </tr>
               <tr v-for="nom_columna in Array.from(val)">
                 <td>"{{nom_columna}}"</td>
@@ -5319,11 +5326,6 @@
             let nom_taula     = enn[0];
             let noms_columnes = enn[1];
 
-            //només taules origen xlsx i rdiaz
-            let taula = this.taules[nom_taula];
-            if(taula.origen!="xlsx") return;
-            if(!taula.comentaris.includes("rdiaz")) return;
-
             //crea un nou set buit
             if(retval[nom_taula]==undefined){
               retval[nom_taula]=new Set();
@@ -5354,6 +5356,15 @@
           retval[nom_taula]=noms_columnes;
         });
         return retval;
+      },
+
+      get_origens_taules(){
+        if(!this.tot_carregat) return false;
+        let set = new Set();
+        Object.values(this.taules).forEach(taula=>{
+          set.add(taula.origen);
+        });
+        return Array.from(set);
       },
     },
   }).mount("#app");
