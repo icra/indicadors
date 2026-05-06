@@ -1237,11 +1237,12 @@
 </script>
 
 <!--modul scimago-->
-<!--TODO fer servir "import"-->
-<script src="modul-scimago.js"></script>
+<script src="modul_scimago.js"></script>
 <script>
+  modul_scimago.init()//descarrega i parseja csvs
+
   //importa modul scimago a vue app
-  app.scimagojr                     = scimagojr; //diccionari
-  app.scimagojr_years_not_available = scimagojr_years_not_available; //set
-  app.busca_a_scimagocsv            = busca_a_scimagocsv; //function
+  app.scimagojr                     = modul_scimago.scimagojr; //diccionari
+  app.scimagojr_years_not_available = modul_scimago.scimagojr_years_not_available; //set
+  app.busca_a_scimagocsv            = modul_scimago.busca_a_scimagocsv; //function
 </script>

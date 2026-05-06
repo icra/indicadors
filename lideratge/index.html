@@ -87,8 +87,8 @@
 
 <a href="../centre.html">&larr; Inici</a>
 <h1>ICRA publicacions (segons OpenAlex)</h1>
-<h2>Càlcul automàtic lideratge &amp; gènere</h2>
-<h3>2021-2024 (nota: quan la web estigui acabada es podrà consultar qualsevol any)</h3><hr>
+<h2>Càlcul automàtic lideratge &amp; gènere &amp; percentil</h2>
+<h3>Resultats 2021-2024 (nota: es podrà consultar qualsevol any quan la web estigui acabada)</h3><hr>
 
 <div id=app>
   Link web OpenAlex:
@@ -181,7 +181,31 @@
             </label>
           </td>
         </tr>
+      </table>
+
+      <table border=1 style="margin-top:5px">
+        <tr>
+          <td>
+            Filtrar per ranking revista
+            <span v-if="modul_scimago">
+              (scimago rankings: {{Object.keys(modul_scimago.scimagojr).join(", ")}})
+            </span>
+          </td>
+        </tr>
+        <tr><td>&emsp;<label><input type=checkbox v-model="filtrar_per_Q1"> Q1 (percentil&lt;25%)</label></td></tr>
+        <tr><td>&emsp;<label><input type=checkbox v-model="filtrar_per_D1"> D1 (percentil&lt;10%)</label></td></tr>
+        <tr>
+          <td>
+            <label>
+              <input type=checkbox v-model="filtrar_per_FWCI">
+              Filtrar per FWCI &ge;
+            </label>
+            <input type=number v-model="filtrar_per_FWCI_valor" :disabled="!filtrar_per_FWCI" style="width:4em">
+            <button @click="filtrar_per_FWCI_valor=0" :disabled="!filtrar_per_FWCI_valor || !filtrar_per_FWCI">X</button>
+          </td>
+        </tr>
       </table><hr>
+
     </div>
 
     <!--veure noms que no s'han pogut classificar bé (gènere)-->
@@ -313,6 +337,46 @@
                 </div>
               </details>
             </td>
+            <td nowrap v-if="columnes_visibles.revista">
+              <div v-if="work?.primary_location?.source?.type=='journal'">
+                <details>
+                  <summary>
+                    {{work.primary_location.source.display_name}}
+                    <code>(issn: {{
+                      Array.from(
+                        new Set([
+                          work.primary_location.source.issn_l,
+                          ...work.primary_location.source.issn,
+                        ])
+                      ).join(", ")
+                    }})</code>
+                  </summary>
+                  <div v-for="sjr in [busca_ranking_journal(work)]">
+                    <div v-if="sjr">
+                      <table border=1 style="font-size:smaller">
+                        <tr v-for="[key,val] in Object.entries(sjr)">
+                          <th>{{key}}</th>
+                          <td>
+                            <div v-if="val.constructor===Object">
+                              <table border=1 style="font-size:smaller">
+                                <tr v-for="en in Object.entries(val)">
+                                  <td>{{en[0]}}</td>
+                                  <td>{{en[1]}}</td>
+                                </tr>
+                              </table>
+                            </div>
+                            <div v-else>{{val}}</div>
+                          </td>
+                        </tr>
+                      </table>
+                    </div>
+                  </div>
+                </details>
+              </div>
+              <div v-else>
+                {{work?.primary_location?.source?.type}}
+              </div>
+            </td>
           </tr>
         </tbody>
       </table>
@@ -388,6 +452,7 @@
         "fwci":true,
         "cites":true,
         "detalls":false,
+        "revista":false,
       },
       noms_columnes:{
         "numero"      : "Nº",
@@ -399,6 +464,7 @@
         "fwci"        : "FWCI",
         "cites"       : "Cites",
         "detalls"     : "Detalls(JSON)",
+        "revista"     : "Revista",
       },
       columnes_ordenables:{
         "numero":false,
@@ -410,6 +476,7 @@
         "fwci":true,
         "cites":true,
         "detalls":false,
+        "revista":false,
       },
 
       //set de resultats visible usuari
@@ -422,6 +489,14 @@
 
       //set per guardar noms no trobats
       names_not_found:new Set(),
+
+      //filtrar per Q1, D1 i FWCI
+      filtrar_per_Q1:false,      //bool
+      filtrar_per_D1:false,      //bool
+      filtrar_per_FWCI:false,    //bool
+      filtrar_per_FWCI_valor:10, //number
+
+      modul_scimago:null,
     }},
 
     methods:{
@@ -491,6 +566,27 @@
         }
         this.field_sort_resultats = new_value;
       },
+
+      busca_ranking_journal(work){
+        let PLS = work?.primary_location?.source;
+
+        if(!PLS)                return false;
+        if(PLS.type!="journal") return false;
+
+        let nom_revista = PLS.display_name; //string
+        let issn_l      = PLS.issn_l; //string
+        let issn        = PLS.issn; //array
+        let year        = work.publication_year; //string
+
+        //busca objecte scimago ranking
+        let sjr = null;
+        for(let i=0;i<issn.length;i++){
+          sjr = modul_scimago.busca_a_scimagocsv(nom_revista, issn_l, issn[i], year);
+          if(sjr) break;
+        };
+
+        return sjr;
+      },
     },
 
     computed:{
@@ -540,6 +636,8 @@
       //aplicar filtres any, tipus i ordenar
       get_works_filtrats_per_tipus(){
         if(!this.array_works_visible) return false;
+
+        //filtra per any i tipus publicació
         let works = this.array_works_visible.filter(work=>{
           let y = work.publication_year;
           return (
@@ -548,6 +646,25 @@
             this.work_types[work.type]
           );
         });
+
+        //filtra per FWCI
+        if(this.filtrar_per_FWCI){
+          works = works.filter(w=>w.fwci>=this.filtrar_per_FWCI_valor);
+        }
+
+        //filtra per Q1 i/o D1 (últim perquè és el més car computacionalment)
+        if(this.filtrar_per_Q1 || this.filtrar_per_D1){
+          //valor desitjat a filtrar
+          let percentil = this.filtrar_per_D1 ? 10 : 25;
+          works = works.filter(w=>{
+            let sjr = this.busca_ranking_journal(w);
+            if(!sjr)            return false;
+            if(!sjr.percentils) return false;
+
+            //aplica check percentil
+            return Object.values(sjr.percentils).some(per=>per.percentil<=percentil);
+          });
+        }
 
         //ordena
         let inv = this.field_sort_inv;
@@ -636,4 +753,11 @@
       });
     },
   }).mount("#app");
+</script>
+
+<!--modul scimago-->
+<script src="../modul_scimago.js"></script>
+<script>
+  modul_scimago.init("../csv")//descarrega i parseja csvs
+  app.modul_scimago = modul_scimago;
 </script>

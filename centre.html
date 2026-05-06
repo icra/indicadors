@@ -5583,8 +5583,8 @@
 </script>
 
 <!--modul scimago-->
-<!--TODO fer servir "import"-->
-<script src="modul-scimago.js"></script>
+<script src="modul_scimago.js"></script>
+<script>modul_scimago.init()//descarrega i parseja csvs</script>
 
 <script>/*modul scopus (request per investigador)*/
   let cache_scopus_requests={
@@ -5683,7 +5683,7 @@
       let issn        = entry["prism:issn"];
       let eIssn       = entry["prism:eIssn"];
       let year        = entry["prism:coverDate"]?.split("-")[0];
-      let sjr         = busca_a_scimagocsv(nom_revista,issn,eIssn,year);
+      let sjr         = modul_scimago.busca_a_scimagocsv(nom_revista,issn,eIssn,year);
 
       if(!sjr) return;
       if(!sjr.percentils) return;
