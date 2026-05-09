@@ -1,5 +1,5 @@
 === COSES PENDENTS ===
 
-Elisabet (2026-04-10):
-  - afegir relació quartils (SJR) i lideratge + gènere
+etornes (2026-04-10):
+  - [ok] afegir relació quartils (SJR) i lideratge + gènere
   - implementar exportació taules a excel sense taules intermitges (scopus: taula articles i journals)

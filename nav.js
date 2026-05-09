@@ -7,15 +7,16 @@ function genera_nav(div_container_id){
   }
 
   let links=[
-    {href:"index.html",         nom:"scopus"},
-    {href:"centre.html",        nom:"centre"},
-    {href:"personal.html",      nom:"personal"},
-    {href:"impacte.html",       nom:"impacte"},
-    {href:"esdeveniments.html", nom:"esdeveniments"},
-    {href:"iframe/index.html",  nom:"carta director"},
-    {href:"lideratge",          nom:"lideratge"},
-    {href:"impact-factor.html", nom:"impact-factor"},
-    {href:"cites-anuals.html",  nom:"cites-anuals"},
+    {href:"index.html",            nom:"scopus"},
+    {href:"centre.html",           nom:"centre"},
+    {href:"personal.html",         nom:"personal"},
+    {href:"impacte.html",          nom:"impacte"},
+    {href:"esdeveniments.html",    nom:"esdeveniments"},
+    {href:"iframe/index.html",     nom:"carta director"},
+    {href:"lideratge",             nom:"lideratge"},
+    {href:"impact-factor.html",    nom:"impact-factor"},
+    {href:"cites-anuals.html",     nom:"cites-anuals"},
+    {href:"colab-california.html", nom:"colab-california"},
   ];
 
   let nav = document.createElement("nav");

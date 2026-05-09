@@ -1,0 +1,394 @@
+<!doctype html><html><head>
+  <meta charset=utf8>
+  <title>california collab</title>
+  <script src="lib/vue.global.prod.js"></script>
+  <style>
+    table{
+      border-collapse:collapse;
+    }
+    td{
+      vertical-align:top;
+    }
+    button[selected=true]{
+      background:gold;
+      color:black;
+    }
+    [first_or_last]{
+      color:#666;
+      border-radius:5px;
+      border:1px solid #ccc;
+      font-size:smaller;
+    }
+    [first_or_last=true]{
+      background:#af0;
+      box-shadow:inset 1px 1px 10px lightgreen;
+    }
+    [is_corresponding=true]{
+      background:#af0;
+      box-shadow:inset 1px 1px 10px lightgreen;
+      color:#666;
+      border-radius:5px;
+      border:1px solid #ccc;
+      font-size:smaller;
+    }
+    [center]{ text-align:center; }
+    [date]{ font-family:monospace; font-size:smaller; white-space:nowrap; }
+    [nowrap]{ white-space:nowrap; }
+    [small]{ font-size:smaller; }
+    summary{
+      font-weight:bold;
+      cursor:pointer;
+    }
+    summary:hover{
+      text-decoration:underline;
+    }
+  </style>
+</head><body>
+
+<h2>ICRA &amp; California collaboration 2007-2026 (according to OpenAlex)</h2>
+
+<div id=app>
+  <div v-if="!works">loading publications...</div>
+
+  <div v-if="works">
+    <details open>
+      <summary>Summary</summary>
+      <table border=1>
+        <tr>
+          <th></th>
+          <th>Publications</th>
+          <th></th>
+          <th>Impact factor (IF)</th>
+        </tr>
+        <tr>
+          <td>Total ICRA publications (2007-2026)</td>
+          <td center>{{works.length}}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>Total ICRA publications (2007-2026) with California collaboration
+          <td center>{{get_works_colab_california.length}}</td>
+          <td>
+            <button
+              @click="year_inici=2007;year_final=year_current"
+              :disabled=""
+            >select</button>
+          </td>
+          <td></td>
+        </tr>
+        <tbody v-for="y in get_all_years" small>
+          <tr v-for="npub in [get_works_colab_california.filter(w=>w.publication_year==y).length]">
+            <td>Total ICRA publications with California {{y}}</td>
+            <td center>{{npub}}</td>
+            <td>
+              <button
+                @click="year_inici=y;year_final=y"
+                :disabled="year_inici==y&&year_final==y"
+              >select
+              </button>
+            </td>
+            <td>
+              <details v-for="obj in [impact_factor(y)]">
+                <summary>
+                  IF =
+                  {{obj.impact_factor ? obj.impact_factor.toFixed(2) : 0}}</summary>
+                <table border=1 small>
+                  <tr>
+                    <td>"A"=</td>
+                    <td>Number of times that the articles published in [{{y-2}}, {{y-1}}] were cited by indexed journals during [{{y}}]</td>
+                    <td>{{obj.A}}</td>
+                  </tr>
+                  <tr>
+                    <td>"B"=</td>
+                    <td>Total number of "citable items" published in [{{y-2}}, {{y-1}}]</td>
+                    <td>{{obj.B}}</td>
+                  </tr>
+                  <tr>
+                    <td>"IF"=</td>
+                    <td>A/B</td>
+                    <td><b>{{obj.impact_factor.toFixed(2)}}</b></td>
+                  </tr>
+                </table>
+              </details>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </details>
+
+    <fieldset style="margin:10px">
+      <legend>Visible columns</legend>
+      <label v-for="nom_columna in Object.keys(columnes_visibles)">
+        <input type=checkbox v-model="columnes_visibles[nom_columna]">
+        {{nom_columna}}
+      </label>
+    </fieldset>
+
+    <b style="font-size:larger">
+      ICRA &amp; California [{{year_inici}}-{{year_final}}]
+      ({{get_works_colab_california_filtrats.length}} publications)
+    </b>
+
+    <div v-if="get_works_colab_california_filtrats.length==0">
+      ~no results for [{{year_inici}}-{{year_final}}]
+    </div>
+    <table border=1 v-if="get_works_colab_california_filtrats.length">
+      <tr>
+        <th>n</th>
+        <th v-if="columnes_visibles.date">date</th>
+        <th v-if="columnes_visibles.type">type</th>
+        <th v-if="columnes_visibles.title">title</th>
+        <th v-if="columnes_visibles.doi">doi</th>
+        <th v-if="columnes_visibles['authors icra']">authors icra</th>
+        <th v-if="columnes_visibles['authors california']">authors california</th>
+        <th v-if="columnes_visibles.fwci">fwci</th>
+        <th v-if="columnes_visibles['total citations']">total citations</th>
+        <th v-if="columnes_visibles['citations by year']">citations by year</th>
+      </tr>
+      <tr v-for="work,i in get_works_colab_california_filtrats">
+        <td center small>{{i+1}}</td>
+        <td nowrap date v-if="columnes_visibles.date">{{work.publication_date}}</td>
+        <td small center v-if="columnes_visibles.type">{{work.type}}</td>
+        <td small v-if="columnes_visibles.title"><i>{{work.title}}</i></td>
+        <td small v-if="columnes_visibles.doi">
+          <div v-if="work.doi">
+            <a :href="work.doi" target=_blank>{{work.doi}}</a>
+          </div>
+          <div v-else-if="work.primary_location && work.primary_location.landing_page_url">
+            <a :href="work.primary_location.landing_page_url" target=_blank>{{work.primary_location.landing_page_url}}</a>
+          </div>
+        </td>
+        <td v-if="columnes_visibles['authors icra']">
+          <table border=1 small>
+            <tr v-for="authorship in work.authorships.filter(a=>a.institutions.some(i=>i.id==id_icra))">
+              <td nowrap :title="authorship.raw_author_name">
+                <span>
+                  {{authorship.author.display_name}}
+                </span>
+                <span v-if="authorship.author.display_name!=authorship.raw_author_name">
+                  ({{authorship.raw_author_name}})
+                </span>
+                <div>
+                  <span :first_or_last="['first','last'].includes(authorship.author_position)">
+                    {{authorship.author_position}}
+                  </span>
+                  <span :is_corresponding="authorship.is_corresponding">
+                    <span v-if="authorship.is_corresponding">
+                      corresponding
+                    </span>
+                  </span>
+                </div>
+              </td>
+            </tr>
+          </table>
+        </td>
+        <td v-if="columnes_visibles['authors california']">
+          <table border=1 small>
+            <tr v-for="authorship in work.authorships.filter(a=>a.raw_affiliation_strings.some(ras=>ras.toLowerCase().includes('californi')))">
+              <td :title="authorship.raw_author_name">
+                <span>
+                  <b>{{authorship.author.display_name}}</b>
+                </span>
+                <div v-for="ras in authorship.raw_affiliation_strings.filter(ras=>ras.toLowerCase().includes('californi'))">
+                  <small>({{ras}})</small>
+                </div>
+                <div>
+                  <span :first_or_last="['first','last'].includes(authorship.author_position)">
+                    {{authorship.author_position}}
+                  </span>
+                  <span :is_corresponding="authorship.is_corresponding">
+                    <span v-if="authorship.is_corresponding">
+                      corresponding
+                    </span>
+                  </span>
+                </div>
+              </td>
+            </tr>
+          </table>
+        </td>
+        <td center small v-if="columnes_visibles.fwci">{{work.fwci || 0}}</td>
+        <td center small v-if="columnes_visibles['total citations']">{{work.cited_by_count}}</td>
+        <td center       v-if="columnes_visibles['citations by year']">
+          <table border=1 small>
+            <tr v-for="cby in work.counts_by_year.sort((a,b)=>a.year-b.year)">
+              <td>{{cby.year}}</td>
+              <td>{{cby.cited_by_count}}</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<script>
+  let app=Vue.createApp({
+    data(){return{
+      works:null,
+      status_oa:null,
+
+      year_current:new Date().getFullYear(),
+      year_inici:2007,
+      year_final:new Date().getFullYear(),
+
+      id_icra:"https://openalex.org/I2799562678", //id   openAlex institution ICRA
+
+      columnes_visibles:{
+        "date":true,
+        "type":false,
+        "title":true,
+        "doi":false,
+        "authors icra":true,
+        "authors california":true,
+        "fwci":true,
+        "total citations":true,
+        "citations by year":true,
+      },
+    }},
+
+    methods:{
+      impact_factor(year){
+        let works_2yb = this.get_works_colab_california.filter(w=>w.publication_year==year-1||w.publication_year==year-2);
+        let B = works_2yb.length;
+        let A = works_2yb.map(w=>{
+          let row = w.counts_by_year.find(r=>r.year==year);
+          if(!row) return false;
+          return row.cited_by_count;
+        }).filter(el=>el).reduce((p,c)=>p+c,0);
+        let impact_factor = B?A/B:0;
+        return {A,B,impact_factor};
+      },
+    },
+
+    computed:{
+      get_all_years(){
+        if(!this.works) return false;
+        let years= new Set();
+        this.works.forEach(work=>{
+          years.add(work.publication_year);
+        });
+        return Array.from(years);
+      },
+
+      get_works_colab_california(){
+        //filta per california
+        if(!this.works) return false;
+        return this.works.filter(work=>{
+          return work.authorships.some(auth=>{
+            return (
+              auth.countries.some(c=>c=='US') &&
+              auth.raw_affiliation_strings.some(str=>{
+                let str_lc = str.toLowerCase();
+                return (
+                  str_lc.includes("californi")
+                );
+              })
+            );
+          });
+        });
+      },
+
+      get_works_colab_california_filtrats(){
+        if(!this.get_works_colab_california) return false;
+        let works = this.get_works_colab_california.filter(work=>{
+          return(
+            work.publication_year>=this.year_inici &&
+            work.publication_year<=this.year_final
+          );
+        });
+        return works;
+      },
+    },
+
+    mounted(){
+      //carrega presaved results
+      fetch("query-2007-2026.json")
+        .then(r=>r.json())
+        .then(arr=>{
+          arr.sort((a,b)=>{
+            let aa = a.publication_date;
+            let bb = b.publication_date;
+            return bb<aa?1:-1;
+          });
+          this.works=arr;
+          console.log("[ok] query-2007-2026.json");
+        });
+    },
+  }).mount("#app");
+</script>
+
+<script type=module>
+  async function query_oa_api(){
+    //inputs
+    let year_inici = 2007;
+    let year_final = new Date().getFullYear();
+    let codi_icra  = "I2799562678"; //institution code
+    let api_key    = "tGXbKHpYBXs5jv8YOFteH5";
+
+    //utils
+    let page     = 1;
+    let per_page = 200;
+    let results  = [];
+
+    while(true){
+      let url=`https://api.openalex.org/works?api_key=${api_key}&filter=institutions.id:${codi_icra},publication_year:${year_inici}-${year_final}&per_page=${per_page}&page=${page}`;
+
+      //fetch openalex api
+      let msg = `[openalex] Fetching page ${page}... (items received:${results.length})`;
+      console.log(msg);
+      app.status_oa=msg;
+
+      const res  = await fetch(url);
+      const data = await res.json();
+
+      //append results
+      results = results.concat(data.results);
+
+      //next page
+      if(data.results.length < per_page){
+        break;
+      }else{
+        page++;
+      }
+    }
+
+    //filta per ICRA i descarta ICFO, ICN, etc
+    results = results.filter(work=>{
+      return work.authorships.some(auth=>{
+        return auth.raw_affiliation_strings.some(str=>{
+          let str_lc = str.toLowerCase();
+          return (
+            str_lc.includes("icra")||
+            str_lc.includes("catalan institute for water research")||
+            str_lc.includes("catalan institute of water research")||
+            str_lc.includes("institut catala de recerca de l'aigua")||
+            str_lc.includes("institut català de recerca de l'aigua")
+          );
+        });
+      });
+    });
+
+    //ordena per data
+    results.sort((a,b)=>{
+      let aa = a.publication_date;
+      let bb = b.publication_date;
+      return bb<aa?1:-1;
+    });
+
+    console.log(results);
+    app.works=results;
+    app.status_oa=`[openalex] done (items: ${results.length})`;
+  }
+  app.query_oa_api = query_oa_api;
+  async function guarda_works(){
+    let str = JSON.stringify(app.works);
+    let blob = new Blob([str],{type:"application/json"});
+    const handle = await window.showSaveFilePicker({
+      suggestedName: "query-2007-2026.json"
+    });
+    let writable = await handle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+  }
+  app.guarda_works = guarda_works;
+</script>
