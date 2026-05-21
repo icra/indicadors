@@ -93,473 +93,499 @@
 </h3>
 
 <div id=app>
-  <fieldset>
-    <legend>Publications</legend>
-    <table border=1 style="border-collapse:collapse;width:100%">
-      <tr>
-        <td>Query</td>
-        <td>
-          <div flex>
-            <div style="display:flex">
-              <textarea
-                v-model="scopus.query"
-                query
-                style="font-size:smaller;min-width:200px"
-                placeholder="write scopus query here"
-                @keydown.enter.prevent="get_publications()"
-              ></textarea>
-              <button @click="scopus.query=''" :disabled="scopus.query==''">X</button>
-            </div>
-
-            <small style="font-size:x-small;margin:0 1em">
-              <a target=_blank href="https://schema.elsevier.com/dtds/document/bkapi/search/SCOPUSSearchTips.htm">scopus search guide</a>
-            </small>
-
-            <details xsmall>
-              <summary>most used fields</summary>
-              <div>
-                <a href=# title="affiliation id"       @click="scopus.query+=' AND AF-ID(60110375)'">AF-ID</a>,
-                <a href=# title="author name"          @click="scopus.query+=' AND AUTH(bosch)'">AUTH</a>,
-                <a href=# title="author id"            @click="scopus.query+=' AND AU-ID(56411720900)'">AU-ID</a>,
-                <a href=# title="journal issn number"  @click="scopus.query+=' AND ISSN(02697491)'">ISSN</a>,
-                <a href=# title="publication language" @click="scopus.query+=' AND LANGUAGE(spanish)'">LANGUAGE</a>,
-                <a href=# title="publication year"     @click="scopus.query+=' AND PUBYEAR is 2025'">PUBYEAR</a>
-              </div>
-            </details>
-          </div>
-        </td>
-      </tr>
-      <tr>
-        <td></td>
-        <td>
-          <div flex>
-            <button @click="get_publications()" nowrap
-              style="
-                padding:0.618em 1em;
-                background:lightgreen;
-              "
-            >Search &#128270;
-            </button>
-
-            <!--historial-->
-            <div
-              style="
-                display:flex;
-                align-items:center;
-              "
-              v-if="historial.length>1"
-            >
-              <div small>
-                <span>&nbsp;recent queries&nbsp;</span>
-                <select small @change="scopus.query=$event.target.value;get_publications()">
-                  <option v-for="q in historial">
-                    {{q}}
-                  </option>
-                </select>
-              </div>
-              &nbsp;
-              <button xsmall @click="alert(permalink)">get permalink</button>
-            </div>
-          </div>
-        </td>
-      </tr>
-      <tr>
-        <td colspan=2>
-          <details open>
-            <summary sticky>Results
-              <span v-if="scopus.result && scopus.result_ok && scopus.result_is_loading==false">
-                ({{scopus.response["search-results"]["opensearch:totalResults"]}} results,
-                {{scopus.result.map(page=>page.length).reduce((p,c)=>p+c,0)}} items received, {{scopus.number_of_requests}} requests)
-              </span>
-              <div v-if="scopus.result_is_loading">
+  <div v-if="modul_scimago && modul_scimago_is_loading">
+    <fieldset>
+      <legend>Loading Scimago rankings</legend>
+      <table border=1>
+        <tr v-for="key in Object.keys(modul_scimago.scimagojr).sort()">
+          <td>{{key}}</td>
+          <td>
+            <code>
+              <div v-if="modul_scimago.scimagojr[key]=='loading'">
                 loading...
-                <span v-if="scopus.number_of_requests">
-                  ({{scopus.current_request_number}} of {{scopus.number_of_requests}} requests to scopus API done)
-                </span>
               </div>
-            </summary>
-            <div v-if="scopus.result_is_loading==false">
-              <div v-if="!scopus.result" style="color:#666">none</div>
-              <div v-if="scopus.result && scopus.result_ok==false">
-                {{scopus.result}}
+              <div v-else-if="modul_scimago.scimagojr[key].constructor===Object">
+                loaded correctly
               </div>
-              <div v-if="scopus.result && scopus.result_ok">
-
-                <!--filtra subtypes-->
-                <div v-if="get_subtypes">
-                  <span>
-                    Viewing: {{get_publications_array_filtrat_per_subtipus.length}} items |
-                  </span>
-                  <span v-for="sub in get_subtypes">
-                    <label>
-                      <input type=checkbox v-model="subtypes_visibles[sub]">
-                      {{sub}}
-                      ({{
-                        get_publications_array.filter(p=>p.subtypeDescription==sub).length
-                      }})
-                    </label>
-                  </span>
-                </div>
-
-                <table border=1
-                  style="
-                    font-size:smaller;
-                    border-collapse:collapse;
-                    border-color:#ccc;
-                  "
-                >
-                  <tr>
-                    <th>nº</th>
-                    <th>
-                      <a href=# @click="scopus.sort_publications_by='citedby-count'">cited</a>
-                    </th>
-                    <th>
-                      <a href=# @click="scopus.sort_publications_by='subtypeDescription'">subtype</a>
-                    </th>
-                    <th style="text-align:left">
-                      <a href=# @click="scopus.sort_publications_by='prism:coverDate'">publication</a>
-                    </th>
-                  </tr>
-                  <tbody v-for="entry,i in get_publications_array_filtrat_per_subtipus">
-                    <tr>
-                      <td style="font-size:smaller">{{i+1}}</td>
-                      <td style="font-size:smaller" center>{{entry["citedby-count"]}}</td>
-                      <td nowrap>
-                        {{entry.subtypeDescription || entry.subtype}}
-                      </td>
-                      <td>
-                        <details>
-                          <summary>
-                            <span>[{{entry["prism:coverDate"]}}]&nbsp;</span>
-                            <b>{{entry["dc:creator"]}}&nbsp;</b>
-                            <small><i>{{entry["dc:title"]}}</i></small>
-                          </summary>
-
-                          <div v-if="entry['prism:doi']">
-                            <a target=_blank :href="`https://doi.org/${entry['prism:doi']}`">
-                              https://doi.org/{{entry['prism:doi']}}
-                            </a>
-                          </div>
-
-                          <div>
-                            <div v-if="abstract[entry['prism:doi']]">
-                              <details open>
-                                <summary>Detalls ("abstract metadata request")</summary>
-                                <pre>{{
-                                  JSON.stringify(
-                                    abstract[entry['prism:doi']],
-                                    null,
-                                    '  ',
-                                  )
-                                }}</pre>
-                              </details>
-                            </div>
-                            <button
-                              v-if="!abstract[entry['prism:doi']]"
-                              @click="request_abstract(entry)"
-                            >
-                              request publication details
-                            </button>
-                            <button
-                              @click="request_citation_overview(entry)"
-                            >
-                              request citation overview
-                            </button>
-                          </div>
-
-                          <table border=1>
-                            <tr v-for="val,key in entry">
-                              <th>{{key}}</th>
-                              <td>
-                                <div v-if="val && (val.constructor===Object || val.constructor===Array)">
-                                  <pre>{{JSON.stringify(val,null,'  ')}}</pre>
-                                </div>
-                                <div v-else>{{val}}</div>
-                              </td>
-                            </tr>
-                          </table>
-                        </details>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+              <div v-else-if="modul_scimago.scimagojr[key]===false">
+                does not exist
               </div>
-            </div>
-          </details>
-        </td>
-      </tr>
-
-      <tr v-if="false && get_publications_array">
-        <td colspan=2>
-          <table border=1 small>
-            <tbody v-for="entry in get_publications_array">
-              <tr>
-                <td nowrap>{{entry["prism:coverDate"]}}</td>
-                <td>
-                  <div v-if="entry['prism:doi']">
-                    <a target=_blank :href="`https://doi.org/${entry['prism:doi']}`">
-                      {{entry['prism:doi']}}
-                    </a>
-                  </div>
-                </td>
-                <td>
-                  <b>{{entry["dc:creator"]}}&nbsp;</b>
-                </td>
-                <td>
-                  <small><i>{{entry["dc:title"]}}</i></small>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </td>
-      </tr>
-    </table>
-  </fieldset>
-
-  <fieldset>
-    <legend>
-      Total citations in the
-      <span v-if="get_publications_array_filtrat_per_subtipus">({{get_publications_array_filtrat_per_subtipus.length}})</span>
-      results
-    </legend>
-    <div v-if="scopus.result && scopus.result_ok">
-      {{ calcula_cites_totals }}
-    </div><div v-else style="color:#666">
-      none
-    </div>
-  </fieldset>
-
-  <fieldset>
-    <legend>
-      Journals dels
-      <span v-if="get_publications_array_filtrat_per_subtipus">({{get_publications_array_filtrat_per_subtipus.length}})</span>
-      resultats
-    </legend>
-    <details>
-      <summary sticky>
-        Journals
-        <span v-if="get_revistes">({{get_revistes.length}})</span>
-        &mdash; sorted by:
-        <select v-model="journals_sorted_by" @change="display_only(journals_sorted_by)">
-          <option v-for="op in journals_sorted_by_OPTIONS">{{op}}</option>
-        </select>
-      </summary>
-      <div v-if="!get_revistes" style="color:#666">none</div>
-      <table border=1 v-if="get_revistes">
-        <tr>
-          <th>nº</th>
-          <th>issn</th>
-          <th>eIssn</th>
-          <th>Journal name</th>
-          <th>Publications</th>
-          <th>
-            SCOPUS journal
-            metrics <button @click="request_all_journal_metrics()">request all journals</button>
-            <div small>
-              <label nowrap title="Source-Normalized Impact per Paper (SNIP): Measures contextual citation impact by taking differences in disciplinary characteristics into account; can be used to compare journals in different fields."><input type=checkbox v-model="metrics.snip">SNIP</label>
-              <label nowrap title="SCImago Journal Rank (SJR): A prestige metric for journals, book series and conference proceedings that weights the value of a citation based on the subject field, quality and reputation of the source."><input type=checkbox v-model="metrics.sjr">SJR</label>
-              <label nowrap title="CiteScore™ metrics: Introduced in 2016, a family of eight indicators to analyze the publication influence of serial titles. CiteScore metrics offer more robust, timely and accurate indicators of a serial title’s impact."><input type=checkbox v-model="metrics.citescore">CiteScore</label>
-              <label nowrap title="CiteScore™ metrics: Introduced in 2016, a family of eight indicators to analyze the publication influence of serial titles. CiteScore metrics offer more robust, timely and accurate indicators of a serial title’s impact."><input type=checkbox v-model="metrics.more_details">(all)</label>
-            </div>
-          </th>
-          <th>Scimago Journal Rank CSV metrics
-            <div v-if="!scimagojr">
-              (loading scimagojr csvs...)
-            </div>
-
-            <div v-if="scimagojr">
-              <table style="font-size:smaller;font-weight:normal;margin:auto" border=1>
-                <tr v-for="key in Object.keys(scimagojr)">
-                  <td>ranking {{key}}</td>
-                  <td>loaded</td>
-                </tr>
-                <tr v-for="key in scimagojr_years_not_available">
-                  <td>ranking {{key}}</td>
-                  <td style="color:#aaa">not available</td>
-                </tr>
-              </table>
-            </div>
-          </th>
-        </tr>
-        <tr v-for="[key,val],i in get_revistes">
-          <td xsmall>{{i+1}}</td>
-          <td xsmall nowrap>{{val.issn}}</td>
-          <td xsmall nowrap>{{val.eIssn}}</td>
-          <td :title="key">
-            <details>
-              <summary>
-                {{key.substring(0,50)}}<span v-if="key.length>50">...</span>
-              </summary>
-              <p small>
-                <a target=_blank :href="`https://www.scimagojr.com/journalsearch.php?q=${val.source_id}&tip=sid&clean=0`">
-                  https://www.scimagojr.com/journalsearch.php?q={{val.source_id}}&tip=sid&clean=0
-                </a>
-              </p>
-              <table small>
-                <tbody v-for="entry in val.articles">
-                  <tr>
-                    <td>
-                      <a target=_blank :href="`https://doi.org/${entry['prism:doi']}`">
-                        [{{entry["prism:coverDate"]}}]
-                        <b>{{entry["dc:creator"]}}&nbsp;</b>
-                        <small><i>{{entry["dc:title"]}}</i></small>
-                      </a>
-                    </td>
-                  </tr>
-                </tr>
-              </table>
-            </details>
-          </td>
-          <td nowrap small> {{val.articles.length}} publications </td>
-          <td small>
-            <div v-if="journal_metrics[key]">
-              <table border=1 xsmall>
-                <tr v-if="metrics.snip">
-                  <td>SNIP ({{ get_snip([key,val]).year }})</td>
-                  <td right>{{ get_snip([key,val]).score }}</td>
-                </tr>
-                <tr v-if="metrics.sjr">
-                  <td>SJR ({{  get_sjr([key,val]).year }})</td>
-                  <td right>{{ get_sjr([key,val]).score }}</td>
-                </tr>
-                <tr v-if="metrics.citescore">
-                  <td>CiteScore (current) ({{ get_citescore_current([key,val]).year }})</td>
-                  <td right>{{                get_citescore_current([key,val]).score }}</td>
-                </tr>
-                <tr v-if="metrics.citescore">
-                  <td>CiteScore (tracker) ({{ get_citescore_tracker([key,val]).year }})</td>
-                  <td right>{{                get_citescore_tracker([key,val]).score }}</td>
-                </tr>
-              </table>
-            </div>
-            <details v-if="journal_metrics[key] && metrics.more_details" xsmall>
-              <summary>more details</summary>
-              <pre>{{
-                JSON.stringify(
-                  recurse(
-                    journal_metrics[key],
-                    ['serial-metadata-response','entry',0]
-                  ),
-                  null,
-                  "  ",
-                )
-              }}</pre>
-            </details>
-            <div v-if="!journal_metrics[key]">
-              <button small v-if="val.issn||val.eIssn" @click="request_journal(val.issn||val.eIssn,key)">
-                request journal info (SCOPUS)
-              </button>
-            </div>
-          </td>
-          <td v-if="scimagojr">
-            <div v-for="sjr in [busca_a_scimagocsv(key, val.issn, val.eIssn, val.articles[0]['prism:coverDate']?.split('-')[0])]">
-              <table v-if="sjr" border=1 xsmall>
-                <tbody>
-                  <tr><th nowrap>SJR              <td>{{sjr.SJR}}</tr>
-                  <tr><th nowrap>SJR Best Quartile<th>{{sjr["SJR Best Quartile"]}}</th>
-                  <tr><th nowrap>H index          <td>{{sjr["H index"]}}</tr>
-                </tbody>
-              </table>
-              <details v-if="sjr" xsmall>
-                <summary>see all ScimagoJR metrics</summary>
-                <table border=2 xsmall>
-                  <tr v-for="val2,key2 in sjr">
-                    <th nowrap>{{key2}}</th>
-                    <td>{{val2}}</td>
-                  </tr>
-                </table>
-              </details>
-              <div v-if="!sjr">
-                <code>~journal not ranked in SJR</code>
-              </div>
-            </div>
-          </td>
-          <td v-if="!scimagojr">
-            (loading scimago csvs...)
+            </code>
           </td>
         </tr>
       </table>
-    </details>
-  </fieldset>
+    </fieldset>
+  </div>
 
-  <fieldset>
-    <legend>
-      Indicadors dels
-      <span v-if="get_publications_array_filtrat_per_subtipus">({{get_publications_array_filtrat_per_subtipus.length}})</span>
-      resultats
-    </legend>
-    <table border=1>
-      <tbody v-if="get_articles_quartils">
-        <tr v-for="arr,key in get_articles_quartils">
-          <td>Articles publicats a revista {{key}}</td>
-          <td center>
-            {{arr.length}}
+  <div v-show="modul_scimago && !modul_scimago_is_loading">
+    <fieldset>
+      <legend>Publications</legend>
+      <table border=1 style="border-collapse:collapse;width:100%">
+        <tr>
+          <td>Query</td>
+          <td>
+            <div flex>
+              <div style="display:flex">
+                <textarea
+                  v-model="scopus.query"
+                  query
+                  style="font-size:smaller;min-width:200px"
+                  placeholder="write scopus query here"
+                  @keydown.enter.prevent="get_publications()"
+                ></textarea>
+                <button @click="scopus.query=''" :disabled="scopus.query==''">X</button>
+              </div>
+
+              <small style="font-size:x-small;margin:0 1em">
+                <a target=_blank href="https://schema.elsevier.com/dtds/document/bkapi/search/SCOPUSSearchTips.htm">scopus search guide</a>
+              </small>
+
+              <details xsmall>
+                <summary>most used fields</summary>
+                <div>
+                  <a href=# title="affiliation id"       @click="scopus.query+=' AND AF-ID(60110375)'">AF-ID</a>,
+                  <a href=# title="author name"          @click="scopus.query+=' AND AUTH(bosch)'">AUTH</a>,
+                  <a href=# title="author id"            @click="scopus.query+=' AND AU-ID(56411720900)'">AU-ID</a>,
+                  <a href=# title="journal issn number"  @click="scopus.query+=' AND ISSN(02697491)'">ISSN</a>,
+                  <a href=# title="publication language" @click="scopus.query+=' AND LANGUAGE(spanish)'">LANGUAGE</a>,
+                  <a href=# title="publication year"     @click="scopus.query+=' AND PUBYEAR is 2025'">PUBYEAR</a>
+                </div>
+              </details>
+            </div>
           </td>
-          <td v-if="arr.length">
-            <details small>
-              <summary>llista</summary>
-              <table border=1 small>
-                <tr>
-                  <td center>Journal
-                  <td center>Rank (percentile) by category
-                  <td center>Author
-                  <td center>Title
-                </tr>
-                <tr v-for="entry in arr">
-                  <td>
-                    <b>{{entry.pub["prism:publicationName"]}}</b>
-                  </td>
-                  <td>
-                    <table style="width:100%">
-                      <tr v-for="val,key in entry.sjr.percentils">
-                        <td>{{key}}</td>
-                        <td>#{{val.rank}}/{{val.n}}</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>
+            <div flex>
+              <button @click="get_publications()" nowrap
+                style="
+                  padding:0.618em 1em;
+                  background:lightgreen;
+                "
+              >Search &#128270;
+              </button>
+
+              <!--historial-->
+              <div
+                style="
+                  display:flex;
+                  align-items:center;
+                "
+                v-if="historial.length>1"
+              >
+                <div small>
+                  <span>&nbsp;recent queries&nbsp;</span>
+                  <select small @change="scopus.query=$event.target.value;get_publications()">
+                    <option v-for="q in historial">
+                      {{q}}
+                    </option>
+                  </select>
+                </div>
+                &nbsp;
+                <button xsmall @click="alert(permalink)">get permalink</button>
+              </div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td colspan=2>
+            <details open>
+              <summary sticky>Results
+                <span v-if="scopus.result && scopus.result_ok && scopus.result_is_loading==false">
+                  ({{scopus.response["search-results"]["opensearch:totalResults"]}} results,
+                  {{scopus.result.map(page=>page.length).reduce((p,c)=>p+c,0)}} items received, {{scopus.number_of_requests}} requests)
+                </span>
+                <div v-if="scopus.result_is_loading">
+                  loading...
+                  <span v-if="scopus.number_of_requests">
+                    ({{scopus.current_request_number}} of {{scopus.number_of_requests}} requests to scopus API done)
+                  </span>
+                </div>
+              </summary>
+              <div v-if="scopus.result_is_loading==false">
+                <div v-if="!scopus.result" style="color:#666">none</div>
+                <div v-if="scopus.result && scopus.result_ok==false">
+                  {{scopus.result}}
+                </div>
+                <div v-if="scopus.result && scopus.result_ok">
+
+                  <!--filtra subtypes-->
+                  <div v-if="get_subtypes">
+                    <span>
+                      Viewing: {{get_publications_array_filtrat_per_subtipus.length}} items |
+                    </span>
+                    <span v-for="sub in get_subtypes">
+                      <label>
+                        <input type=checkbox v-model="subtypes_visibles[sub]">
+                        {{sub}}
+                        ({{
+                          get_publications_array.filter(p=>p.subtypeDescription==sub).length
+                        }})
+                      </label>
+                    </span>
+                  </div>
+
+                  <table border=1
+                    style="
+                      font-size:smaller;
+                      border-collapse:collapse;
+                      border-color:#ccc;
+                    "
+                  >
+                    <tr>
+                      <th>nº</th>
+                      <th>
+                        <a href=# @click="scopus.sort_publications_by='citedby-count'">cited</a>
+                      </th>
+                      <th>
+                        <a href=# @click="scopus.sort_publications_by='subtypeDescription'">subtype</a>
+                      </th>
+                      <th style="text-align:left">
+                        <a href=# @click="scopus.sort_publications_by='prism:coverDate'">publication</a>
+                      </th>
+                    </tr>
+                    <tbody v-for="entry,i in get_publications_array_filtrat_per_subtipus">
+                      <tr>
+                        <td style="font-size:smaller">{{i+1}}</td>
+                        <td style="font-size:smaller" center>{{entry["citedby-count"]}}</td>
+                        <td nowrap>
+                          {{entry.subtypeDescription || entry.subtype}}
+                        </td>
                         <td>
-                          ({{val.percentil.toFixed(2)}}%)
+                          <details>
+                            <summary>
+                              <span>[{{entry["prism:coverDate"]}}]&nbsp;</span>
+                              <b>{{entry["dc:creator"]}}&nbsp;</b>
+                              <small><i>{{entry["dc:title"]}}</i></small>
+                            </summary>
+
+                            <div v-if="entry['prism:doi']">
+                              <a target=_blank :href="`https://doi.org/${entry['prism:doi']}`">
+                                https://doi.org/{{entry['prism:doi']}}
+                              </a>
+                            </div>
+
+                            <div>
+                              <div v-if="abstract[entry['prism:doi']]">
+                                <details open>
+                                  <summary>Detalls ("abstract metadata request")</summary>
+                                  <pre>{{
+                                    JSON.stringify(
+                                      abstract[entry['prism:doi']],
+                                      null,
+                                      '  ',
+                                    )
+                                  }}</pre>
+                                </details>
+                              </div>
+                              <button
+                                v-if="!abstract[entry['prism:doi']]"
+                                @click="request_abstract(entry)"
+                              >
+                                request publication details
+                              </button>
+                              <button
+                                @click="request_citation_overview(entry)"
+                              >
+                                request citation overview
+                              </button>
+                            </div>
+
+                            <table border=1>
+                              <tr v-for="val,key in entry">
+                                <th>{{key}}</th>
+                                <td>
+                                  <div v-if="val && (val.constructor===Object || val.constructor===Array)">
+                                    <pre>{{JSON.stringify(val,null,'  ')}}</pre>
+                                  </div>
+                                  <div v-else>{{val}}</div>
+                                </td>
+                              </tr>
+                            </table>
+                          </details>
                         </td>
                       </tr>
-                    </table>
-                  </td>
-                  <td><b>{{entry.pub["dc:creator"]}}&nbsp;</b></td>
-                  <td>
-                    <small><i>
-                      <a target=_blank :href="`https://doi.org/${entry.pub['prism:doi']}`">
-                        {{entry.pub["dc:title"]}}
-                      </a>
-                    </i></small>
-                  </td>
-                </tr>
-              </table>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </details>
           </td>
         </tr>
-      </tbody>
 
-      <tr>
-        <td>Nombre de cites</td>
-        <td center>
-          <div v-if="calcula_cites_totals">{{calcula_cites_totals}}</div>
-        </td>
-      </tr>
-      <tr>
-        <td style="vertical-align:middle">
-          H index
-        </td>
-        <td center style="vertical-align:middle">
-          {{calcula_H_index}}
-        </td>
-        <td colspan=2 xsmall>
-          <p>
-            Number of publications that have been cited at least that same
-            number of times.
-          </p>
-          <p v-if="calcula_H_index">
-            Results: {{calcula_H_index}} papers have been cited {{calcula_H_index}} times (or more).
-          </p>
-        </td>
-      </tr>
-    </table>
-  </fieldset>
+        <tr v-if="false && get_publications_array">
+          <td colspan=2>
+            <table border=1 small>
+              <tbody v-for="entry in get_publications_array">
+                <tr>
+                  <td nowrap>{{entry["prism:coverDate"]}}</td>
+                  <td>
+                    <div v-if="entry['prism:doi']">
+                      <a target=_blank :href="`https://doi.org/${entry['prism:doi']}`">
+                        {{entry['prism:doi']}}
+                      </a>
+                    </div>
+                  </td>
+                  <td>
+                    <b>{{entry["dc:creator"]}}&nbsp;</b>
+                  </td>
+                  <td>
+                    <small><i>{{entry["dc:title"]}}</i></small>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </fieldset>
+
+    <fieldset>
+      <legend>
+        Total citations in the
+        <span v-if="get_publications_array_filtrat_per_subtipus">({{get_publications_array_filtrat_per_subtipus.length}})</span>
+        results
+      </legend>
+      <div v-if="scopus.result && scopus.result_ok">
+        {{ calcula_cites_totals }}
+      </div><div v-else style="color:#666">
+        none
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>
+        Journals dels
+        <span v-if="get_publications_array_filtrat_per_subtipus">({{get_publications_array_filtrat_per_subtipus.length}})</span>
+        resultats
+      </legend>
+      <details>
+        <summary sticky>
+          Journals
+          <span v-if="get_revistes">({{get_revistes.length}})</span>
+          &mdash; sorted by:
+          <select v-model="journals_sorted_by" @change="display_only(journals_sorted_by)">
+            <option v-for="op in journals_sorted_by_OPTIONS">{{op}}</option>
+          </select>
+        </summary>
+        <div v-if="!get_revistes" style="color:#666">none</div>
+        <table border=1 v-if="get_revistes">
+          <tr>
+            <th>nº</th>
+            <th>issn</th>
+            <th>eIssn</th>
+            <th>Journal name</th>
+            <th>Publications</th>
+            <th>
+              SCOPUS journal
+              metrics <button @click="request_all_journal_metrics()">request all journals</button>
+              <div small>
+                <label nowrap title="Source-Normalized Impact per Paper (SNIP): Measures contextual citation impact by taking differences in disciplinary characteristics into account; can be used to compare journals in different fields."><input type=checkbox v-model="metrics.snip">SNIP</label>
+                <label nowrap title="SCImago Journal Rank (SJR): A prestige metric for journals, book series and conference proceedings that weights the value of a citation based on the subject field, quality and reputation of the source."><input type=checkbox v-model="metrics.sjr">SJR</label>
+                <label nowrap title="CiteScore™ metrics: Introduced in 2016, a family of eight indicators to analyze the publication influence of serial titles. CiteScore metrics offer more robust, timely and accurate indicators of a serial title’s impact."><input type=checkbox v-model="metrics.citescore">CiteScore</label>
+                <label nowrap title="CiteScore™ metrics: Introduced in 2016, a family of eight indicators to analyze the publication influence of serial titles. CiteScore metrics offer more robust, timely and accurate indicators of a serial title’s impact."><input type=checkbox v-model="metrics.more_details">(all)</label>
+              </div>
+            </th>
+            <th>Scimago Journal Rank CSV metrics
+              <div v-if="!scimagojr">
+                (loading scimagojr csvs...)
+              </div>
+
+              <div v-if="scimagojr">
+                <table style="font-size:smaller;font-weight:normal;margin:auto" border=1>
+                  <tr v-for="key in Object.keys(scimagojr)">
+                    <td>ranking {{key}}</td>
+                    <td>loaded</td>
+                  </tr>
+                  <tr v-for="key in scimagojr_years_not_available">
+                    <td>ranking {{key}}</td>
+                    <td style="color:#aaa">not available</td>
+                  </tr>
+                </table>
+              </div>
+            </th>
+          </tr>
+          <tr v-for="[key,val],i in get_revistes">
+            <td xsmall>{{i+1}}</td>
+            <td xsmall nowrap>{{val.issn}}</td>
+            <td xsmall nowrap>{{val.eIssn}}</td>
+            <td :title="key">
+              <details>
+                <summary>
+                  {{key.substring(0,50)}}<span v-if="key.length>50">...</span>
+                </summary>
+                <p small>
+                  <a target=_blank :href="`https://www.scimagojr.com/journalsearch.php?q=${val.source_id}&tip=sid&clean=0`">
+                    https://www.scimagojr.com/journalsearch.php?q={{val.source_id}}&tip=sid&clean=0
+                  </a>
+                </p>
+                <table small>
+                  <tbody v-for="entry in val.articles">
+                    <tr>
+                      <td>
+                        <a target=_blank :href="`https://doi.org/${entry['prism:doi']}`">
+                          [{{entry["prism:coverDate"]}}]
+                          <b>{{entry["dc:creator"]}}&nbsp;</b>
+                          <small><i>{{entry["dc:title"]}}</i></small>
+                        </a>
+                      </td>
+                    </tr>
+                  </tr>
+                </table>
+              </details>
+            </td>
+            <td nowrap small> {{val.articles.length}} publications </td>
+            <td small>
+              <div v-if="journal_metrics[key]">
+                <table border=1 xsmall>
+                  <tr v-if="metrics.snip">
+                    <td>SNIP ({{ get_snip([key,val]).year }})</td>
+                    <td right>{{ get_snip([key,val]).score }}</td>
+                  </tr>
+                  <tr v-if="metrics.sjr">
+                    <td>SJR ({{  get_sjr([key,val]).year }})</td>
+                    <td right>{{ get_sjr([key,val]).score }}</td>
+                  </tr>
+                  <tr v-if="metrics.citescore">
+                    <td>CiteScore (current) ({{ get_citescore_current([key,val]).year }})</td>
+                    <td right>{{                get_citescore_current([key,val]).score }}</td>
+                  </tr>
+                  <tr v-if="metrics.citescore">
+                    <td>CiteScore (tracker) ({{ get_citescore_tracker([key,val]).year }})</td>
+                    <td right>{{                get_citescore_tracker([key,val]).score }}</td>
+                  </tr>
+                </table>
+              </div>
+              <details v-if="journal_metrics[key] && metrics.more_details" xsmall>
+                <summary>more details</summary>
+                <pre>{{
+                  JSON.stringify(
+                    recurse(
+                      journal_metrics[key],
+                      ['serial-metadata-response','entry',0]
+                    ),
+                    null,
+                    "  ",
+                  )
+                }}</pre>
+              </details>
+              <div v-if="!journal_metrics[key]">
+                <button small v-if="val.issn||val.eIssn" @click="request_journal(val.issn||val.eIssn,key)">
+                  request journal info (SCOPUS)
+                </button>
+              </div>
+            </td>
+            <td v-if="scimagojr">
+              <div v-for="sjr in [busca_a_scimagocsv(key, val.issn, val.eIssn, val.articles[0]['prism:coverDate']?.split('-')[0])]">
+                <table v-if="sjr" border=1 xsmall>
+                  <tbody>
+                    <tr><th nowrap>SJR              <td>{{sjr.SJR}}</tr>
+                    <tr><th nowrap>SJR Best Quartile<th>{{sjr["SJR Best Quartile"]}}</th>
+                    <tr><th nowrap>H index          <td>{{sjr["H index"]}}</tr>
+                  </tbody>
+                </table>
+                <details v-if="sjr" xsmall>
+                  <summary>see all ScimagoJR metrics</summary>
+                  <table border=2 xsmall>
+                    <tr v-for="val2,key2 in sjr">
+                      <th nowrap>{{key2}}</th>
+                      <td>{{val2}}</td>
+                    </tr>
+                  </table>
+                </details>
+                <div v-if="!sjr">
+                  <code>~journal not ranked in SJR</code>
+                </div>
+              </div>
+            </td>
+            <td v-if="!scimagojr">
+              (loading scimago csvs...)
+            </td>
+          </tr>
+        </table>
+      </details>
+    </fieldset>
+
+    <fieldset>
+      <legend>
+        Indicadors dels
+        <span v-if="get_publications_array_filtrat_per_subtipus">({{get_publications_array_filtrat_per_subtipus.length}})</span>
+        resultats
+      </legend>
+      <table border=1>
+        <tbody v-if="get_articles_quartils">
+          <tr v-for="arr,key in get_articles_quartils">
+            <td>Articles publicats a revista {{key}}</td>
+            <td center>
+              {{arr.length}}
+            </td>
+            <td v-if="arr.length">
+              <details small>
+                <summary>llista</summary>
+                <table border=1 small>
+                  <tr>
+                    <td center>Journal
+                    <td center>Rank (percentile) by category
+                    <td center>Author
+                    <td center>Title
+                  </tr>
+                  <tr v-for="entry in arr">
+                    <td>
+                      <b>{{entry.pub["prism:publicationName"]}}</b>
+                    </td>
+                    <td>
+                      <table style="width:100%">
+                        <tr v-for="val,key in entry.sjr.percentils">
+                          <td>{{key}}</td>
+                          <td>#{{val.rank}}/{{val.n}}</td>
+                          <td>
+                            ({{val.percentil.toFixed(2)}}%)
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                    <td><b>{{entry.pub["dc:creator"]}}&nbsp;</b></td>
+                    <td>
+                      <small><i>
+                        <a target=_blank :href="`https://doi.org/${entry.pub['prism:doi']}`">
+                          {{entry.pub["dc:title"]}}
+                        </a>
+                      </i></small>
+                    </td>
+                  </tr>
+                </table>
+              </details>
+            </td>
+          </tr>
+        </tbody>
+
+        <tr>
+          <td>Nombre de cites</td>
+          <td center>
+            <div v-if="calcula_cites_totals">{{calcula_cites_totals}}</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align:middle">
+            H index
+          </td>
+          <td center style="vertical-align:middle">
+            {{calcula_H_index}}
+          </td>
+          <td colspan=2 xsmall>
+            <p>
+              Number of publications that have been cited at least that same
+              number of times.
+            </p>
+            <p v-if="calcula_H_index">
+              Results: {{calcula_H_index}} papers have been cited {{calcula_H_index}} times (or more).
+            </p>
+          </td>
+        </tr>
+      </table>
+    </fieldset>
+  </div>
 </div>
 
 <script>
@@ -602,6 +628,8 @@
           /*"query":{results}*/
         },
       },
+      modul_scimago:null,
+      scimagojr:null,
 
       //historial queries
       historial:[],
@@ -1223,10 +1251,15 @@
 
         return ret;
       },
+
+      modul_scimago_is_loading(){
+        return this.modul_scimago.is_loading();
+      },
     },
 
     mounted(){
-      document.querySelector("textarea[query]").focus();
+      let el=document.querySelector("textarea[query]");
+      if(el) el.focus();
 
       //if query is in the url, start search immediately
       if(query){
@@ -1239,10 +1272,11 @@
 <!--modul scimago-->
 <script src="modul_scimago.js"></script>
 <script>
-  modul_scimago.init()//descarrega i parseja csvs
-
-  //importa modul scimago a vue app
+  //bind modul scimago to the vue app
+  app.modul_scimago                 = modul_scimago;
   app.scimagojr                     = modul_scimago.scimagojr; //diccionari
   app.scimagojr_years_not_available = modul_scimago.scimagojr_years_not_available; //set
   app.busca_a_scimagocsv            = modul_scimago.busca_a_scimagocsv; //function
+
+  app.modul_scimago.init();//descarrega i parseja csvs
 </script>

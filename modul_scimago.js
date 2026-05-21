@@ -28,6 +28,10 @@ let modul_scimago={
     }
   },
 
+  is_loading(){
+    return Object.values(this.scimagojr).some(val=>val=="loading");
+  },
+
   //get csv by year and save to cache
   //and parse objects inside
   async fetch_scimagocsv(year, path_to_csvs){
@@ -38,10 +42,13 @@ let modul_scimago={
 
     if(this.scimagojr[year]) return;
 
+    this.scimagojr[year]="loading";
+
     let res = await fetch(`${path_to_csvs}/scimagojr ${year}.csv`);
     if(!res.ok){
       this.scimagojr_years_not_available.add(year);
       console.warn(`[scimago] ranking ${year} no existeix encara`);
+      this.scimagojr[year]=false;
       return;
     }
 
