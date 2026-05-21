@@ -168,14 +168,18 @@ let modul_scimago={
     if(obj) return obj;
 
     //search by issn
-    issn = issn.replaceAll("-","");
-    obj = Object.entries(csv).find(en=>en[1].Issn.includes(issn)); //object or null
-    if(obj) return obj[1];
+    if(issn){
+      issn = issn.replaceAll("-","");
+      obj = Object.entries(csv).find(en=>en[1].Issn.includes(issn)); //object or null
+      if(obj) return obj[1];
+    }
 
     //search by eIssn
-    eIssn = eIssn.replaceAll("-","");
-    obj = Object.entries(csv).find(en=>en[1].Issn.includes(eIssn)); //object or null
-    if(obj) return obj[1];
+    if(eIssn){
+      eIssn = eIssn.replaceAll("-","");
+      obj = Object.entries(csv).find(en=>en[1].Issn.includes(eIssn)); //object or null
+      if(obj) return obj[1];
+    }
 
     return false; //not found
   },
