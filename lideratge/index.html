@@ -105,18 +105,21 @@
           <th>Publicacions<br>totals</th>
           <th>Publicacions<br>lideratge</th>
           <th>Publicacions<br>lideratge<br>femení</th>
+          <th>Publicacions<br>lideratge<br>masculí</th>
         </tr>
         <tr>
           <th>tots els tipus</th>
           <th>{{works.length}}</th>
           <th>{{get_works_amb_lideratge.length}}</th>
           <th>{{get_works_amb_lideratge_femeni.length}}</th>
+          <th>{{get_works_amb_lideratge_masculi.length}}</th>
         </tr>
         <tr>
           <th>tipus seleccionats</th>
           <th>{{works.filter(w=>work_types[w.type]).length}}</th>
           <th>{{get_works_amb_lideratge.filter(w=>work_types[w.type]).length}}</th>
           <th>{{get_works_amb_lideratge_femeni.filter(w=>work_types[w.type]).length}}</th>
+          <th>{{get_works_amb_lideratge_masculi.filter(w=>work_types[w.type]).length}}</th>
         </tr>
         <tr v-for="tipus in get_tipus_publicacions">
           <td>
@@ -125,15 +128,10 @@
               {{tipus}}
             </label>
           </td>
-          <td center>
-            {{works.filter(w=>w.type==tipus).length}}
-          </td>
-          <td center>
-            {{get_works_amb_lideratge.filter(w=>w.type==tipus).length}}
-          </td>
-          <td center>
-            {{get_works_amb_lideratge_femeni.filter(w=>w.type==tipus).length}}
-          </td>
+          <td center> {{works.filter(w=>w.type==tipus).length}}                           </td>
+          <td center> {{get_works_amb_lideratge.filter(w=>w.type==tipus).length}}         </td>
+          <td center> {{get_works_amb_lideratge_femeni.filter(w=>w.type==tipus).length}}  </td>
+          <td center> {{get_works_amb_lideratge_masculi.filter(w=>w.type==tipus).length}} </td>
         </tr>
         <tr>
           <td>
@@ -153,6 +151,7 @@
       <button @click="array_works_visible=works;                          array_works_seleccionat='P'"   :seleccionat="array_works_seleccionat=='P'"  >Publicacions totals</button>
       <button @click="array_works_visible=get_works_amb_lideratge;        array_works_seleccionat='PL'"  :seleccionat="array_works_seleccionat=='PL'" >Publicacions lideratge ICRA</button>
       <button @click="array_works_visible=get_works_amb_lideratge_femeni; array_works_seleccionat='PLF'" :seleccionat="array_works_seleccionat=='PLF'">Publicacions lideratge ICRA femení</button>
+      <button @click="array_works_visible=get_works_amb_lideratge_masculi; array_works_seleccionat='PLM'" :seleccionat="array_works_seleccionat=='PLM'">Publicacions lideratge ICRA masculí</button>
     </div><hr>
 
     <!--opcions-->
@@ -230,6 +229,7 @@
             "P":"Publicacions",
             "PL":"Publicacions lideratge",
             "PLF":"Publicacions lideratge femení",
+            "PLM":"Publicacions lideratge masculí",
           }[array_works_seleccionat]
         }}
         {{Object.entries(work_types).filter(en=>en[1]).map(en=>en[0])}}
@@ -555,6 +555,15 @@
             let gender = this.gender_authorship(a);
             return gender=="female";
           });
+        }else if(this.array_works_seleccionat=="PLM"){
+          return work.authorships.filter(a=>{
+            let lideratge = a.is_corresponding || a.author_position!='middle';
+            if(!lideratge) return false;
+            let icra = a.institutions.some(i=>i.id==this.id_icra);
+            if(!icra) return false;
+            let gender = this.gender_authorship(a);
+            return gender=="male";
+          });
         }else{
           return [];
         }
@@ -627,6 +636,23 @@
           return authorships.some(a=>{
             let gender = this.gender_authorship(a);
             return gender=="female" && (a.is_corresponding || a.author_position!='middle');
+          });
+        });
+
+        return works;
+      },
+
+      get_works_amb_lideratge_masculi(){
+        if(!this.get_works_amb_lideratge) return [];
+
+        let works = this.get_works_amb_lideratge.filter(work=>{
+          //filtra authorships icra
+          let authorships = work.authorships.filter(a=>a.institutions.some(i=>i.id==this.id_icra));
+
+          //check lideratge i gènere
+          return authorships.some(a=>{
+            let gender = this.gender_authorship(a);
+            return gender=="male" && (a.is_corresponding || a.author_position!='middle');
           });
         });
 
