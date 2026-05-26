@@ -85,10 +85,9 @@
   </style>
 </head><body>
 
-<a href="../centre.html">&larr; Inici</a>
 <h1>ICRA publicacions (segons OpenAlex)</h1>
 <h2>Càlcul automàtic lideratge &amp; gènere &amp; percentil</h2>
-<h3>Resultats 2021-2024 (nota: es podrà consultar qualsevol any quan la web estigui acabada)</h3><hr>
+<h3>Resultats 2021-2025 (nota: es podrà consultar qualsevol any quan la web estigui acabada)</h3><hr>
 
 <div id=app>
   Link web OpenAlex:
@@ -98,7 +97,7 @@
   <div v-if="works"><hr>
     <!--taules context-->
     <details open>
-      <summary>Metadades resultats</summary>
+      <summary>Metadades resultats (tots els anys)</summary>
       <table border=1 id=taula_metadades>
         <tr>
           <th>Tipus publicació</th>
@@ -385,10 +384,11 @@
 </div>
 
 <script>
-  //TODO api calls sota demanda
-  async function query_oa_api(){
-    let year_inici = 2021;
-    let year_final = 2024;
+  //api calls sense filtrar per nom institució
+  async function query_oa_api(year_inici, year_final){
+    year_inici = year_inici || 2021;
+    year_final = year_final || 2025;
+
     let codi_icra  = "I2799562678"; //institution code
     let api_key    = "tGXbKHpYBXs5jv8YOFteH5";
 
@@ -417,8 +417,30 @@
 
     return results;
   }
-  //let results = query_oa_api(); //debug mode
+
+  //genera arxiu per disminuir crides a openalex
+  //wrapper (api call + descarregar arxiu)
+  async function fes_query_i_guarda_json(){
+    //part FilePicker a la mateixa funcio onclick per evitar security_error
+    const handle = await window.showSaveFilePicker({
+      suggestedName: "query-works-2021-2025.json"
+    });
+    let writable = await handle.createWritable();
+
+    //query i generacio blob
+    let array_works = await query_oa_api(2021,2025);
+    let str         = JSON.stringify(array_works);
+    let blob        = new Blob([str],{type:"application/json"});
+
+    //ajunta writable i blob
+    await writable.write(blob);
+    await writable.close();
+    console.log("arxiu escrit correctament");
+  }
 </script>
+<!--
+<button onclick="fes_query_i_guarda_json()">fes_query_i_guarda_json</button>
+-->
 
 <!--llibreria gender-->
 <script src="genders.js"></script>
@@ -430,7 +452,7 @@
       real_people, //from genders.js
 
       year_inici:2021,
-      year_final:2024,
+      year_final:2025,
       codi_icra:                   "I2799562678", //codi openAlex institution ICRA
       id_icra:"https://openalex.org/I2799562678", //id   openAlex institution ICRA
       works:null,
@@ -752,7 +774,7 @@
     },
     mounted(){
       //carrega presaved results
-      fetch("query-result-works-2021-2024-icra.json")
+      fetch("query-works-2021-2025.json")
       .then(r=>r.json())
       .then(arr=>{
         arr = arr.filter(work=>{
@@ -775,7 +797,7 @@
           return bb<aa?1:-1;
         });
         this.works=arr;
-        console.log("[ok] query-result-works-2021-2024-icra.json");
+        console.log("[ok] query-works-2021-2025.json");
       });
     },
   }).mount("#app");
