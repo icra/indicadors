@@ -675,4 +675,14 @@ let real_people={
   "Mercado-BettÃ­n, Daniel":"male", //daniel
   "Pueyo-Ros Josep":"male", //josep
   "S. Zahedi":"female", //soraya
+  "M. Isabel Cadena-Aizaga":"female",
+  "Llorente-Moragrega, Oliu":"male",
+  "Estrada, Laia":"female",
+  "Comalada, Francesc":"male",
+  "Acuña, Vicenç":"male",
+  "Lide Jaurrieta":"female",
+  "Garcia, Xavier":"male",
+  "Itzel Alcaraz Bernades":"female",
+  "Castellar da Cunha, Joana América":"female",
+  "R. Gil-Solsona":"male",//ruben
 };
