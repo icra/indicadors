@@ -1,5 +1,17 @@
 === COSES PENDENTS ===
-
 etornes (2026-04-10):
   - [ok] afegir relació quartils (SJR) i lideratge + gènere
   - implementar exportació taules a excel sense taules intermitges (scopus: taula articles i journals)
+
+=== 2026-10-07 ==========================================
+
+* REVISAR DEFINICIÓ DE "RECERCAIRE"!
+
+[fet]* 1.16 estades a icra "estades_recercaires_acollits"
+  canviar codi: TODO calcular més de 3 mesos
+
+[fet] * 1.17 estades internacionals en centre internacionals
+  demanar a ruben que miri icranet (n'hi ha 3 i només en surt un)
+
+[fet] * 1.9 indicador nombre de sessions especials organitzades per icra
+  demanar a ruben que miri icranet (surt 0)
