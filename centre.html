@@ -440,8 +440,8 @@
           </span>
           <span small>
             <span
-              :style="{background:taules[taula].origen!='sql'?'red':''}"
-              :title="taules[taula].origen=='sql'?'taula automatitzada':'taula pendent automatitzar'"
+              :style="{background:taules[taula].origen!='xlsx'?'':'red'}"
+              :title="taules[taula].origen!='xlsx'?'taula automatitzada':'taula pendent automatitzar'"
             >[{{taules[taula].origen}}]
             </span>
           </span>
@@ -1563,7 +1563,8 @@
 
         return(
           (
-            per["Categoria"]=="110. VISITING SCIENTIST"||
+            per["Categoria"]=="110. VISITING SCIENTIST"//||
+            /*TODO confirmar definició de "recercaire"
             (
               per["Categoria"]=="120. VISITING STUDENT"&&
               (
@@ -1571,9 +1572,10 @@
                 per["Titulacio"]=="020. MASTER"||
                 per["Titulacio"]=="030. LLICENCIAT"||
                 per["Titulacio"]=="040. DIPLOMAT"//||
-                //per["Titulacio"]=="050. GRAU"
+                per["Titulacio"]=="050. GRAU"
               )
             )
+            */
           )&&
           new Date(per["Datainicicontracte"]).getFullYear()<=year &&
           new Date(per["DataFiContracte"   ]).getFullYear()>=year &&
@@ -4925,7 +4927,7 @@
 
       //taules des d'on es calculen els indicadors: origens diversos (SQL icra, excels, ...)
       taules:{
-        projectes:           new Conf_Taula("'projectes.xlsx'          | export fundanet rdiaz    | llista de projectes                    ",'xlsx'),
+        projectes:           new Conf_Taula("'projectes.json'          | export fundanet rdiaz    | llista de projectes                    ",'json undarius'),
         personal:            new Conf_Taula("SQL Server icranet        | rdiaz                    | llista de persones                     ",'sql'),
         esdeveniments:       new Conf_Taula("SQL Server icranet        | rdiaz                    | participacions en esdeveniments per investigador ",'sql'),
         tipus_esdeveniments: new Conf_Taula("SQL Server icranet        | rdiaz                    | tipus d'esdeveniments                            ",'sql'),
@@ -4936,7 +4938,6 @@
         xarxes_socials:      new Conf_Taula("'xarxes_socials.xlsx'     | fet manualment sdrammeh  | mètriques per any                      ",'xlsx'),
         scopus:              new Conf_Taula("'scopus.xlsx'             | fet manualment etornes   | mètriques per any                      ",'xlsx'),
         sage:                new Conf_Taula("'sage_profiles.txt'       | fet manualment lbosch    | perfils sagepub                        ",'txt'),
-        projectes_icranet:   new Conf_Taula("SQL Server icranet        | rdiaz                    | llista de projectes                    ",'sql'),
         tesis:               new Conf_Taula("SQL Server icranet        | rdiaz                    | llista de tesis defensades             ",'sql'),
         projectes_imports:   new Conf_Taula("'Projectes_Imports.xlsx'  | export fundanet rdiaz    | pressupostos dels projectes            ",'xlsx'),
       },
@@ -5462,16 +5463,23 @@
     app.taules[nom_taula_desti].carregant = true;
 
     try{
-      //console.log(`llegint SQL server /${nom_taula}...`);
+      //console.log(`llegint undarius.icra.local:50000/${nom_taula_sql}...`);
       let url=`https://undarius.icra.local:50000/${nom_taula_sql}`;
       let response = await fetch(url);
       if(!response.ok){
-        throw(`error fetching SQL Server (taula '${nom_taula_sql}')`);
+        throw(`error fetching Undarius Server (taula '${nom_taula_sql}')`);
       }
 
       let data = await response.json();
+
+      //processa correctament taules fundanet
+      if(data?.metadata?.dataset=="FundanetDataset"){
+        data = data.data;
+        //console.log({data});//debug
+      }
+
       app.taules[nom_taula_desti].taula = data;
-      console.log(`[SQL] OK GET /${nom_taula_sql}`);
+      console.log(`[Undarius] OK GET /${nom_taula_sql}`);
     }catch(err){
       console.error('Error fetching data:', err);
       app.taules[nom_taula_desti].error = err;
@@ -5479,16 +5487,21 @@
       app.taules[nom_taula_desti].carregant = false;
     }
   }
-  fetch_taula_undarius("projectes","projectes_icranet");
+
+  //taules SQL icranet
   fetch_taula_undarius("personal");
   fetch_taula_undarius("esdeveniments");
   fetch_taula_undarius("tipus_esdeveniments");
   fetch_taula_undarius("ingressos");
   fetch_taula_undarius("taula_aigua");
   fetch_taula_undarius("tesis");
+
+  //taules json_fundanet exports
+  fetch_taula_undarius("projectes.json","projectes");
 </script>
 
 <script>
+  //TODO objectiu és no haver de fer servir aquest mòdul
   //read excel file from local url
   async function llegir_excel(nom_taula, url){
     //url = "csv/export-fundanet/fitxer.xlsx"
@@ -5543,7 +5556,6 @@
     return taula;
   }
 
-  llegir_excel("projectes",          "csv/export-fundanet/Projectes2.xlsx");
   llegir_excel("projectes_personal", "csv/export-fundanet/Projectes_Personal2.xlsx");
   llegir_excel("stakeholders",       "csv/export-fundanet/Stakeholders3.xlsx");
   llegir_excel("xarxes_socials",     "csv/export-fundanet/xarxes_socials.xlsx");
