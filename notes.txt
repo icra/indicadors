@@ -1,17 +1,54 @@
 === COSES PENDENTS ===
-etornes (2026-04-10):
-  - [ok] afegir relació quartils (SJR) i lideratge + gènere
-  - implementar exportació taules a excel sense taules intermitges (scopus: taula articles i journals)
+
+=== 2026-04-10 reunió elisabet ==========================
+  * [fet] afegir relació quartils (SJR) i lideratge + gènere
+  * [   ] implementar exportació taules a excel sense taules intermitges (scopus: taula articles i journals)
 
 === 2026-10-07 ==========================================
+  [fet] * REVISAR DEFINICIÓ DE "RECERCAIRE"!
 
-* REVISAR DEFINICIÓ DE "RECERCAIRE"!
+  [fet] * 1.16 estades a icra "estades_recercaires_acollits"
+    canviar codi: TODO calcular més de 3 mesos
 
-[fet]* 1.16 estades a icra "estades_recercaires_acollits"
-  canviar codi: TODO calcular més de 3 mesos
+  [fet] * 1.17 estades internacionals en centre internacionals
+    demanar a ruben que miri icranet (n'hi ha 3 i només en surt un)
 
-[fet] * 1.17 estades internacionals en centre internacionals
-  demanar a ruben que miri icranet (n'hi ha 3 i només en surt un)
+  [fet] * 1.9 indicador nombre de sessions especials organitzades per icra
+    demanar a ruben que miri icranet (surt 0)
 
-[fet] * 1.9 indicador nombre de sessions especials organitzades per icra
-  demanar a ruben que miri icranet (surt 0)
+=== 2026-10-09 reunió vicenç ============================
+  [fet] * projectes_KTT: afegir filtre situacion proyecto excloure denegats i en preparació
+  [   ] * adaptar taula stakeholders
+
+=== 2026-10-09 reunió elisabet ============================
+  * calcular lideratge/gènere/Q1,D1,FWCI amb Scopus amb una web on s'hi carregui un excel
+    - es pot exportar de scopus:
+      - llista d'autors amb noms sencers
+      - correspondence address
+      - assignar gènere com ja s'ha fet amb openalex
+
+  * elisabet pregunta si es pot fer una cerca automatitzada de datasets que no surten a scopus:
+    - chatgpt diu que :
+    "
+      3. La opción más eficiente: usar DataCite como punto de partida
+
+      La API pública de DataCite permite buscar y recuperar metadatos DOI, filtrar
+      por repositorio y tipo de recurso, y paginar grandes volúmenes de resultados.
+      Incluso permite consultar los registros asociados al cliente cern.zenodo, por
+      ejemplo, para obtener metadatos de ese repositorio. 
+
+      Puedes combinar estas herramientas:
+
+      Herramienta  | Función
+      DataCite API | Recuperar datasets y sus metadatos a gran escala
+      Zenodo API   | Buscar directamente en Zenodo
+      Scopus       | Comprobar la presencia de registros bibliográficos
+      OpenAlex     | Contrastar publicaciones y relaciones bibliográficas como fuente complementaria
+
+      Para un estudio reproducible, guardaría también la fecha de consulta, las
+      consultas utilizadas y el resultado de cada comprobación.
+    "
+
+next
+=== 2026-mm-dd ==========================================
+  [ ] * 
