@@ -140,14 +140,12 @@
 
 <!--nav--><div id=nav></div><hr><script src="nav.js"></script>
 
-
 <div id=app>
   <div style="background:azure">
     avís 2026-10-13:<br>
-    mode manteniment / pàgina no operativa<br>
+    mode manteniment<br>
     PÀGINA EN DESENVOLUPAMENT<br>
   </div>
-
 
   <h2>
     <div style="display:flex;justify-content:space-between">
@@ -161,7 +159,26 @@
   <!--avís certificat-->
   <div v-if="!tot_carregat"><hr>
     <div v-if="carregant">
-      Carregant...<hr>
+      <b>Carregant taules...</b><hr>
+      <table border=1 monospace>
+        <tr>
+          <th>nom taula</th>
+          <th>origen</th>
+          <th>status</th>
+        </tr>
+        <tr v-for="taula,nom_taula in taules">
+          <td>
+            Taula "{{nom_taula}}"
+          </td>
+          <td>
+            {{taula.origen}}
+          </td>
+          <td>
+            <div v-if="taula.taula==null">carregant...</div>
+            <div v-if="taula.taula">ok</div>
+          </td>
+        <tr>
+      </table>
     </div>
     <div v-if="!carregant">
       ERROR! Perquè la web funcioni:
@@ -239,11 +256,12 @@
           <span v-if="!ip_seleccionat">Selecciona IP</span>
           <span v-if="ip_seleccionat">
             IP seleccionat: <b>{{ip_seleccionat.nom}}</b>
+            <span v-if="ip_seleccionat.orcid?.trim()">, ORCID="{{ip_seleccionat.orcid}}"</span>
+            <span v-else>, [ORCID FIELD BLANK, siusplau informa del teu nº ORCID a administració]</span>
             &nbsp;
             <button @click="ip_seleccionat=null">X</button>
           </span>
         </summary>
-        <code v-if="ip_seleccionat" center block>orcid({{ip_seleccionat.orcid}})</code>
         <div
           style="
             display:grid;
@@ -436,8 +454,9 @@
   <!--taules dev "Conf_Taula"-->
   <details v-if="debug && tot_carregat">
     <summary large bold>
-      [dev] Taules desenvolupament
+      [dev] Taules desenvolupament ({{Object.keys(taules).length}})
     </summary>
+
     <!--itera taules-->
     <div v-for="taula in Object.keys(taules).sort()">
       <details :id="`container_taula_${taula}`">
@@ -461,9 +480,22 @@
           {{taules[taula].error}}
         </div>
 
-        <code v-if="taules[taula].comentaris" style="margin-left:1em">
-          {{taules[taula].comentaris}}
+        <code v-if="taules[taula].comentaris" style="padding-left:40px">
+          Comentaris: "{{taules[taula].comentaris}}"
         </code>
+
+        <div v-if="get_indicadors_calculats_a_partir_de_taules" style="padding-left:40px">
+          <div v-for="indicadors_calculats in [get_indicadors_calculats_a_partir_de_taules[taula]]">
+            <details v-if="indicadors_calculats">
+              <summary>
+                Indicadors calculats a partir d'aquesta taula ({{indicadors_calculats.length}})
+              </summary>
+              <code small>
+                {{indicadors_calculats}}
+              </code>
+            </details>
+          </div>
+        </div>
 
         <!--checkboxes per veure columnes-->
         <p v-if="taules[taula].taula?.length" small>
@@ -491,7 +523,7 @@
             </tr>
           </thead>
           <tr v-for="row in taules[taula].files_filtrades">
-            <td v-for="key in taules[taula].columnes_actives">
+            <td v-for="key in taules[taula].columnes_actives" nowrap>
               <span @click="taules[taula].filtres[key]=row[key]">{{row[key]}}</span>
             </td>
           </tr>
@@ -503,7 +535,7 @@
   <!--taula_resum_esdeveniments-->
   <details v-if="debug && taula_resum_esdeveniments">
     <summary large bold>
-      [dev] Taula resum esdeveniments-IPs
+      [dev] Resum esdeveniments (IPs) icranet
     </summary>
     <ul
       v-for="[a,b] in [[
@@ -571,7 +603,7 @@
   </details>
 
   <!--taules i columnes utilitzades per calcular indicadors-->
-  <details v-if="debug && tot_carregat" open>
+  <details v-if="debug && tot_carregat">
     <summary large bold>
       [dev] Taules i columnes utilitzades per indicadors
     </summary>
@@ -644,6 +676,19 @@
           </td>
         </tr>
       </table>
+    </div>
+  </details>
+
+  <details v-if="debug && tot_carregat">
+    <summary large bold>
+      [dev] Buscador de problemes
+    </summary>
+    <div>
+      secció en desenvolupament
+      <ul>
+        <li>IPs/professors-UDG sense orcid</li>
+        <li>IPs/professors-UDG sense sage-id</li>
+      </ul>
     </div>
   </details>
 </div>
@@ -1905,6 +1950,7 @@
           "Tipo de Financiación Contracte Programa",
           "Fecha Comienzo",
           "Fecha Fin Real",
+          "Situación del Proyecto",
         ],
       };
 
@@ -4943,17 +4989,21 @@
       //taules des d'on es calculen els indicadors: origens diversos (SQL icra, excels, ...)
       taules:{
         projectes:           new Conf_Taula("'projectes.json'              | export fundanet rdiaz    | llista de projectes"                    ,'json_fundanet'),
-        personal:            new Conf_Taula("SQL Server icranet            | rdiaz                    | llista de persones"                     ,'sql'),
-        esdeveniments:       new Conf_Taula("SQL Server icranet            | rdiaz                    | esdeveniments investigadors"            ,'sql'),
-        tipus_esdeveniments: new Conf_Taula("SQL Server icranet            | rdiaz                    | tipus d'esdeveniments"                  ,'sql'),
-        ingressos:           new Conf_Taula("SQL Server icranet            | rdiaz                    | aportacions econòmiques per projecte"   ,'sql'),
-        taula_aigua:         new Conf_Taula("SQL Server icranet            | rdiaz                    | taula aigua"                            ,'sql'),
         projectes_personal:  new Conf_Taula("'projectes_personal.json'     | export fundanet rdiaz    | implicació personal en projectes"       ,'json_fundanet'),
         stakeholders:        new Conf_Taula("'projectes_stakeholders.json' | export fundanet rdiaz    | participacions de tercers en projectes" ,'json_fundanet'),
+
+        personal:            new Conf_Taula("SQL Server icranet            | rdiaz                    | llista de persones"                     ,'sql_icranet'),
+        esdeveniments:       new Conf_Taula("SQL Server icranet            | rdiaz                    | esdeveniments investigadors"            ,'sql_icranet'),
+        tipus_esdeveniments: new Conf_Taula("SQL Server icranet            | rdiaz                    | tipus d'esdeveniments"                  ,'sql_icranet'),
+        ingressos:           new Conf_Taula("SQL Server icranet            | rdiaz                    | aportacions econòmiques per projecte"   ,'sql_icranet'),
+        taula_aigua:         new Conf_Taula("SQL Server icranet            | rdiaz                    | taula aigua"                            ,'sql_icranet'),
+        tesis:               new Conf_Taula("SQL Server icranet            | rdiaz                    | llista de tesis defensades"             ,'sql_icranet'),
+
         xarxes_socials:      new Conf_Taula("'xarxes_socials.xlsx'         | fet manualment sdrammeh  | mètriques per any"                      ,'xlsx'),
         scopus:              new Conf_Taula("'scopus.xlsx'                 | fet manualment etornes   | mètriques per any"                      ,'xlsx'),
         sage:                new Conf_Taula("'sage_profiles.txt'           | fet manualment lbosch    | perfils sagepub"                        ,'txt'),
-        tesis:               new Conf_Taula("SQL Server icranet            | rdiaz                    | llista de tesis defensades"             ,'sql'),
+
+        //pendent integrar a fundanet 13-10-2026
         projectes_imports:   new Conf_Taula("'Projectes_Imports.xlsx'      | export fundanet rdiaz    | pressupostos dels projectes"            ,'xlsx'),
       },
 
@@ -4962,8 +5012,8 @@
 
       //taules i columnes utilitzades
       taules_i_columnes_usades,
-      taules_i_columnes_usades_filtre_origen:"xlsx",
-      taules_i_columnes_usades_filtre_comentaris:"rdiaz",
+      taules_i_columnes_usades_filtre_origen:"",
+      taules_i_columnes_usades_filtre_comentaris:"",
     }},
 
     methods:{
@@ -5336,6 +5386,9 @@
         if(!this.tot_carregat) return false;
 
         //1. calcula tots els indicadors per poblar la variable "taules_i_columnes_usades"
+        //aixo genera bug a la hora de seleccionar columnes TODO
+        /*
+        */
         this.ambits.forEach(ambit=>{
           ambit.blocs.forEach(bloc=>{
             bloc.indicadors.forEach(indi=>{
@@ -5397,15 +5450,41 @@
         });
         return Array.from(set);
       },
+
+      get_indicadors_calculats_a_partir_de_taules(){
+        if(!this.tot_carregat) return false;
+
+        let dicc={};//retval [nom_taula]=>[...indicadors]
+
+        let get_taules = this.get_taules_i_columnes_utilitzades_des_dexcels;
+
+        //itera indicadors
+        Object.entries(this.taules_i_columnes_usades).forEach(en=>{
+          let nom_indicador = en[0];
+          let coleccio      = en[1];
+
+          //itera taules
+          Object.entries(coleccio).forEach(enn=>{
+            let nom_taula = enn[0];
+
+            //crea un nou set buit
+            if(dicc[nom_taula]==undefined){
+              dicc[nom_taula]=[];
+            }
+
+            dicc[nom_taula].push(nom_indicador);
+
+          });
+        });
+
+        return dicc;
+      },
     },
   }).mount("#app");
 
   //columnes activades per defecte
   app.taules.projectes.columnes={
-    "Situación del Proyecto":true,
     "Título Abreviado":true,
-    "Naturaleza del Proyecto":true,
-    "Concurrencia":true,
   };
   app.taules.personal.columnes={
     "Nom":true,
@@ -5503,10 +5582,6 @@
               delete fila[key];
             });
           });
-        }
-
-        if(nom_taula_desti=="projectes_personal"){
-          console.log(data[0]);
         }
       }
 
@@ -5651,7 +5726,12 @@
   };
 
   async function fetch_orcid(orcid,year){
-    if(!orcid) throw new Error("orcid not defined");
+    orcid = orcid || false;
+    orcid = orcid.trim();
+    if(!orcid){
+      throw new Error("orcid not defined");
+    }
+
     if(!year) throw new Error("year not defined");
 
     //return cached value if exists
