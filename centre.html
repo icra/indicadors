@@ -142,9 +142,9 @@
 
 
 <div id=app>
-  <div>
-    avís 2026-10-09:<br>
-    mode manteniment activat pàgina no operativa<br>
+  <div style="background:azure">
+    avís 2026-10-13:<br>
+    mode manteniment / pàgina no operativa<br>
     PÀGINA EN DESENVOLUPAMENT<br>
   </div>
 
@@ -467,7 +467,7 @@
 
         <!--checkboxes per veure columnes-->
         <p v-if="taules[taula].taula?.length" small>
-          <label v-for="val,key in taules[taula].taula[0]">
+          <label v-for="key in Object.keys(taules[taula].taula[0]).sort()">
             <input type=checkbox v-model="taules[taula].columnes[key]">
             <span :style="{color:taules[taula].filtres[key]!=undefined?'blue':''}">{{key}}</span>
           </label>
@@ -2111,6 +2111,7 @@
         return(
           pro["Título Abreviado"].toUpperCase().startsWith("PATENT")&&
           pro["Situación del Proyecto"]!="Descartat"&&
+          pro["Situación del Proyecto"]!="Denegat"&&
           new Date(pro["Fecha Comienzo"]).getFullYear()<=year&&
           new Date(pro["Fecha Fin Real"]).getFullYear()>=year
         );
@@ -2138,6 +2139,7 @@
         return(
           pro["Título Abreviado"].replaceAll("-","").toUpperCase().startsWith("SPINOFF")&&
           pro["Situación del Proyecto"]!="Descartat"&&
+          pro["Situación del Proyecto"]!="Denegat"&&
           new Date(pro["Fecha Comienzo"]).getFullYear()<=year&&
           new Date(pro["Fecha Fin Real"]).getFullYear()>=year
         );
@@ -3152,15 +3154,15 @@
       let ingressos = app.taules.ingressos.taula.filter(i=>i.Any==year);
       let personal  = app.taules.projectes_personal.taula.filter(row=>{
         return(
-          row["Persona"]==nom_ip &&(
-            row["EnQualitatde"]=="INVESTIGADOR/A PRINCIPAL (IP)"||
-            row["EnQualitatde"]=="CO IP"
+          row["Tercero"]==nom_ip &&(
+            row["EnCalidadDe"]=="INVESTIGADOR/A PRINCIPAL (IP)"||
+            row["EnCalidadDe"]=="CO IP"
           )&&(
-            row["Tipo de Financiación Contracte Programa"]=="RECERCA"||
-            row["Tipo de Financiación Contracte Programa"]=="TRANSFERENCIA"
+            row["TipoFinanciacionContractePrograma"]=="RECERCA"||
+            row["TipoFinanciacionContractePrograma"]=="TRANSFERENCIA"
           )&&(
-            new Date(row["DataInici"]).getFullYear()<=year &&
-            new Date(row["DataFi"   ]).getFullYear()>=year
+            new Date(row["FechaDesde"]).getFullYear()<=year &&
+            new Date(row["FechaHasta"]).getFullYear()>=year
           )
         );
       });
@@ -3170,7 +3172,7 @@
 
       //itera ingressos
       personal.forEach(row=>{
-        let codi = row.CodiProjecte; //string
+        let codi = row.ProyectoCodigo; //string
 
         let ing  = busca_projecte(codi,ingressos,"Codi");
         if(!ing) return;
@@ -3179,10 +3181,10 @@
         if(!pro) return;
 
         joined[codi]={
-          Persona      : nom_ip,
-          EnQualitatde : row.EnQualitatde,
-          projecte     : pro,
-          ingressos    : ing.Ingressos,
+          Tercero     : nom_ip,
+          EnCalidadDe : row.EnCalidadDe,
+          projecte    : pro,
+          ingressos   : ing.Ingressos,
         };
       });
 
@@ -3195,9 +3197,9 @@
         indicador.years[year].valor  = keuros; //number
         indicador.years[year].llista = llista.map(row=>{
           let new_row={
-            Persona:       row.Persona,
-            EnQualitatde : row.EnQualitatde,
-            ingressos:     row.ingressos,
+            Tercero     : row.Tercero,
+            EnCalidadDe : row.EnCalidadDe,
+            ingressos   : row.ingressos,
           };
           app.taules.projectes.columnes_actives.forEach(key=>{
             new_row[key] = row.projecte[key];
@@ -3209,12 +3211,12 @@
       //recopila taules i columnes utilitzades
       taules_i_columnes_usades.ips_euros_recerca={
         "projectes_personal":[
-          "Persona",
-          "EnQualitatde",
-          "Tipo de Financiación Contracte Programa",
-          "DataInici",
-          "DataFi",
-          "CodiProjecte",
+          "Tercero",
+          "EnCalidadDe",
+          "TipoFinanciacionContractePrograma",
+          "FechaDesde",
+          "FechaHasta",
+          "ProyectoCodigo",
         ],
         "projectes":[
           "Código Identificativo",
@@ -3241,14 +3243,14 @@
 
       let personal = app.taules.projectes_personal.taula.filter(row=>{
         return(
-          row["Persona"]==nom_ip &&(
-            row["EnQualitatde"]=="INVESTIGADOR/A PRINCIPAL (IP)"||
-            row["EnQualitatde"]=="CO IP"
+          row["Tercero"]==nom_ip &&(
+            row["EnCalidadDe"]=="INVESTIGADOR/A PRINCIPAL (IP)"||
+            row["EnCalidadDe"]=="CO IP"
           )&&(
-            row["Tipo de Financiación Contracte Programa"]=="TRANSFERENCIA"
+            row["TipoFinanciacionContractePrograma"]=="TRANSFERENCIA"
           )&&(
-            new Date(row["DataInici"]).getFullYear()<=year &&
-            new Date(row["DataFi"   ]).getFullYear()>=year
+            new Date(row["FechaDesde"]).getFullYear()<=year &&
+            new Date(row["FechaHasta"]).getFullYear()>=year
           )
         );
       });
@@ -3257,7 +3259,7 @@
       let joined={};
 
       personal.forEach(row=>{
-        let codi = row.CodiProjecte; //string
+        let codi = row.ProyectoCodigo; //string
 
         let ing  = busca_projecte(codi,ingressos,"Codi");
         if(!ing) return;
@@ -3266,10 +3268,10 @@
         if(!pro) return;
 
         joined[codi]={
-          Persona      : nom_ip,
-          EnQualitatde : row.EnQualitatde,
-          projecte     : pro,
-          ingressos    : ing.Ingressos,
+          Tercero     : nom_ip,
+          EnCalidadDe : row.EnCalidadDe,
+          projecte    : pro,
+          ingressos   : ing.Ingressos,
         };
       });
 
@@ -3282,7 +3284,7 @@
         indicador.years[year].valor  = keuros; //number
         indicador.years[year].llista = llista.map(row=>{
           let new_row={
-            Persona:   row.Persona,
+            Tercero:   row.Tercero,
             ingressos: row.ingressos,
           };
           app.taules.projectes.columnes_actives.forEach(key=>{
@@ -3295,12 +3297,12 @@
       //recopila taules i columnes utilitzades
       taules_i_columnes_usades.ips_euros_projectes_KTT={
         "projectes_personal":[
-          "Persona",
-          "EnQualitatde",
-          "Tipo de Financiación Contracte Programa",
-          "DataInici",
-          "DataFi",
-          "CodiProjecte",
+          "Tercero",
+          "EnCalidadDe",
+          "TipoFinanciacionContractePrograma",
+          "FechaDesde",
+          "FechaHasta",
+          "ProyectoCodigo",
         ],
         "projectes":[
           "Código Identificativo",
@@ -3333,12 +3335,12 @@
 
       let personal = app.taules.projectes_personal.taula.filter(row=>{
         return(
-          row["Persona"]==nom_ip &&(
-            row["EnQualitatde"]=="INVESTIGADOR/A PRINCIPAL (IP)"||
-            row["EnQualitatde"]=="CO IP"
+          row["Tercero"]==nom_ip &&(
+            row["EnCalidadDe"]=="INVESTIGADOR/A PRINCIPAL (IP)"||
+            row["EnCalidadDe"]=="CO IP"
           )&&(
-            new Date(row["DataInici"]).getFullYear()<=year &&
-            new Date(row["DataFi"   ]).getFullYear()>=year
+            new Date(row["FechaDesde"]).getFullYear()<=year &&
+            new Date(row["FechaHasta"]).getFullYear()>=year
           )
         );
       });
@@ -3347,15 +3349,15 @@
       let joined={};
 
       personal.forEach(row=>{
-        let codi = row.CodiProjecte; //string
+        let codi = row.ProyectoCodigo; //string
 
         let pro  = busca_projecte(codi,projectes);
         if(!pro) return;
 
         joined[codi]={
-          Persona      : nom_ip,
-          EnQualitatde : row.EnQualitatde,
-          projecte     : pro,
+          Tercero     : nom_ip,
+          EnCalidadDe : row.EnCalidadDe,
+          projecte    : pro,
         };
       });
 
@@ -3375,8 +3377,8 @@
         indicador.years[year].valor  = n_projectes;
         indicador.years[year].llista = llista.map(row=>{
           let new_row={
-            Persona      : row.Persona,
-            EnQualitatde : row.EnQualitatde,
+            Tercero     : row.Tercero,
+            EnCalidadDe : row.EnCalidadDe,
           };
           app.taules.projectes.columnes_actives.forEach(key=>{
             new_row[key]=row.projecte[key];
@@ -3388,11 +3390,11 @@
       //recopila taules i columnes utilitzades
       taules_i_columnes_usades.ips_projectes_erc_eic={
         "projectes_personal":[
-          "Persona",
-          "EnQualitatde",
-          "DataInici",
-          "DataFi",
-          "CodiProjecte",
+          "Tercero",
+          "EnCalidadDe",
+          "FechaDesde",
+          "FechaHasta",
+          "ProyectoCodigo",
         ],
         "projectes":[
           "Código Identificativo",
@@ -3421,12 +3423,12 @@
 
       let personal = app.taules.projectes_personal.taula.filter(row=>{
         return(
-          row["Persona"]==nom_ip &&(
-            row["EnQualitatde"]=="INVESTIGADOR/A PRINCIPAL (IP)"||
-            row["EnQualitatde"]=="CO IP"
+          row["Tercero"]==nom_ip &&(
+            row["EnCalidadDe"]=="INVESTIGADOR/A PRINCIPAL (IP)"||
+            row["EnCalidadDe"]=="CO IP"
           )&&(
-            new Date(row["DataInici"]).getFullYear()<=year &&
-            new Date(row["DataFi"   ]).getFullYear()>=year
+            new Date(row["FechaDesde"]).getFullYear()<=year &&
+            new Date(row["FechaHasta"]).getFullYear()>=year
           )
         );
       });
@@ -3434,15 +3436,15 @@
       //diccionari codi=>projecte
       let joined={};
       personal.forEach(row=>{
-        let codi = row.CodiProjecte; //string
+        let codi = row.ProyectoCodigo; //string
 
         let pro  = busca_projecte(codi,projectes);
         if(!pro) return;
 
         joined[codi]={
-          Persona      : nom_ip,
-          EnQualitatde : row.EnQualitatde,
-          projecte     : pro,
+          Tercero     : nom_ip,
+          EnCalidadDe : row.EnCalidadDe,
+          projecte    : pro,
         };
       });
 
@@ -3462,8 +3464,8 @@
         indicador.years[year].valor  = n_projectes;
         indicador.years[year].llista = llista.map(row=>{
           let new_row={
-            Persona      : row.Persona,
-            EnQualitatde : row.EnQualitatde,
+            Tercero     : row.Tercero,
+            EnCalidadDe : row.EnCalidadDe,
           };
           app.taules.projectes.columnes_actives.forEach(key=>{
             new_row[key]=row.projecte[key];
@@ -3475,11 +3477,11 @@
       //recopila taules i columnes utilitzades
       taules_i_columnes_usades.ips_projectes_IP_o_COIP={
         "projectes_personal":[
-          "CodiProjecte",
-          "Persona",
-          "EnQualitatde",
-          "DataInici",
-          "DataFi",
+          "ProyectoCodigo",
+          "Tercero",
+          "EnCalidadDe",
+          "FechaDesde",
+          "FechaHasta",
         ],
         "projectes":[
           "Código Identificativo",
@@ -3490,11 +3492,6 @@
         ],
       };
     },
-
-    //continuar aqui 2025-03-25 TODO
-    //continuar aqui 2025-03-25 TODO
-    //continuar aqui 2025-03-25 TODO
-    //continuar aqui 2025-03-25 TODO
 
     ips_projectes_participant(year,indicador){
       let nom_ip = app.ip_seleccionat?.nom || "Acuña Salazar, Vicenç";
@@ -3512,12 +3509,12 @@
 
       let personal = app.taules.projectes_personal.taula.filter(row=>{
         return(
-          row["Persona"]==nom_ip &&(
-            row["EnQualitatde"]!="INVESTIGADOR/A PRINCIPAL (IP)"&&
-            row["EnQualitatde"]!="CO IP"
+          row["Tercero"]==nom_ip &&(
+            row["EnCalidadDe"]!="INVESTIGADOR/A PRINCIPAL (IP)"&&
+            row["EnCalidadDe"]!="CO IP"
           )&&(
-            new Date(row["DataInici"]).getFullYear()<=year &&
-            new Date(row["DataFi"   ]).getFullYear()>=year
+            new Date(row["FechaDesde"]).getFullYear()<=year &&
+            new Date(row["FechaHasta"]).getFullYear()>=year
           )
         );
       });
@@ -3525,13 +3522,13 @@
       //diccionari codi=>projecte
       let joined={};
       personal.forEach(row=>{
-        let codi = row.CodiProjecte; //string
+        let codi = row.ProyectoCodigo; //string
         let pro  = busca_projecte(codi,projectes);
         if(!pro) return;
         joined[codi]={
-          Persona      : nom_ip,
-          EnQualitatde : row.EnQualitatde,
-          projecte     : pro,
+          Tercero     : nom_ip,
+          EnCalidadDe : row.EnCalidadDe,
+          projecte    : pro,
         };
       });
 
@@ -3551,8 +3548,8 @@
         indicador.years[year].valor  = n_projectes;
         indicador.years[year].llista = llista.map(row=>{
           let new_row={
-            Persona      : row.Persona,
-            EnQualitatde : row.EnQualitatde,
+            Tercero     : row.Tercero,
+            EnCalidadDe : row.EnCalidadDe,
           };
           app.taules.projectes.columnes_actives.forEach(key=>{
             new_row[key]=row.projecte[key];
@@ -3571,11 +3568,11 @@
           "Fecha Fin Real",
         ],
         "projectes_personal":[
-          "CodiProjecte",
-          "Persona",
-          "EnQualitatde",
-          "DataInici",
-          "DataFi",
+          "ProyectoCodigo",
+          "Tercero",
+          "EnCalidadDe",
+          "FechaDesde",
+          "FechaHasta",
         ],
       };
     },
@@ -3584,12 +3581,13 @@
       let nom_ip = app.ip_seleccionat?.nom || "Acuña Salazar, Vicenç";
       let personal = app.taules.projectes_personal.taula.filter(row=>{
         return(
-          row["Persona"]==nom_ip &&
-          row["Projecte"].toUpperCase().startsWith("PATENT")&&
-          row["Situación del Proyecto"]!="Descartat"&&
+          row["Tercero"]==nom_ip &&
+          row["Proyecto"].toUpperCase().startsWith("PATENT")&&
+          row["SituacionDelProyecto"]!="Descartat"&&
+          row["SituacionDelProyecto"]!="Denegat"&&
           (
-            new Date(row["DataInici"]).getFullYear()<=year &&
-            new Date(row["DataFi"   ]).getFullYear()>=year
+            new Date(row["FechaDesde"]).getFullYear()<=year &&
+            new Date(row["FechaHasta"]).getFullYear()>=year
           )
         );
       });
@@ -3603,11 +3601,11 @@
       //recopila taules i columnes utilitzades
       taules_i_columnes_usades.ips_patents_i_secrets_industrials={
         "projectes_personal":[
-          "Persona",
-          "Projecte",
-          "Situación del Proyecto",
-          "DataInici",
-          "DataFi",
+          "Tercero",
+          "Proyecto",
+          "SituacionDelProyecto",
+          "FechaDesde",
+          "FechaHasta",
         ],
       };
     },
@@ -3616,12 +3614,13 @@
       let nom_ip = app.ip_seleccionat?.nom || "Acuña Salazar, Vicenç";
       let personal = app.taules.projectes_personal.taula.filter(row=>{
         return(
-          row["Persona"]==nom_ip &&
-          row["Projecte"].replaceAll("-","").toUpperCase().startsWith("SPINOFF")&&
-          row["Situación del Proyecto"]!="Descartat"&&
+          row["Tercero"]==nom_ip &&
+          row["Proyecto"].replaceAll("-","").toUpperCase().startsWith("SPINOFF")&&
+          row["SituacionDelProyecto"]!="Descartat"&&
+          row["SituacionDelProyecto"]!="Denegat"&&
           (
-            new Date(row["DataInici"]).getFullYear()<=year &&
-            new Date(row["DataFi"   ]).getFullYear()>=year
+            new Date(row["FechaDesde"]).getFullYear()<=year &&
+            new Date(row["FechaHasta"]).getFullYear()>=year
           )
         );
       });
@@ -3635,11 +3634,11 @@
       //recopila taules i columnes utilitzades
       taules_i_columnes_usades.ips_spinoffs_i_startups={
         "projectes_personal":[
-          "Persona",
-          "Projecte",
-          "Situación del Proyecto",
-          "DataInici",
-          "DataFi",
+          "Tercero",
+          "Proyecto",
+          "SituacionDelProyecto",
+          "FechaDesde",
+          "FechaHasta",
         ],
       };
     },
@@ -4889,7 +4888,7 @@
 
     get columnes_actives(){
       //retorna només noms columnes actives
-      return Object.entries(this.columnes).filter(en=>en[1]).map(en=>en[0]);
+      return Object.entries(this.columnes).filter(en=>en[1]).map(en=>en[0]).sort();
     }
     get files_filtrades(){
       //retorna les files de la taula que compleixen tots els filtres
@@ -4943,19 +4942,19 @@
 
       //taules des d'on es calculen els indicadors: origens diversos (SQL icra, excels, ...)
       taules:{
-        projectes:           new Conf_Taula("'projectes.json'          | export fundanet rdiaz    | llista de projectes                    ",'json undarius'),
-        personal:            new Conf_Taula("SQL Server icranet        | rdiaz                    | llista de persones                     ",'sql'),
-        esdeveniments:       new Conf_Taula("SQL Server icranet        | rdiaz                    | participacions en esdeveniments per investigador ",'sql'),
-        tipus_esdeveniments: new Conf_Taula("SQL Server icranet        | rdiaz                    | tipus d'esdeveniments                            ",'sql'),
-        ingressos:           new Conf_Taula("SQL Server icranet        | rdiaz                    | aportacions econòmiques per projecte   ",'sql'),
-        taula_aigua:         new Conf_Taula("SQL Server icranet        | rdiaz                    | taula aigua                            ",'sql'),
-        projectes_personal:  new Conf_Taula("'projectes_personal.xlsx' | export fundanet rdiaz    | implicació personal en projectes       ",'xlsx'),
-        stakeholders:        new Conf_Taula("'stakeholders.xlsx'       | export fundanet rdiaz    | participacions de tercers en projectes ",'xlsx'),
-        xarxes_socials:      new Conf_Taula("'xarxes_socials.xlsx'     | fet manualment sdrammeh  | mètriques per any                      ",'xlsx'),
-        scopus:              new Conf_Taula("'scopus.xlsx'             | fet manualment etornes   | mètriques per any                      ",'xlsx'),
-        sage:                new Conf_Taula("'sage_profiles.txt'       | fet manualment lbosch    | perfils sagepub                        ",'txt'),
-        tesis:               new Conf_Taula("SQL Server icranet        | rdiaz                    | llista de tesis defensades             ",'sql'),
-        projectes_imports:   new Conf_Taula("'Projectes_Imports.xlsx'  | export fundanet rdiaz    | pressupostos dels projectes            ",'xlsx'),
+        projectes:           new Conf_Taula("'projectes.json'              | export fundanet rdiaz    | llista de projectes"                    ,'json_fundanet'),
+        personal:            new Conf_Taula("SQL Server icranet            | rdiaz                    | llista de persones"                     ,'sql'),
+        esdeveniments:       new Conf_Taula("SQL Server icranet            | rdiaz                    | esdeveniments investigadors"            ,'sql'),
+        tipus_esdeveniments: new Conf_Taula("SQL Server icranet            | rdiaz                    | tipus d'esdeveniments"                  ,'sql'),
+        ingressos:           new Conf_Taula("SQL Server icranet            | rdiaz                    | aportacions econòmiques per projecte"   ,'sql'),
+        taula_aigua:         new Conf_Taula("SQL Server icranet            | rdiaz                    | taula aigua"                            ,'sql'),
+        projectes_personal:  new Conf_Taula("'projectes_personal.json'     | export fundanet rdiaz    | implicació personal en projectes"       ,'json_fundanet'),
+        stakeholders:        new Conf_Taula("'projectes_stakeholders.json' | export fundanet rdiaz    | participacions de tercers en projectes" ,'json_fundanet'),
+        xarxes_socials:      new Conf_Taula("'xarxes_socials.xlsx'         | fet manualment sdrammeh  | mètriques per any"                      ,'xlsx'),
+        scopus:              new Conf_Taula("'scopus.xlsx'                 | fet manualment etornes   | mètriques per any"                      ,'xlsx'),
+        sage:                new Conf_Taula("'sage_profiles.txt'           | fet manualment lbosch    | perfils sagepub"                        ,'txt'),
+        tesis:               new Conf_Taula("SQL Server icranet            | rdiaz                    | llista de tesis defensades"             ,'sql'),
+        projectes_imports:   new Conf_Taula("'Projectes_Imports.xlsx'      | export fundanet rdiaz    | pressupostos dels projectes"            ,'xlsx'),
       },
 
       //opcions indicadors IPs
@@ -5127,31 +5126,31 @@
         let personal = this.taules.projectes_personal.taula.filter(row=>{
           return(
             (
-              row["EnQualitatde"]=="INVESTIGADOR/A PRINCIPAL (IP)"||
-              row["EnQualitatde"]=="COORDINADOR/A PROJECTE"
+              row["EnCalidadDe"]=="INVESTIGADOR/A PRINCIPAL (IP)"||
+              row["EnCalidadDe"]=="COORDINADOR/A PROJECTE"
             )&&
-            row["VinculacioProjecte"]=="PERSONAL INVESTIGADOR"&&
+            row["TipoPersonal"]=="PERSONAL INVESTIGADOR"&&
             (
-              row["Situación del Proyecto"]=="En Execucio"||
-              row["Situación del Proyecto"]=="Finalitzat"||
-              row["Situación del Proyecto"]=="Tancat"
+              row["SituacionDelProyecto"]=="En Execucio"||
+              row["SituacionDelProyecto"]=="Finalitzat"||
+              row["SituacionDelProyecto"]=="Tancat"
             )&&
             (
-              row["Tipo de Financiación Contracte Programa"]=="RECERCA"||
-              row["Tipo de Financiación Contracte Programa"]=="TRANSFERENCIA"
+              row["TipoFinanciacionContractePrograma"]=="RECERCA"||
+              row["TipoFinanciacionContractePrograma"]=="TRANSFERENCIA"
             )&&
-            (year ? new Date(row["DataInici"]).getFullYear()<=year : true) &&
-            (year ? new Date(row["DataFi"   ]).getFullYear()>=year : true)
+            (year ? new Date(row["FechaDesde"]).getFullYear()<=year : true) &&
+            (year ? new Date(row["FechaHasta"]).getFullYear()>=year : true)
           );
         });
 
         //{nom,orcid}
         let ips=[];
-        let noms = Array.from(new Set(personal.map(row=>row.Persona)));
+        let noms = Array.from(new Set(personal.map(row=>row.Tercero)));
 
         noms.forEach(nom=>{
           let tr     = this.treu_accents; //function
-          let tr_nom = tr(nom);
+          let tr_nom = tr(nom);//string
           let obj = this.taules.personal.taula.find(row=>tr(row.Nom)==tr_nom);
           if(!obj) return;
           let orcid  = obj.ORCID;
@@ -5433,9 +5432,9 @@
     "Descripcio":true,
   };
   app.taules.projectes_personal.columnes={
-    "Persona":true,
-    "EnQualitatde":true,
-    "Projecte":true,
+    "Tercero":true,
+    "EnCalidadDe":true,
+    "Proyecto":true,
   };
   app.taules.stakeholders.columnes={
     "Proyecto":true,
@@ -5493,6 +5492,22 @@
       if(data?.metadata?.dataset=="FundanetDataset"){
         data = data.data;
         //console.log({data});//debug
+
+        if(nom_taula_desti=="stakeholders"){
+          //canvia noms columnes
+          data.forEach(fila=>{
+            let text="Stakeholders - Datos Generales[";
+            Object.keys(fila).forEach(key=>{
+              let nou_key=key.replace(text,"");
+              fila[nou_key]=fila[key];
+              delete fila[key];
+            });
+          });
+        }
+
+        if(nom_taula_desti=="projectes_personal"){
+          console.log(data[0]);
+        }
       }
 
       app.taules[nom_taula_desti].taula = data;
@@ -5514,9 +5529,9 @@
   fetch_taula_undarius("tesis");
 
   //taules json_fundanet exports
-  fetch_taula_undarius("projectes.json","projectes");
-  //stakeholders TODO continuar aqui
-  fetch_taula_undarius("projectes_s.json","projectes");
+  fetch_taula_undarius("projectes.json"             ,"projectes");
+  fetch_taula_undarius("projectes_stakeholders.json","stakeholders");
+  fetch_taula_undarius("projectes_personal.json"    ,"projectes_personal");
 </script>
 
 <script>
@@ -5575,8 +5590,6 @@
     return taula;
   }
 
-  llegir_excel("projectes_personal", "csv/export-fundanet/Projectes_Personal2.xlsx");
-  llegir_excel("stakeholders",       "csv/export-fundanet/Stakeholders3.xlsx");
   llegir_excel("xarxes_socials",     "csv/export-fundanet/xarxes_socials.xlsx");
   llegir_excel("scopus",             "csv/export-fundanet/scopus.xlsx");
   llegir_excel("projectes_imports",  "csv/export-fundanet/Projectes_Imports.xlsx");
