@@ -732,6 +732,9 @@
       this.pes_percent = pes_percent || 0; //number
       this.responsable = responsables[id]; //string
 
+      //marcar ja calculat (no impedeix recalcular, però es pot impedir des de fora l'objecte)
+      this.calculat = false;
+
       if(!this.text) throw(`no text for ${id}`);
 
       this.base_year="2023"; //String
@@ -801,6 +804,9 @@
             app.funcions_calculadores[id](year, this);
           }
         });
+      //*
+
+      this.calculat=true;
     }
 
     get selected_years(){
@@ -5387,13 +5393,12 @@
         if(!this.tot_carregat) return false;
 
         //1. calcula tots els indicadors per poblar la variable "taules_i_columnes_usades"
-        //aixo genera bug a la hora de seleccionar columnes TODO
-        /*
-        */
         this.ambits.forEach(ambit=>{
           ambit.blocs.forEach(bloc=>{
             bloc.indicadors.forEach(indi=>{
-              indi.calcula();
+              if(!indi.calculat){
+                indi.calcula();
+              }
             });
           });
         });
@@ -5457,24 +5462,22 @@
 
         let dicc={};//retval [nom_taula]=>[...indicadors]
 
+        //crida aquesta cache per obligar a recalcular tots els indicadors
         let get_taules = this.get_taules_i_columnes_utilitzades_des_dexcels;
 
         //itera indicadors
         Object.entries(this.taules_i_columnes_usades).forEach(en=>{
-          let nom_indicador = en[0];
-          let coleccio      = en[1];
+          let nom_indicador = en[0];//string
+          let taules        = en[1];//dicc [nom_taula]=>[...noms_columnes]
 
           //itera taules
-          Object.entries(coleccio).forEach(enn=>{
-            let nom_taula = enn[0];
-
+          Object.keys(taules).forEach(nom_taula=>{
             //crea un nou set buit
             if(dicc[nom_taula]==undefined){
               dicc[nom_taula]=[];
             }
-
+            //afegeix el nom de l'indicador a la llista de la taula
             dicc[nom_taula].push(nom_indicador);
-
           });
         });
 
