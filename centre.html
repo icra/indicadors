@@ -142,9 +142,9 @@
 
 <div id=app>
   <div style="background:azure">
-    avís 2026-10-13:<br>
-    mode manteniment<br>
-    PÀGINA EN DESENVOLUPAMENT<br>
+    avís 2026-10-14:<br>
+    PÀGINA EN MODE MANTENIMENT<br>
+    treballant en la sincronització amb fundanet i icranet
   </div>
 
   <h2>
@@ -242,12 +242,12 @@
       </label>
       <label>
         <input type=checkbox v-model="veure_percentatge">
-        Veure variació (%) respecte 2023
+        Veure variació (%) respecte 2023 (any basal)
       </label>
-      <label>
-        <input type=checkbox v-model="veure_boto_detalls">
-        Veure botó "detalls"
-      </label>
+    </p>
+
+    <p small>
+      <b>nota</b>: fes doble clic sobre el valor de l'indicador (el número) per veure'n els detalls del càlcul
     </p>
 
     <!--opcions indicadors IPs-->
@@ -401,7 +401,11 @@
                     "
                   >
                     <!--valor indicador-->
-                    <div right :gris="obj.valor==0">{{obj.valor.toFixed(0)}}</div>
+                    <div right
+                      :gris="obj.valor==0"
+                      @dblclick="click_detalls_indicador(indi,year)"
+                      title="Fes doble clic aquí per veure detalls"
+                    >{{obj.valor.toFixed(0)}}</div>
 
                     <!--increment i objectiu-->
                     <div
@@ -419,14 +423,6 @@
                           <span large>∞</span>%
                         </span>
                       </span>
-                    </div>
-
-                    <!--boto veure detalls-->
-                    <div v-if="!obj.excloure && funcions_calculadores[indi.funcio_calculadora] && veure_boto_detalls" small right>
-                      <button
-                        @click="click_detalls_indicador(indi,year)"
-                        style="padding:0;font-size:x-small"
-                      >detalls</button>
                     </div>
                   </div>
                 </div>
@@ -469,8 +465,12 @@
           <span small>
             <span
               :style="{background:taules[taula].origen!='xlsx'?'':'red'}"
-              :title="taules[taula].origen!='xlsx'?'taula automatitzada':'taula pendent automatitzar'"
-            >[{{taules[taula].origen}}]
+              :title="taules[taula].origen!='xlsx'?'taula automatitzada':''"
+            >
+              <span>[{{taules[taula].origen}}]</span>
+              <span v-if="taules[taula].origen=='xlsx'">
+                (pendent automatitzar)
+              </span>
             </span>
           </span>
         </summary>
@@ -499,22 +499,41 @@
         </div>
 
         <!--checkboxes per veure columnes-->
-        <p v-if="taules[taula].taula?.length" small>
-          <label v-for="key in Object.keys(taules[taula].taula[0]).sort()">
-            <input type=checkbox v-model="taules[taula].columnes[key]">
-            <span :style="{color:taules[taula].filtres[key]!=undefined?'blue':''}">{{key}}</span>
-          </label>
-        </p>
+        <div v-if="taules[taula].taula?.length" small style="padding-left:40px">
+          <div>
+            Columnes visibles:
+            <button @click="taules[taula].columnes={}" :disabled="Object.values(taules[taula].columnes).every(val=>!val)">cap</button>
+            <button @click="Object.keys(taules[taula].taula[0]).forEach(key=>taules[taula].columnes[key]=true)">totes</button>
+          </div>
+          <div
+            style="
+              display:grid;
+              grid-template-columns:repeat(7,1fr);
+            "
+          >
+            <label v-for="key in Object.keys(taules[taula].taula[0]).sort()">
+              <div style="display:flex;align-items:center">
+                <input type=checkbox v-model="taules[taula].columnes[key]">
+                <span :style="{color:taules[taula].filtres[key]!=undefined?'blue':''}">{{key}}</span>
+              </div>
+            </label>
+          </div>
+        </div>
 
         <table border=1 v-if="taules[taula].taula?.length" small>
           <thead>
             <tr sticky>
               <th v-for="key in taules[taula].columnes_actives">
-                <button @click="taules[taula].taula.sort((a,b)=>a[key]>b[key]?1:-1)">&darr;{{key}}</button>
-                <button v-if="taules[taula].filtres[key]!=undefined" @click="delete taules[taula].filtres[key]">
-                          ="{{String(taules[taula].filtres[key]).substring(0,50)}}"
+                <button @click="taules[taula].taula.sort((a,b)=>a[key]>b[key]?1:-1)"
+                  title="ordenar taula a partir d'aquesta columna"
+                  >&darr;{{key}}</button>
+                <button v-if="taules[taula].filtres[key]!=undefined" @click="delete taules[taula].filtres[key]"
+                  title="esborra filtre"
+                  marcat=1
+                >
+                          =="{{String(taules[taula].filtres[key]).substring(0,50)}}"
                 </button>
-                <button @click="taules[taula].columnes[key]=false">X</button>
+                <button @click="taules[taula].columnes[key]=false" title="ocultar columna">X</button>
               </th>
               <th>
                 <a :href="`#container_taula_${taula}`">
@@ -524,7 +543,7 @@
             </tr>
           </thead>
           <tr v-for="row in taules[taula].files_filtrades">
-            <td v-for="key in taules[taula].columnes_actives" nowrap>
+            <td v-for="key in taules[taula].columnes_actives">
               <span @click="taules[taula].filtres[key]=row[key]">{{row[key]}}</span>
             </td>
           </tr>
@@ -614,7 +633,6 @@
           <tr>
             <td>Filtrar taules per origen</td>
             <td>
-              <input v-model="taules_i_columnes_usades_filtre_origen" placeholder="origen">
               <button @click="taules_i_columnes_usades_filtre_origen=''"
                   :disabled="!taules_i_columnes_usades_filtre_origen"
               >X</button> |
@@ -689,6 +707,7 @@
       <ul>
         <li>IPs/professors-UDG sense orcid</li>
         <li>IPs/professors-UDG sense sage-id</li>
+        <li>idea: botó per reportar "missing data"</li>
       </ul>
     </div>
   </details>
@@ -4987,9 +5006,6 @@
       veure_responsable:false,
       filtre_responsable:false, //string || "RRHH","ordi",...
 
-      //veure botó detalls
-      veure_boto_detalls:true,
-
       //veure percentatge indicador
       veure_percentatge:false,
 
@@ -5096,9 +5112,9 @@
       crea_html_caption(indi,year){
         let incr = indi.increment(year);
         let header=`
-          <b>Detalls indicador [id:${indi.id}]</b>
-          <p>
-            <i>${indi.text}</i>
+          <div><code>Detalls indicador [id=${indi.id}]</code></div>
+          <p style="font-size:larger">
+            <b>${indi.text}</b>
           </p>
           <p>Any: ${year}</p>
           <table border=1 small>
@@ -5671,6 +5687,8 @@
 
   llegir_excel("xarxes_socials",     "csv/export-fundanet/xarxes_socials.xlsx");
   llegir_excel("scopus",             "csv/export-fundanet/scopus.xlsx");
+
+  //demanat a ruben integrar el dia 13 octubre 2026
   llegir_excel("projectes_imports",  "csv/export-fundanet/Projectes_Imports.xlsx");
 </script>
 
