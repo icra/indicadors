@@ -38,7 +38,7 @@
     "
 
 reunió sady, vicenç
-=== 2026-mm-dd ==========================================
+=== 2026-10-15 ==========================================
   [ ] * afegir nous àmbits
     - web icra.cat (4 indicadors)
       - crear llista
