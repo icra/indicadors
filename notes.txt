@@ -49,6 +49,142 @@
       consultas utilizadas y el resultado de cada comprobación.
     "
 
-next
+reunió sady, vicenç
 === 2026-mm-dd ==========================================
-  [ ] * 
+  [ ] * afegir nous àmbits
+    - web icra.cat (4 indicadors)
+      - crear llista
+    - carta director
+      - crear llista
+    - pantalla entrada
+      - crear llista
+
+    - URGENT: memoria anual (icra.cat/memoria-anual)
+      llista actual:
+        //aportacions
+        - pressupost executat:   5.8M€
+        - projectes competitius: 42%
+        - KTT:                   6%
+
+        //percentatge aportació econòmica 2025
+        - nacionals: 20%
+        - erc/eic:   6%
+        - patrons:   50%
+        - horizon:   13%
+        - ktt:       6%
+        - regionals: 4%
+
+        //publicacions
+        - nombre total articles: 69
+        - Q1:                    59
+        - Q1 en lideratge:       47%
+        - D1:                    38
+        - D1 en lideratge:       47%
+
+        //formatget
+        - Q1: 86%
+        - Q2: 14%
+        - D1: 55%
+
+        //projectes
+        - pressupost:     2.4M€
+        - nacionals:      56%
+        - internacionals: 44%
+
+        //KTT
+        - patents i secrets industrials: 3
+        - spin-off o start up:           2
+        - aportacio economica:           347K€
+        - aportació econòmica ktt respecte competitius: 12%
+        - articles socis sector empresarial i administratiu: 17%
+        - formacions empresa/administració: 4
+
+        //SCTs
+        - experiments realitzats:                  437
+        - prestacions de serveis a projectes icra: 23
+        - serveis externs:                         37
+        - col·laboració amb empresa/administració: 7
+
+        //laboratori plantes pilot i bioprocessos
+        - projectes icra amb us de laboratori: 6
+        - publicacions científiques derivades: 3
+        - tecnologies testades: 3
+
+        //paret verda
+        - espècies vegetals: 5
+        - conferències internacionals: 6
+        - estudiants formats: 7
+
+        //instal·lació de rius experimentals (ESF)
+        - experiments realitzats: 3
+        - projectes amb ús de la instal·lació: 3
+        - visites a la instal·lació: 22
+
+        //hidropònics
+        - espècies vegetals:                       11
+        - tipologies d'aigua testades:              5
+        - projectes icra amb ús de la instal·lació: 4
+
+        //recursos humans
+        - personal laboral i adscrits: 107
+        - personal de recerca:         79
+        - %dones en recerca:           49%
+
+        //formatget rrhh
+        - tècnica suport especialitzat/da: 24
+        - investigador/a post-doctoral:    22
+        - investigador/a predoctoral:      15
+        - investigador/a sènior:           10
+        - professor/a de recerca:          7
+        - SSR                              5
+        - tècnic/a suport recerca:         1
+
+        // homes/dones
+        - administració:       6/10
+        - SCT:                 1/6
+        - tècnic recerca:      13/12
+        - predoctoral:         6/9
+        - postdoctoral:        10/12
+        - investigador sènior: 6/4
+        - professor recerca:   5/2
+
+        //impacte
+        - cites en legislació:     25
+        - comitès experts:         11
+        - premis i reconeixements: 5
+
+        //comunicació
+        - seguidors:             +1395
+        - comparticions:         366
+        - visites pàgina web:    18k
+        - actes de disseminació: 46
+        - reproduccions:         660
+        - notícies web:          91
+        - cobertura en premsa:   74
+        - premsa nacional:       61
+        - premsa internacional:  13
+
+        //divulgació
+        - actes de divulgació: 25
+        - nº assistents:       850
+        - visites a escoles:   8
+        - acollida estudiants: 6
+
+        //tesis doctorals
+        - tesis doctorals defensades: 6
+        - publicacions derivades:     12*
+        - doctorats actius:           2
+
+        //ICRA frontier school
+        - estudiants: 17
+        - centres de recerca: 10
+        - nacionalitats: 10
+
+
+
+
+  - kahoot
+    - instalar classquiz al loading
+
+  per calcular articles Q1:
+    - desmarcar de scopus.html: erratum, book chapter, conference paper
