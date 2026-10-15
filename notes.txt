@@ -41,11 +41,13 @@ reunió sady, vicenç
 === 2026-10-15 ==========================================
   [ ] * afegir nous àmbits
     - web icra.cat (4 indicadors)
-      - crear llista
+      - crear llista aquí
+
     - carta director
-      - crear llista
+      - crear llista aquí
+
     - pantalla entrada
-      - crear llista
+      - crear llista aquí
 
     - URGENT: memoria anual (icra.cat/memoria-anual)
       llista actual:
@@ -167,9 +169,6 @@ reunió sady, vicenç
         - estudiants: 17
         - centres de recerca: 10
         - nacionalitats: 10
-
-
-
 
   - kahoot
     - instalar classquiz al loading

@@ -126,6 +126,9 @@
     [gris=true]{
       color:#ccc;
     }
+    [blau=true]{
+      color:blue;
+    }
     [clicable]:hover{
       cursor:pointer;
       text-decoration:underline;
@@ -142,9 +145,10 @@
 
 <div id=app>
   <div style="background:azure">
-    avís 2026-10-14:<br>
-    PÀGINA EN MODE MANTENIMENT<br>
-    treballant en la sincronització amb fundanet i icranet
+    avís 2026-10-16:<br>
+    PÀGINA EN MODE MANTENIMENT: <b>els indicadors que apareixin no estàn validats pels seus responsables</b><br>
+    treballant en la sincronització amb fundanet i icranet (lbosch+rdiaz)<br>
+    implementant indicadors "memòria anual" (lbosch+sdrammeh)
   </div>
 
   <h2>
@@ -246,10 +250,6 @@
       </label>
     </p>
 
-    <p small>
-      <b>nota</b>: fes doble clic sobre el valor de l'indicador (el número) per veure'n els detalls del càlcul
-    </p>
-
     <!--opcions indicadors IPs-->
     <div v-if="ambit_actual.nom=='IPs' || ambit_actual.nom=='UdG professors'">
       <details open style="margin-bottom:10px">
@@ -311,6 +311,7 @@
             @click="calcular_tots_els_indicadors()"
             :disabled="!tot_carregat"
             btn_calcular_tots
+            style="padding:1em 1.618em"
           >calcular tots</button>
         </th>
         <th>
@@ -331,8 +332,8 @@
           <td>
             <b nom_bloc @click="bloc.visible^=1">
               <span style="font-family:monospace">
-                <span v-if="bloc.visible">[-] </span>
-                <span v-if="!bloc.visible">[+] </span>
+                <span v-if="bloc.visible">&#9207;</span>
+                <span v-if="!bloc.visible">&#9205;</span>
               </span>
               <span>{{i+1}}. {{bloc.nom}}</span>
               <small> ({{bloc.indicadors.length}} ind.)</small>
@@ -368,10 +369,10 @@
 
               <!--text indicador-->
               <span v-if="!indi.marcat">
-                <span :title="`${indi.text} (${indi.id})`">{{indi.text.slice(0,100)}}</span>
+                <span :title="`${indi.text} (${indi.id})`">&nbsp;{{indi.text.slice(0,100)}}</span>
                 <span v-if="indi.text.length>100">...</span>
               </span>
-              <span v-if="indi.marcat">{{indi.text}}</span>
+              <span v-if="indi.marcat">&nbsp;{{indi.text}}</span>
             </div>
           </td>
 
@@ -401,10 +402,12 @@
                     "
                   >
                     <!--valor indicador-->
-                    <div right
+                    <div right clicable
+                      v-if="funcions_calculadores[indi.funcio_calculadora]"
                       :gris="obj.valor==0"
-                      @dblclick="click_detalls_indicador(indi,year)"
-                      title="Fes doble clic aquí per veure detalls"
+                      :blau="obj.valor!=0"
+                      @click="click_detalls_indicador(indi,year)"
+                      title="Veure detalls càlcul"
                     >{{obj.valor.toFixed(0)}}</div>
 
                     <!--increment i objectiu-->
@@ -432,16 +435,11 @@
 
           <!--indicador botó calcular-->
           <td center>
-            <button
-              v-if="funcions_calculadores[indi.funcio_calculadora]"
-              @click="indi.calcula()"
-              xsmall
-              :disabled="!tot_carregat"
-              style="display:block"
-              >
-              calcular indicador
-            </button>
-            <span v-else xsmall style="color:red" title="implementació pendent">pendent</span>
+            <span
+              v-if="!funcions_calculadores[indi.funcio_calculadora]"
+              xsmall style="color:red"
+            >implementació pendent</span>
+            <span v-else xsmall>implementat</span>
           </td>
         </tr>
       </tbody>
@@ -458,7 +456,7 @@
     <div v-for="taula in Object.keys(taules).sort()">
       <details :id="`container_taula_${taula}`">
         <summary large bold style="margin-left:1em;color:#555">
-          Taula {{taula}}
+          Taula "{{taula}}"
           <span v-if="taules[taula].taula" small>
             ({{taules[taula].files_filtrades.length}}/{{taules[taula].taula.length}} items)
           </span>
@@ -746,7 +744,7 @@
       valor_basal = valor_basal ||[]; //array valors precalculats
 
       this.id          = id;               //string
-      this.text        = textos[id]||id;   //string
+      this.text        = textos[id]||`[${id}]`;   //string
       this.unit        = unitats[id];      //string
       this.pes_percent = pes_percent || 0; //number
       this.responsable = responsables[id]; //string
@@ -842,15 +840,25 @@
     "euros_recerca_erc_eic"                                 : `Aportació econòmica de projectes de recerca competitius Europeus (ERC-EIC)`,
     "euros_recerca_estatal"                                 : `Aportació econòmica de projectes de recerca competitius estatals (AEI-ERANETs)`,
     "euros_recerca_regional"                                : `Aportació econòmica de projectes de recerca competitius regionals (ACA-AGAUR)`,
+
+    "euros_projectes_competitius"                           : `Aportació econòmica a través de projectes competitius`,
+    "euros_pressupost_executat"                             : `Pressupost executat`,
+
     "projectes_horizon"                                     : `Projectes de recerca competitius vigents tipus Horizon coordinats`,
     "projectes_erc_eic"                                     : `Projectes de recerca competitius vigents tipus ERC o EIC`,
     "congressos_tallers_escoles_estiu_organitzats"          : `Congressos/tallers/escoles d'estiu i altres activitats internacionals de recerca organitzats per ICRA`,
     "sessions_especials_organitzades"                       : `Sessions especials en congressos organitzades per ICRA`,
     "comites_internacionals_participats"                    : `Comitès internacionals (i.e. SAB/panell d'avaluació/expert group...) participats per ICRA`,
+
+    "articles_totals"                                       : `Articles científics totals (segons Scopus)`,
     "articles_Q1"                                           : `Articles científics al Q1 (segons Scopus)`,
-    "articles_Q1_amb_lideratge"                             : `Articles científics al Q1 (segons Scopus) amb lideratge ICRA (primer, darrer, o autor de correspondència)`,
     "articles_D1"                                           : `Articles científics al D1 (segons Scopus)`,
     "articles_FWCI_10"                                      : `Articles científics influents amb un factor d'impacte ponderat per cites (FWCI>10, segons Scopus)`,
+
+    "articles_lideratge"                                    : `Articles científics amb lideratge icra (segons OpenAlex)`,
+    "articles_Q1_amb_lideratge"                             : `Articles científics al Q1 amb lideratge ICRA (segons OpenAlex)`,
+    "articles_D1_amb_lideratge"                             : `Articles científics al D1 amb lideratge ICRA (segons OpenAlex)`,
+
     "cites_articles"                                        : `Cites anuals (segons Scopus)`,
     "impact_factor"                                         : `Índex d'impacte (Impact factor) de la institució (segons Scopus) en el moment de l'anàlisi`,
     "estades_recercaires_acollits"                          : `Estades de recercaires (predocs, postdocs, seniors) internacionals a ICRA (>3mesos)`,
@@ -872,18 +880,24 @@
     "estudiants_acollits"                                   : `Estudiants d'ESO o Batxillerat acollits o mentoritzats des d'ICRA`,
     "cites_en_legislacio"                                   : `Cites en legislació (segons Sage Policy Profiles, sagepub.com)`,
     "participacions_comites_experts_ambit_legislatiu"       : `Participacions en comitès d'experts en l'àmbit legislatiu i de gestió de l'aigua`,
+
     "premis_nacionals"                                      : `Premis/reconeixements a nivell regional/estatal`,
     "premis_internacionals"                                 : `Premis/reconeixements a nivell internacional`,
+    "premis_totals"                                         : `Premis/reconeixements totals`,
+
     "narratives_impacte_CERCA"                              : `Narratives d'impacte sotmeses a CERCA i avaluades amb un excel·lent o outstanding`,
     "contribucions_gestio_aigua"                            : `Contribucions a canvis en la gestió de l'aigua a les conques internes de Catalunya`,
     "llocs_de_treball_generats_llicencies"                  : `Llocs de treball generats mitjançant llicències amb participació d'ICRA`,
     "aliances_solides_entitats_socials"                     : `Aliances sòlides amb entitats que tinguin una finalitat social (ambientals, esportives, culturals, educatives)`,
-    "xxss_seguidors"                                        : `Seguidors/subscriptors a les xarxes socials d'ICRA`,
+    "xxss_seguidors"                                        : `Nous seguidors/subscriptors a les xarxes socials d'ICRA`,
     "xxss_shares"                                           : `Comparticions (shares, retweets) a les xarxes socials d'ICRA`,
     "xxss_streams"                                          : `Visualitzacions de sessions de streaming realitzades a les xarxes socials d'ICRA`,
     "actes_disseminacio_participats_o_organitzats"          : `Actes de disseminació participats o organitzats per ICRA`,
+
     "aparicions_mitjans_comunicacio_nacionals"              : `Aparicions en els mitjans de comunicació escrits i audiovisuals regionals o estatals`,
     "aparicions_mitjans_comunicacio_internacionals"         : `Aparicions en els mitjans de comunicació escrits i audiovisuals internacionals`,
+    "aparicions_mitjans_comunicacio"                        : `Aparicions en els mitjans de comunicació escrits i audiovisuals`,
+
     "hores_tasques_taula_aigua_ACA"                         : `Hores computades per IPs a tasques associades a la taula de l'Aigua`,
     "euros_projectes_KTT_ACA"                               : `Aportacions de projectes o contractes de KTT amb l'ACA, via contracte programa o licitació`,
     "tallers_UdG_ICRA"                                      : `Organitzacions i participacions en tallers UdG-ICRA per enfortir col·laboració en marc de l'aigua`,
@@ -977,15 +991,25 @@
     "euros_recerca_erc_eic"                                 : `k€`,
     "euros_recerca_estatal"                                 : `k€`,
     "euros_recerca_regional"                                : `k€`,
+
+    "euros_projectes_competitius"                           : `k€`,
+    "euros_pressupost_executat"                             : `M€`,
+
     "projectes_horizon"                                     : `projectes`,
     "projectes_erc_eic"                                     : `projectes`,
     "congressos_tallers_escoles_estiu_organitzats"          : `activitats`,
     "sessions_especials_organitzades"                       : `sessions`,
     "comites_internacionals_participats"                    : `comitès`,
+
+    "articles_totals"                                       : `articles`,
     "articles_Q1"                                           : `articles`,
-    "articles_Q1_amb_lideratge"                             : `articles`,
     "articles_D1"                                           : `articles`,
     "articles_FWCI_10"                                      : `articles`,
+
+    "articles_lideratge"                                    : `articles`,
+    "articles_Q1_amb_lideratge"                             : `articles`,
+    "articles_D1_amb_lideratge"                             : `articles`,
+
     "cites_articles"                                        : `cites`,
     "impact_factor"                                         : `IF`,
     "estades_recercaires_acollits"                          : `estades`,
@@ -1007,8 +1031,11 @@
     "estudiants_acollits"                                   : `persones`,
     "cites_en_legislacio"                                   : `cites`,
     "participacions_comites_experts_ambit_legislatiu"       : `participacions`,
+
     "premis_nacionals"                                      : `premis`,
     "premis_internacionals"                                 : `premis`,
+    "premis_totals"                                         : `premis`,
+
     "narratives_impacte_CERCA"                              : `narratives`,
     "contribucions_gestio_aigua"                            : `contribucions`,
     "llocs_de_treball_generats_llicencies"                  : `llocs de treball`,
@@ -1017,8 +1044,11 @@
     "xxss_shares"                                           : `shares`,
     "xxss_streams"                                          : `views`,
     "actes_disseminacio_participats_o_organitzats"          : `actes`,
+
     "aparicions_mitjans_comunicacio_nacionals"              : `aparicions`,
     "aparicions_mitjans_comunicacio_internacionals"         : `aparicions`,
+    "aparicions_mitjans_comunicacio"                        : `aparicions`,
+
     "hores_tasques_taula_aigua_ACA"                         : `hores`,
     "euros_projectes_KTT_ACA"                               : `k€`,
     "tallers_UdG_ICRA"                                      : `tallers`,
@@ -1377,6 +1407,59 @@
       };
     },
 
+    euros_projectes_competitius(year, indicador){
+      let projectes = app.taules.projectes.taula.filter(pro=>{
+        return(
+          pro["Concurrencia"]=="FONS COMPETITIUS"
+        );
+      });
+      let ingressos = app.taules.ingressos.taula.filter(i=>i.Any==year);
+
+      //ajunta taules per codi projecte
+      let joined={};
+      ingressos.forEach(ing=>{
+        let codi     = ing.Codi;//string
+        let projecte = busca_projecte(codi,projectes);//objecte
+        if(!projecte) return;
+        joined[codi]={
+          projecte,
+          ingressos: ing.Ingressos,
+        }
+      });
+
+      let llista = Object.values(joined); //array
+      let keuros = llista.map(obj=>obj.ingressos).suma()/1000; //number
+
+      app.taules.projectes.columnes["Concurrencia"]=true;
+      app.taules.projectes.columnes["Naturaleza del Proyecto"]=true;
+      app.taules.projectes.columnes["Financiador Convocatoria"]=true;
+      app.taules.projectes.columnes["Director del Proyecto"]=true;
+
+      indicador.years[year].valor  = keuros; //number
+      indicador.years[year].llista = llista.map(row=>{
+        let new_row={
+          ingressos: row.ingressos,
+        };
+        app.taules.projectes.columnes_actives.forEach(key=>{
+          new_row[key] = row.projecte[key];
+        });
+        return new_row;
+      });
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.euros_projectes_competitius={
+        "ingressos":[
+          "Any",
+          "Codi",
+          "Ingressos",
+        ],
+        "projectes":[
+          "Código Identificativo",
+          "Concurrencia",
+        ],
+      };
+    },
+
     projectes_horizon(year, indicador){
       //projectes europeus coordinats
       let projectes = app.taules.projectes.taula.filter(pro=>{
@@ -1545,7 +1628,21 @@
     },
 
     //bloc scopus
-    //TODO aquest bloc ja es poden reimplementar fent servir modul scopus/open alex
+    //TODO aquest bloc es podria reimplementar fent servir modul scopus/open alex
+    articles_totals(year,indicador){
+      let scopus = app.taules.scopus.taula.filter(row=>row.year==year);
+      let n      = scopus.length ? scopus[0].articles_totals : 0;
+      indicador.years[year].valor  = n;
+      indicador.years[year].llista = scopus;
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.articles_totals={
+        "scopus":[
+          "year",
+          "articles_totals",
+        ],
+      };
+    },
     articles_Q1(year,indicador){
       let scopus = app.taules.scopus.taula.filter(row=>row.year==year);
       let n      = scopus.length ? scopus[0].articles_Q1 : 0;
@@ -1557,20 +1654,6 @@
         "scopus":[
           "year",
           "articles_Q1",
-        ],
-      };
-    },
-    articles_Q1_amb_lideratge(year,indicador){
-      let scopus = app.taules.scopus.taula.filter(row=>row.year==year);
-      let n      = scopus.length ? scopus[0].articles_Q1_amb_lideratge : 0;
-      indicador.years[year].valor  = n;
-      indicador.years[year].llista = scopus;
-
-      //recopila taules i columnes utilitzades
-      taules_i_columnes_usades.articles_Q1_amb_lideratge={
-        "scopus":[
-          "year",
-          "articles_Q1_amb_lideratge",
         ],
       };
     },
@@ -1599,6 +1682,48 @@
         "scopus":[
           "year",
           "articles_FWCI_10",
+        ],
+      };
+    },
+    articles_lideratge(year,indicador){
+      let scopus = app.taules.scopus.taula.filter(row=>row.year==year);
+      let n      = scopus.length ? scopus[0].articles_lideratge : 0;
+      indicador.years[year].valor  = n;
+      indicador.years[year].llista = scopus;
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.articles_lideratge={
+        "scopus":[
+          "year",
+          "articles_lideratge",
+        ],
+      };
+    },
+    articles_Q1_amb_lideratge(year,indicador){
+      let scopus = app.taules.scopus.taula.filter(row=>row.year==year);
+      let n      = scopus.length ? scopus[0].articles_Q1_amb_lideratge : 0;
+      indicador.years[year].valor  = n;
+      indicador.years[year].llista = scopus;
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.articles_Q1_amb_lideratge={
+        "scopus":[
+          "year",
+          "articles_Q1_amb_lideratge",
+        ],
+      };
+    },
+    articles_D1_amb_lideratge(year,indicador){
+      let scopus = app.taules.scopus.taula.filter(row=>row.year==year);
+      let n      = scopus.length ? scopus[0].articles_D1_amb_lideratge : 0;
+      indicador.years[year].valor  = n;
+      indicador.years[year].llista = scopus;
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.articles_D1_amb_lideratge={
+        "scopus":[
+          "year",
+          "articles_D1_amb_lideratge",
         ],
       };
     },
@@ -2389,6 +2514,38 @@
       return n_actes;
     },
 
+    premis_totals(year,indicador){
+      let esdeveniments = app.taules.esdeveniments.taula.filter(esd=>{
+        return(
+          (
+            esd["Tipus_Esdeveniment"].startsWith("12")||
+            esd["Tipus_Esdeveniment"].startsWith("13")
+          )&&
+          new Date(esd["DataInici_Esdeveniment"]).getFullYear()<=year &&
+          new Date(esd["DataFi_Esdeveniment"   ]).getFullYear()>=year
+        );
+      });
+
+      let n_actes = new Set(esdeveniments.map(e=>e["ID_Esdeveniment"])).size;
+
+      if(indicador){
+        indicador.years[year].valor  = n_actes;
+        indicador.years[year].llista = esdeveniments;
+      }
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.premis_totals={
+        "esdeveniments":[
+          "ID_Esdeveniment",
+          "Tipus_Esdeveniment",
+          "DataInici_Esdeveniment",
+          "DataFi_Esdeveniment",
+        ],
+      };
+
+      return n_actes;
+    },
+
     narratives_impacte_CERCA(year,indicador){
       let esdeveniments = app.taules.esdeveniments.taula.filter(esd=>{
         return(
@@ -2636,6 +2793,38 @@
 
       //recopila taules i columnes utilitzades
       taules_i_columnes_usades.aparicions_mitjans_comunicacio_internacionals={
+        "esdeveniments":[
+          "ID_Esdeveniment",
+          "Tipus_Esdeveniment",
+          "DataInici_Esdeveniment",
+          "DataFi_Esdeveniment",
+        ],
+      };
+
+      return n_actes;
+    },
+
+    aparicions_mitjans_comunicacio(year,indicador){
+      let esdeveniments = app.taules.esdeveniments.taula.filter(esd=>{
+        return(
+          (
+            esd["Tipus_Esdeveniment"].startsWith("03")||
+            esd["Tipus_Esdeveniment"].startsWith("04")
+          )&&
+          new Date(esd["DataInici_Esdeveniment"]).getFullYear()<=year &&
+          new Date(esd["DataFi_Esdeveniment"   ]).getFullYear()>=year
+        );
+      });
+
+      let n_actes = new Set(esdeveniments.map(e=>e["ID_Esdeveniment"])).size;
+
+      if(indicador){
+        indicador.years[year].valor  = n_actes;
+        indicador.years[year].llista = esdeveniments;
+      }
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.aparicions_mitjans_comunicacio={
         "esdeveniments":[
           "ID_Esdeveniment",
           "Tipus_Esdeveniment",
@@ -4526,112 +4715,144 @@
 
       return percentatge;
     },
+
+    tesis_doctorals_llegides(year,indicador){
+      let tesis = app.taules.tesis.taula.filter(row=>{
+        return(
+          new Date(row["Data"]).getFullYear()==year
+        );
+      });
+
+      if(indicador){
+        indicador.years[year].valor  = tesis.length;
+        indicador.years[year].llista = tesis;
+      }
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.tesis_doctorals_llegides={
+        "tesis":[
+          "Data",
+        ],
+      };
+
+      return tesis.length;
+    },
   };
 
   //diccionari: "id_indicador"=> "responsable icra"
   let responsables={
-    "euros_recerca"                                         : `ecofin`,
-    "euros_recerca_horizon"                                 : `ecofin`,
-    "euros_recerca_erc_eic"                                 : `ecofin`,
-    "euros_recerca_estatal"                                 : `ecofin`,
-    "euros_recerca_regional"                                : `ecofin`,
-    "projectes_horizon"                                     : `ordi`,
-    "projectes_erc_eic"                                     : `ordi`,
-    "congressos_tallers_escoles_estiu_organitzats"          : `esdeveniments`,
-    "sessions_especials_organitzades"                       : `esdeveniments`,
-    "comites_internacionals_participats"                    : `esdeveniments`,
-    "articles_Q1"                                           : `scopus`,
-    "articles_Q1_amb_lideratge"                             : `scopus`,
-    "articles_D1"                                           : `scopus`,
-    "articles_FWCI_10"                                      : `scopus`,
-    "cites_articles"                                        : `scopus`,
-    "impact_factor"                                         : `scopus`,
-    "estades_recercaires_acollits"                          : `RRHH`,
-    "estades_recercaires_en_altres_centres"                 : `esdeveniments`,
-    "rati_exit_propostes_europa"                            : `ordi`,
-    "euros_recerca_L17_L18"                                 : `ecofin`,
-    "articles_Q1_L17_L18"                                   : `scopus`,
-    "euros_projectes_KTT_respecte_total"                    : `ecofin`,
-    "euros_projectes_KTT"                                   : `ecofin`,
-    "projectes_KTT"                                         : `ordi`,
-    "formacions_per_empreses_organitzades"                  : `esdeveniments`,
-    "projectes_llavor_producte_innovadors"                  : `ordi`,
-    "doctorats_industrials"                                 : `RRHH`,
-    "euros_mecenatge"                                       : `ecofin`,
-    "projectes_mecenatge"                                   : `ordi`,
-    "patents_i_secrets_industrials"                         : `ordi`,
-    "spinoffs_i_startups"                                   : `ordi`,
-    "articles_amb_socis_industrials"                        : `scopus`,
-    "estudiants_acollits"                                   : `RRHH`,
-    "cites_en_legislacio"                                   : `scopus`,
-    "participacions_comites_experts_ambit_legislatiu"       : `esdeveniments`,
-    "premis_nacionals"                                      : `esdeveniments`,
-    "premis_internacionals"                                 : `esdeveniments`,
-    "narratives_impacte_CERCA"                              : `esdeveniments`,
-    "contribucions_gestio_aigua"                            : `esdeveniments`,
-    "llocs_de_treball_generats_llicencies"                  : `esdeveniments`,
-    "aliances_solides_entitats_socials"                     : `esdeveniments`,
-    "xxss_seguidors"                                        : `comunicacio`,
-    "xxss_shares"                                           : `comunicacio`,
-    "xxss_streams"                                          : `comunicacio`,
-    "actes_disseminacio_participats_o_organitzats"          : `esdeveniments`,
-    "aparicions_mitjans_comunicacio_nacionals"              : `esdeveniments`,
-    "aparicions_mitjans_comunicacio_internacionals"         : `esdeveniments`,
-    "hores_tasques_taula_aigua_ACA"                         : `MWR`,
-    "euros_projectes_KTT_ACA"                               : `ecofin`,
-    "tallers_UdG_ICRA"                                      : `esdeveniments`,
-    "iniciatives_UdG_ICRA"                                  : `ordi`,
-    "euros_projectes_KTT_UdG"                               : `ecofin`,
-    "participacions_activitats_JEDI_organitzades_per_CERCA" : `esdeveniments`,
-    "eficiencia_articles_amb_socis_industrials"             : `ecofin`,
-    "objectius_assolits_del_pla_formacio"                   : `preguntar_vicenç`,
-    "participants_actes_disseminacio_participats"           : `esdeveniments`,
-    "projectes_competitius_outreach"                        : `ordi`,
-    "euros_projectes_competitius_outreach"                  : `ecofin`,
-    "aliances_solides_empreses_i_administracio_publica"     : `esdeveniments`,
-    "projectes_i_encarrecs_ACA"                             : `ordi`,
-    "accions_suport_tecnic_a_ACA_quimica_analitica"         : `preguntar_vicenç`,
-    "participants_tallers_UdG_ICRA"                         : `esdeveniments`,
-    "nombre_IPs"                                            : `RRHH`,
-    "posicions_RF_creades"                                  : `RRHH`,
-    "posicions_RS_estabilitzacio_RF"                        : `RRHH`,
-    "canvis_tram_RS_o_RP"                                   : `RRHH`,
-    "sessions_JEDI_formacio_interna"                        : `esdeveniments`,
-    "participants_sessions_JEDI_formacio_interna"           : `esdeveniments`,
-    "activitats_JEDI_organitzades"                          : `esdeveniments`,
-    "dones_categories_laborals_superiors"                   : `RRHH`,
-    "projectes_amb_administracio_central"                   : `ordi`,
-    "euros_projectes_amb_administracio_central"             : `ecofin`,
+    "euros_recerca"                                         : `ecofin (isanchez)`,
+    "euros_recerca_horizon"                                 : `ecofin (isanchez)`,
+    "euros_recerca_erc_eic"                                 : `ecofin (isanchez)`,
+    "euros_recerca_estatal"                                 : `ecofin (isanchez)`,
+    "euros_recerca_regional"                                : `ecofin (isanchez)`,
 
-    "ips_euros_recerca"                                   :"ecofin",
-    "ips_projectes_erc_eic"                               :"ordi",
-    "ips_projectes_coordinats_5_socis_2M"                 :"ordi",
-    "ips_projectes_coordinats_4_socis_1M"                 :"ordi",
-    "ips_projectes_IP_o_COIP"                             :"ordi",
-    "ips_projectes_participant"                           :"ordi",
-    "ips_congressos_tallers_escoles_estiu_organitzats"    :"esdeveniments",
-    "ips_conferencies_convidades"                         :"esdeveniments",
-    "ips_comites_internacionals_participats"              :"esdeveniments",
-    "ips_articles_Q1"                                     :"scopus",
-    "ips_articles_D1_percentatge"                         :"scopus",
-    "ips_articles_FWCI_10"                                :"scopus",
-    "ips_treball_editorial_Q1"                            :"esdeveniments",
-    "ips_tesis_doctorals"                                 :"RRHH",
-    "ips_postdocs_supervisats"                            :"RRHH",
-    "ips_estades_recercaires_acollits"                    :"RRHH",
-    "ips_euros_projectes_KTT"                             :"ecofin",
-    "ips_formacions_per_empreses_organitzades"            :"esdeveniments",
-    "ips_patents_i_secrets_industrials"                   :"ordi",
-    "ips_spinoffs_i_startups"                             :"ordi",
-    "ips_articles_amb_socis_industrials"                  :"scopus",
-    "ips_estudiants_acollits"                             :"RRHH",
-    "ips_cites_en_legislacio"                             :"scopus",
-    "ips_participacions_comites_experts_ambit_legislatiu" :"esdeveniments",
-    "ips_premis_nacionals_i_internacionals"               :"esdeveniments",
-    "ips_narratives_impacte_CERCA"                        :"esdeveniments",
-    "ips_actes_disseminacio_participats_o_organitzats"    :"esdeveniments",
-    "ips_aparicions_mitjans_comunicacio_nacionals"        :"esdeveniments",
-    "ips_aparicions_mitjans_comunicacio_internacionals"   :"esdeveniments",
+    "euros_projectes_competitius"                           : `ecofin (isanchez)`,
+
+    "projectes_horizon"                                     : `ordi (jalemany)`,
+    "projectes_erc_eic"                                     : `ordi (jalemany)`,
+    "congressos_tallers_escoles_estiu_organitzats"          : `esdeveniments (rdiaz)`,
+    "sessions_especials_organitzades"                       : `esdeveniments (rdiaz)`,
+    "comites_internacionals_participats"                    : `esdeveniments (rdiaz)`,
+    "articles_totals"                                       : `scopus (etornes)`,
+    "articles_Q1"                                           : `scopus (etornes)`,
+    "articles_Q1_amb_lideratge"                             : `scopus (etornes)`,
+    "articles_D1"                                           : `scopus (etornes)`,
+    "articles_FWCI_10"                                      : `scopus (etornes)`,
+    "cites_articles"                                        : `scopus (etornes)`,
+    "impact_factor"                                         : `scopus (etornes)`,
+    "estades_recercaires_acollits"                          : `RRHH (dlopez)`,
+    "estades_recercaires_en_altres_centres"                 : `esdeveniments (rdiaz)`,
+    "rati_exit_propostes_europa"                            : `ordi (jalemany)`,
+    "euros_recerca_L17_L18"                                 : `ecofin (isanchez)`,
+    "articles_Q1_L17_L18"                                   : `scopus (etornes)`,
+    "euros_projectes_KTT_respecte_total"                    : `ecofin (isanchez)`,
+    "euros_projectes_KTT"                                   : `ecofin (isanchez)`,
+    "projectes_KTT"                                         : `ordi (jalemany)`,
+    "formacions_per_empreses_organitzades"                  : `esdeveniments (rdiaz)`,
+    "projectes_llavor_producte_innovadors"                  : `ordi (jalemany)`,
+    "doctorats_industrials"                                 : `RRHH (dlopez)`,
+    "euros_mecenatge"                                       : `ecofin (isanchez)`,
+    "projectes_mecenatge"                                   : `ordi (jalemany)`,
+    "patents_i_secrets_industrials"                         : `ordi (jalemany)`,
+    "spinoffs_i_startups"                                   : `ordi (jalemany)`,
+    "articles_amb_socis_industrials"                        : `scopus (etornes)`,
+    "estudiants_acollits"                                   : `RRHH (dlopez)`,
+    "cites_en_legislacio"                                   : `sage (lbosch)`,
+    "participacions_comites_experts_ambit_legislatiu"       : `esdeveniments (rdiaz)`,
+
+    "premis_nacionals"                                      : `esdeveniments (rdiaz)`,
+    "premis_internacionals"                                 : `esdeveniments (rdiaz)`,
+    "premis_totals"                                         : `esdeveniments (rdiaz)`,
+
+    "narratives_impacte_CERCA"                              : `esdeveniments (rdiaz)`,
+    "contribucions_gestio_aigua"                            : `esdeveniments (rdiaz)`,
+    "llocs_de_treball_generats_llicencies"                  : `esdeveniments (rdiaz)`,
+    "aliances_solides_entitats_socials"                     : `esdeveniments (rdiaz)`,
+    "xxss_seguidors"                                        : `comunicacio (sdrammeh)`,
+    "xxss_shares"                                           : `comunicacio (sdrammeh)`,
+    "xxss_streams"                                          : `comunicacio (sdrammeh)`,
+    "actes_disseminacio_participats_o_organitzats"          : `esdeveniments (rdiaz)`,
+
+    "aparicions_mitjans_comunicacio_nacionals"              : `esdeveniments (rdiaz)`,
+    "aparicions_mitjans_comunicacio_internacionals"         : `esdeveniments (rdiaz)`,
+    "aparicions_mitjans_comunicacio"                        : `esdeveniments (rdiaz)`,
+
+    "hores_tasques_taula_aigua_ACA"                         : `esdeveniments (rdiaz)`,
+    "euros_projectes_KTT_ACA"                               : `ecofin (isanchez)`,
+    "tallers_UdG_ICRA"                                      : `esdeveniments (rdiaz)`,
+    "iniciatives_UdG_ICRA"                                  : `ordi (jalemany)`,
+    "euros_projectes_KTT_UdG"                               : `ecofin (isanchez)`,
+    "participacions_activitats_JEDI_organitzades_per_CERCA" : `esdeveniments (rdiaz)`,
+    "eficiencia_articles_amb_socis_industrials"             : `ecofin (isanchez)`,
+    "objectius_assolits_del_pla_formacio"                   : `preguntar_vicenç`,
+    "participants_actes_disseminacio_participats"           : `esdeveniments (rdiaz)`,
+    "projectes_competitius_outreach"                        : `ordi (jalemany)`,
+    "euros_projectes_competitius_outreach"                  : `ecofin (isanchez)`,
+    "aliances_solides_empreses_i_administracio_publica"     : `esdeveniments (rdiaz)`,
+    "projectes_i_encarrecs_ACA"                             : `ordi (jalemany)`,
+    "accions_suport_tecnic_a_ACA_quimica_analitica"         : `preguntar_vicenç`,
+    "participants_tallers_UdG_ICRA"                         : `esdeveniments (rdiaz)`,
+    "nombre_IPs"                                            : `RRHH (dlopez)`,
+    "posicions_RF_creades"                                  : `RRHH (dlopez)`,
+    "posicions_RS_estabilitzacio_RF"                        : `RRHH (dlopez)`,
+    "canvis_tram_RS_o_RP"                                   : `RRHH (dlopez)`,
+    "sessions_JEDI_formacio_interna"                        : `esdeveniments (rdiaz)`,
+    "participants_sessions_JEDI_formacio_interna"           : `esdeveniments (rdiaz)`,
+    "activitats_JEDI_organitzades"                          : `esdeveniments (rdiaz)`,
+    "dones_categories_laborals_superiors"                   : `RRHH (dlopez)`,
+    "projectes_amb_administracio_central"                   : `ordi (jalemany)`,
+    "euros_projectes_amb_administracio_central"             : `ecofin (isanchez)`,
+
+    "ips_euros_recerca"                                   :"ecofin (isanchez)",
+    "ips_projectes_erc_eic"                               :"ordi (jalemany)",
+    "ips_projectes_coordinats_5_socis_2M"                 :"ordi (jalemany)",
+    "ips_projectes_coordinats_4_socis_1M"                 :"ordi (jalemany)",
+    "ips_projectes_IP_o_COIP"                             :"ordi (jalemany)",
+    "ips_projectes_participant"                           :"ordi (jalemany)",
+    "ips_congressos_tallers_escoles_estiu_organitzats"    :"esdeveniments (rdiaz)",
+    "ips_conferencies_convidades"                         :"esdeveniments (rdiaz)",
+    "ips_comites_internacionals_participats"              :"esdeveniments (rdiaz)",
+    "ips_articles_Q1"                                     :"scopus (etornes)",
+    "ips_articles_D1_percentatge"                         :"scopus (etornes)",
+    "ips_articles_FWCI_10"                                :"scopus (etornes)",
+    "ips_treball_editorial_Q1"                            :"esdeveniments (rdiaz)",
+    "ips_tesis_doctorals"                                 :"RRHH (dlopez)",
+    "ips_postdocs_supervisats"                            :"RRHH (dlopez)",
+    "ips_estades_recercaires_acollits"                    :"RRHH (dlopez)",
+    "ips_euros_projectes_KTT"                             :"ecofin (isanchez)",
+    "ips_formacions_per_empreses_organitzades"            :"esdeveniments (rdiaz)",
+    "ips_patents_i_secrets_industrials"                   :"ordi (jalemany)",
+    "ips_spinoffs_i_startups"                             :"ordi (jalemany)",
+    "ips_articles_amb_socis_industrials"                  :"scopus (etornes)",
+    "ips_estudiants_acollits"                             :"RRHH (dlopez)",
+    "ips_cites_en_legislacio"                             :"scopus (etornes)",
+    "ips_participacions_comites_experts_ambit_legislatiu" :"esdeveniments (rdiaz)",
+    "ips_premis_nacionals_i_internacionals"               :"esdeveniments (rdiaz)",
+    "ips_narratives_impacte_CERCA"                        :"esdeveniments (rdiaz)",
+    "ips_actes_disseminacio_participats_o_organitzats"    :"esdeveniments (rdiaz)",
+    "ips_aparicions_mitjans_comunicacio_nacionals"        :"esdeveniments (rdiaz)",
+    "ips_aparicions_mitjans_comunicacio_internacionals"   :"esdeveniments (rdiaz)",
   };
 
   /*utils*/
@@ -4937,6 +5158,122 @@
         new Indicador("percentatge_publicacions_lideratge_femeni"),
       ]),
     ]),
+
+    //TODO
+    new Ambit("Memòria Anual",[
+      new Bloc("Aportacions",0,[
+        new Indicador(`euros_pressupost_executat`,0,[],[0,0,5.8]),
+        new Indicador(`euros_projectes_competitius`,0,[],[]),
+
+      ]),
+      new Bloc("Publicacions",0,[
+        new Indicador(`articles_totals`),
+        new Indicador(`articles_Q1`),
+        new Indicador(`articles_D1`),
+        new Indicador(`articles_lideratge`),
+        new Indicador(`articles_Q1_amb_lideratge`),
+        new Indicador(`articles_D1_amb_lideratge`),
+      ]),
+      new Bloc("Projectes",0,[
+        new Indicador(`euros_recerca`,               0,[],[2995]),
+        new Indicador(`euros_recerca_estatal`,       0,[],[1189]),
+        new Indicador(`euros_recerca_internacional`, 0,[],[]),
+      ]),
+      new Bloc("KTT",0,[
+        new Indicador(`patents_i_secrets_industrials`),
+        new Indicador(`spinoffs_i_startups`),
+        new Indicador(`euros_projectes_KTT`),
+        new Indicador(`euros_projectes_KTT_respecte_total`),
+        new Indicador(`articles_amb_socis_industrials`),
+        new Indicador(`formacions_per_empreses_organitzades`),
+      ]),
+      new Bloc("Infraestructures Singulars - SCTs",0,[
+        new Indicador(`scts_experiments_realitzats`),
+        new Indicador(`scts_prestacions_de_serveis_a_projectes`),
+        new Indicador(`scts_serveis_externs`),
+        new Indicador(`scts_colaboracions_amb_empresa_o_administracio`),
+      ]),
+      new Bloc("Infraestructures Singulars - Laboratori de Plantes Pilot i Bioprocessos",0,[
+        new Indicador(`lppibp_projectes_amb_us_laboratori`),
+        new Indicador(`lppibp_publicacions_derivades`),
+        new Indicador(`lppibp_tecnologies_testades`),
+      ]),
+      new Bloc("Infraestructures Singulars - Paret Verda",0,[
+        new Indicador(`paretverda_especies_vegetals`),
+        new Indicador(`paretverda_conferencies_internacionals`),
+        new Indicador(`paretverda_estudiants_formats`),
+      ]),
+      new Bloc("Infraestructures Singulars - ESF",0,[
+        new Indicador(`esf_experiments_realitzats`),
+        new Indicador(`esf_projectes_amb_us_instalacio`),
+        new Indicador(`esf_visites_a_la_instalacio`),
+      ]),
+      new Bloc("Infraestructures Singulars - Hidropònics",0,[
+        new Indicador(`hidroponics_especies_vegetals`),
+        new Indicador(`hidroponics_tipologies_aigua_testades`),
+        new Indicador(`hidroponics_projectes_amb_us_instalacio`),
+      ]),
+      new Bloc("Recursos Humans",0,[
+        new Indicador(`rrhh_personal_laboral_i_adscrits`),
+        new Indicador(`rrhh_personal_recerca`),
+        new Indicador(`rrhh_personal_recerca_dones`),
+        //formatge
+        new Indicador(`rrhh_tecnics_suport_especialitzats`),
+        new Indicador(`rrhh_investigadors_postdoctorals`),
+        new Indicador(`rrhh_investigadors_predoctorals`),
+        new Indicador(`rrhh_investigadors_sèniors`),
+        new Indicador(`rrhh_professors_recerca`),
+        new Indicador(`rrhh_ssr`),
+        new Indicador(`rrhh_tecnics_suport_recerca`),
+        //homes+dones
+        new Indicador(`rrhh_administracio_homes`),
+        new Indicador(`rrhh_administracio_dones`),
+        new Indicador(`rrhh_sct_homes`),
+        new Indicador(`rrhh_sct_dones`),
+        new Indicador(`rrhh_tecnics_recerca_homes`),
+        new Indicador(`rrhh_tecnics_recerca_dones`),
+        new Indicador(`rrhh_predoctors_homes`),
+        new Indicador(`rrhh_predoctors_dones`),
+        new Indicador(`rrhh_postdoctors_homes`),
+        new Indicador(`rrhh_postdoctors_dones`),
+        new Indicador(`rrhh_investigadors_seniors_homes`),
+        new Indicador(`rrhh_investigadors_seniors_dones`),
+        new Indicador(`rrhh_professors_recerca_homes`),
+        new Indicador(`rrhh_professors_recerca_dones`),
+      ]),
+      new Bloc("Impacte",0,[
+        new Indicador(`cites_en_legislacio`),
+        new Indicador(`participacions_comites_experts_ambit_legislatiu`),
+        new Indicador(`premis_totals`),
+      ]),
+      new Bloc("Comunicació",0,[
+        new Indicador(`xxss_seguidors`),
+        new Indicador(`xxss_shares`),
+        new Indicador(`xxss_streams`),
+        new Indicador(`actes_disseminacio_participats_o_organitzats`),
+        new Indicador(`aparicions_mitjans_comunicacio`),
+        new Indicador(`aparicions_mitjans_comunicacio_nacionals`),
+        new Indicador(`aparicions_mitjans_comunicacio_internacionals`),
+        new Indicador(`noticies_pagina_web`),
+        new Indicador(`visites_pagina_web`),
+      ]),
+      new Bloc("Divulgació",0,[
+        new Indicador("actes_disseminacio_participats_o_organitzats"),
+        new Indicador("assistents_a_actes_divulgació"),
+        new Indicador("visites_a_escoles"),
+        new Indicador("estudiants_acollits"),
+      ]),
+      new Bloc("Tesis Doctorals",0,[
+        new Indicador("tesis_doctorals_llegides"),
+        new Indicador("tesis_doctorals_publicacions_derivades"),
+        new Indicador("doctorats_actius"),
+      ]),
+      new Bloc("Frontier School",0,[
+        new Indicador("frontier_school_estudiants"),
+        new Indicador("frontier_school_centres"),
+        new Indicador("frontier_school_nacionalitats"),
+      ]),
+    ]),
   ];
 
   let taules_i_columnes_usades={};
@@ -4996,7 +5333,7 @@
       funcions_calculadores,  //taula helper funcions dels indicadors
 
       //paquet indicadors per defecte
-      ambit_actual:ambits[0], //objecte
+      ambit_actual:ambits[6], //objecte TODO
 
       //veure detalls d'un sol indicador
       vista_detalls_indicador:false,
@@ -5542,9 +5879,20 @@
   };
   app.taules.scopus.columnes={
     "year":true,
+    "articles_totals":true,
+    "articles_D1":true,
     "articles_Q1":true,
+    "articles_FWCI_10":true,
+
+    "articles_lideratge":true,
+    "articles_Q1_amb_lideratge":true,
+    "articles_D1_amb_lideratge":true,
+
+    "articles_amb_socis_industrials":true,
+
     "cites_articles":true,
     "cites_en_legislacio":true,
+    "impact_factor":true,
   };
   app.taules.xarxes_socials.columnes={
     "any":true,
