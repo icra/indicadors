@@ -1079,6 +1079,11 @@
         //reset subtypes_visibles
         subtypes_arr.forEach(s=>this.subtypes_visibles[s]=true);
 
+        //demanat per Vicenç Acuña
+        this.subtypes_visibles["Erratum"]=false;
+        this.subtypes_visibles["Book Chapter"]=false;
+        this.subtypes_visibles["Conference Paper"]=false;
+
         return subtypes_arr;
       },
 
