@@ -3,7 +3,7 @@
   <meta charset="utf8">
 
   <!--lib vue-->
-  <script src="lib/vue.global.prod.js"></script>
+  <script src="lib/vue.global.js"></script>
   <script
     src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"
     integrity="sha512-dlPw+ytv/6JyepmelABrgeYgHI0O+frEwgfnPdXDTOIZz+eDgfW07QXG02/O8COfivBdGNINy+Vex+lYmJ5rxw=="
@@ -11,6 +11,19 @@
     referrerpolicy="no-referrer"
   ></script>
   <script src="lib/run_prettify.js"></script>
+
+  <!--llibreria datatables-->
+  <!--
+  <link href="https://cdn.datatables.net/v/dt/dt-3.1.2/datatables.min.css" rel="stylesheet">
+  -->
+  <script src="https://cdn.datatables.net/v/dt/dt-3.1.2/datatables.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/4.1.2/js/dataTables.buttons.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/4.1.2/js/buttons.dataTables.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pdfmake@0.3.11/build/pdfmake.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pdfmake@0.3.11/build/vfs_fonts.js"></script>
+  <link href="https://cdn.datatables.net/columncontrol/2.1.2/css/columnControl.dataTables.min.css" rel="stylesheet">
+  <script src="https://cdn.datatables.net/columncontrol/2.1.2/js/dataTables.columnControl.min.js"></script>
 
   <style>
     body{
@@ -145,10 +158,11 @@
 
 <div id=app>
   <div style="background:azure">
-    avís 2026-10-16:<br>
-    PÀGINA EN MODE MANTENIMENT: <b>els indicadors que apareixin no estàn validats pels seus responsables</b><br>
-    treballant en la sincronització amb fundanet i icranet (lbosch+rdiaz)<br>
-    implementant indicadors "memòria anual" (lbosch+sdrammeh)
+    Avís 2026-10-16:<br>
+    PÀGINA EN MODE MANTENIMENT<br>
+    <b>ELS INDICADORS QUE APAREIXEN NO ESTÀN VALIDATS PELS SEUS RESPONSABLES</b><br>
+    - Treballant en la sincronització amb fundanet i icranet (lbosch+rdiaz)<br>
+    - Implementant indicadors "memòria anual" (lbosch+sdrammeh)
   </div>
 
   <h2>
@@ -201,16 +215,101 @@
   </div>
 
   <!--finestra detalls indicador-->
-  <div v-if="vista_detalls_indicador" vista_detalls_indicador id=detalls>
+  <div v-if="detalls_indicador.visible" vista_detalls_indicador id=detalls>
     <div sticky>
       <button
-        @click="vista_detalls_indicador=false"
+        @click="detalls_indicador.visible=false"
         title="Tancar finestra detalls"
         style="padding:0.618em 1em"
         v-html="'X'"
       />
     </div>
-    <div v-html="html_detalls_indicador"></div>
+
+    <div v-if="detalls_indicador.indicador && detalls_indicador.year">
+
+      <div v-for="[indi,year] in [[detalls_indicador.indicador,detalls_indicador.year]]">
+        <div><code>Detalls indicador ["{{indi.id}}"]</code></div>
+        <p style="font-size:larger">
+          <b>{{year}}: {{indi.text}}</b>
+        </p>
+
+        <!--detalls resum-->
+        <table border=1 small monospace>
+          <tbody>
+            <tr style="font-size:larger;font-weight:bold">
+              <td>Valor indicador ({{year}})</td>
+              <td>
+                {{indi.years[year].valor}}
+                {{indi.unit}}
+              </td>
+            </tr>
+            <tr>
+              <td>Valor basal ({{indi.base_year}})</td>
+              <td>
+                {{indi.years[indi.base_year].valor}}
+                {{indi.unit}}
+              </td>
+            </tr>
+          </tbody>
+          <tbody v-for="incr in [indi.increment(year)]">
+            <tr>
+              <td>Canvi respecte valor basal</td>
+              <td>
+                {{incr.delta}}
+                {{indi.unit}} ({{incr.perc.toFixed(0)}}%)
+              </td>
+            </tr>
+            <tr>
+              <td>Objectiu {{year}}</td>
+              <td>+{{incr.objectiu}}%</td>
+            </tr>
+            <tr>
+              <td>Compleix {{year}}</td>
+              <td>{{incr.compleix?'Sí':'No'}}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!--codi que calcula l'indicador-->
+        <div v-if="funcions_calculadores[indi.funcio_calculadora] && debug"><hr>
+          <details>
+            <summary small><b>[MODE DEBUG] Codi que calcula l'indicador</b></summary>
+            <div v-for="fx in [funcions_calculadores[indi.funcio_calculadora]]">
+              <p v-if="fx">
+                <code xsmall><pre class="prettyprint lang-js">{{fx}}</pre></code>
+              </p>
+            </div>
+          </details>
+        </div>
+
+        <!---->
+        <div v-for="arr in [indi.years[year].llista]">
+          <div v-if="arr?.length"><hr>
+            <div>
+              Nombre de files taula resultant: {{arr.length}}
+            </div>
+            <table border=1 xsmall id=taula_detalls>
+              <thead>
+                <tr sticky>
+                  <th v-for="key in Object.keys(arr[0])">
+                    {{key}}
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <tr v-for="row in arr">
+                  <td v-for="cell in Object.values(row)">
+                    <div v-if="cell && cell.constructor===Object">{{JSON.stringify(cell)}}</div>
+                    <div v-else>{{cell}}</div>
+                  </dd>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!--secció indicadors-->
@@ -497,7 +596,7 @@
         </div>
 
         <!--checkboxes per veure columnes-->
-        <div v-if="taules[taula].taula?.length" small style="padding-left:40px">
+        <div v-if="taules[taula].taula?.length" small>
           <div>
             Columnes visibles:
             <button @click="taules[taula].columnes={}" :disabled="Object.values(taules[taula].columnes).every(val=>!val)">cap</button>
@@ -840,6 +939,7 @@
     "euros_recerca_erc_eic"                                 : `Aportació econòmica de projectes de recerca competitius Europeus (ERC-EIC)`,
     "euros_recerca_estatal"                                 : `Aportació econòmica de projectes de recerca competitius estatals (AEI-ERANETs)`,
     "euros_recerca_regional"                                : `Aportació econòmica de projectes de recerca competitius regionals (ACA-AGAUR)`,
+    "euros_recerca_internacional"                           : `Aportació econòmica de projectes de recerca competitius internacionals`,
 
     "euros_projectes_competitius"                           : `Aportació econòmica a través de projectes competitius`,
     "euros_pressupost_executat"                             : `Pressupost executat`,
@@ -991,6 +1091,7 @@
     "euros_recerca_erc_eic"                                 : `k€`,
     "euros_recerca_estatal"                                 : `k€`,
     "euros_recerca_regional"                                : `k€`,
+    "euros_recerca_internacional"                           : `k€`,
 
     "euros_projectes_competitius"                           : `k€`,
     "euros_pressupost_executat"                             : `M€`,
@@ -1104,6 +1205,31 @@
     "ips_actes_disseminacio_participats_o_organitzats"    :"actes",
     "ips_aparicions_mitjans_comunicacio_nacionals"        :"aparicions",
     "ips_aparicions_mitjans_comunicacio_internacionals"   :"aparicions",
+
+    "rrhh_personal_laboral_i_adscrits"   : "persones",
+    "rrhh_personal_recerca"              : "persones",
+    "rrhh_personal_recerca_dones"        : "persones",
+    "rrhh_tecnics_suport_especialitzats" : "persones",
+    "rrhh_investigadors_postdoctorals"   : "persones",
+    "rrhh_investigadors_predoctorals"    : "persones",
+    "rrhh_investigadors_sèniors"         : "persones",
+    "rrhh_professors_recerca"            : "persones",
+    "rrhh_ssr"                           : "persones",
+    "rrhh_tecnics_suport_recerca"        : "persones",
+    "rrhh_administracio_homes"           : "persones",
+    "rrhh_administracio_dones"           : "persones",
+    "rrhh_sct_homes"                     : "persones",
+    "rrhh_sct_dones"                     : "persones",
+    "rrhh_tecnics_recerca_homes"         : "persones",
+    "rrhh_tecnics_recerca_dones"         : "persones",
+    "rrhh_predoctors_homes"              : "persones",
+    "rrhh_predoctors_dones"              : "persones",
+    "rrhh_postdoctors_homes"             : "persones",
+    "rrhh_postdoctors_dones"             : "persones",
+    "rrhh_investigadors_seniors_homes"   : "persones",
+    "rrhh_investigadors_seniors_dones"   : "persones",
+    "rrhh_professors_recerca_homes"      : "persones",
+    "rrhh_professors_recerca_dones"      : "persones",
   };
 
   //funcions calculadores dels indicadors
@@ -1125,7 +1251,7 @@
       //diccionari codi=>projecte
       let joined={};
 
-      //itera ingressos
+      //itera ingressos per trobar projectes
       ingressos.forEach(ing=>{
         let codi = ing.Codi; //string
         let pro  = busca_projecte(codi);//objecte
@@ -1456,6 +1582,64 @@
         "projectes":[
           "Código Identificativo",
           "Concurrencia",
+        ],
+      };
+    },
+
+    euros_recerca_internacional(year, indicador){
+      let projectes=app.taules.projectes.taula.filter(pro=>{
+        return(
+          pro["Concurrencia"]=="FONS COMPETITIUS"&&
+          (
+            pro["Naturaleza del Proyecto"]=="EUROPEA"||
+            pro["Naturaleza del Proyecto"]=="INTERNACIONAL"
+          )
+        );
+      });
+
+      app.taules.projectes.columnes["Concurrencia"]=true;
+      app.taules.projectes.columnes["Naturaleza del Proyecto"]=true;
+      app.taules.projectes.columnes["Financiador Convocatoria"]=true;
+      app.taules.projectes.columnes["Director del Proyecto"]=true;
+
+      let ingressos = app.taules.ingressos.taula.filter(i=>i.Any==year);
+
+      let joined={};
+      ingressos.forEach(ing=>{
+        let codi = ing.Codi;
+        let projecte = busca_projecte(codi,projectes);//object
+        if(!projecte) return;
+        joined[codi]={
+          projecte,
+          ingressos: ing.Ingressos,
+        }
+      });
+
+      let llista = Object.values(joined); //array
+      let keuros = llista.map(obj=>obj.ingressos).suma()/1000; //number
+
+      indicador.years[year].valor  = keuros; //number
+      indicador.years[year].llista = llista.map(row=>{
+        let new_row={
+          ingressos: row.ingressos,
+        };
+        app.taules.projectes.columnes_actives.forEach(key=>{
+          new_row[key] = row.projecte[key];
+        });
+        return new_row;
+      });
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.euros_recerca_internacional={
+        "ingressos":[
+          "Any",
+          "Codi",
+          "Ingressos",
+        ],
+        "projectes":[
+          "Código Identificativo",
+          "Concurrencia",
+          "Naturaleza del Proyecto",
         ],
       };
     },
@@ -4737,6 +4921,209 @@
 
       return tesis.length;
     },
+
+    rrhh_personal_laboral_i_adscrits(year,indicador){
+      let personal = app.taules.personal.taula.filter(per=>{
+        return(
+          (
+            per["Posicio_Laboral"]=="LABORAL ICRA"||
+            per["Posicio_Laboral"]=="ADSCRIT"
+          )&&
+          new Date(per["Datainicicontracte"]).getFullYear()<=year &&
+          new Date(per["DataFiContracte"   ]).getFullYear()>=year &&
+          !per["Nom"].startsWith("TBA")
+        );
+      });
+
+      //elimina duplicats
+      let persones_uniques = new Set(personal.map(row=>row.Nom));
+
+      app.taules.personal.columnes["Nom"]=true;
+      app.taules.personal.columnes["Categoria"]=true;
+      app.taules.personal.columnes["Posicio_Laboral"]=true;
+
+      if(indicador){
+        indicador.years[year].valor  = persones_uniques.size;
+        indicador.years[year].llista = personal;
+      }
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.rrhh_personal_laboral_i_adscrits={
+        "personal":[
+          "Nom",
+          "Posicio_Laboral",
+          "Datainicicontracte",
+          "DataFiContracte",
+        ],
+      };
+
+      return personal.length;
+    },
+
+    rrhh_personal_recerca(year,indicador){
+      let personal=app.taules.personal.taula.filter(per=>{
+        return(
+          (
+            per["Categoria"]=="010. RESEARCH PROFESSOR"||
+            per["Categoria"]=="015. RESEARCH PROFESSOR ASSOCIATED"||
+            per["Categoria"]=="020. RESEARCH SCIENTIST"||
+            per["Categoria"]=="025. RESEARCH FELLOW"||
+            per["Categoria"]=="030. POSTDOC RESEARCHER ADVANCED"||
+            per["Categoria"]=="035. POSTDOC RESEARCHER"||
+            per["Categoria"]=="040. PREDOCTORAL RESEARCHER"||
+            per["Categoria"]=="051. RESEARCH TECHNICIAN ADVANCED"||
+            per["Categoria"]=="052. RESEARCH TECHNICIAN"||
+            per["Categoria"]=="095. SPECIALIST TECHNICIAN (Suport Recerca)"
+          )&&
+          new Date(per["Datainicicontracte"]).getFullYear()<=year &&
+          new Date(per["DataFiContracte"   ]).getFullYear()>=year &&
+          !per["Nom"].startsWith("TBA")
+        );
+      });
+
+      //elimina duplicats
+      let persones_uniques = new Set(personal.map(row=>row.Nom));
+
+      if(indicador){
+        indicador.years[year].valor  = persones_uniques.size;
+        indicador.years[year].llista = personal;
+      }
+
+      app.taules.personal.columnes["Nom"]=true;
+      app.taules.personal.columnes["Categoria"]=true;
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.rrhh_personal_recerca={
+        "personal":[
+          "Categoria",
+          "Datainicicontracte",
+          "DataFiContracte",
+          "Nom",
+        ],
+      };
+
+      return personal.length;
+    },
+
+    rrhh_personal_recerca_dones(year,indicador){
+      let personal=app.taules.personal.taula.filter(per=>{
+        return(
+          (
+            per["Categoria"]=="010. RESEARCH PROFESSOR"||
+            per["Categoria"]=="015. RESEARCH PROFESSOR ASSOCIATED"||
+            per["Categoria"]=="020. RESEARCH SCIENTIST"||
+            per["Categoria"]=="025. RESEARCH FELLOW"||
+            per["Categoria"]=="030. POSTDOC RESEARCHER ADVANCED"||
+            per["Categoria"]=="035. POSTDOC RESEARCHER"||
+            per["Categoria"]=="040. PREDOCTORAL RESEARCHER"||
+            per["Categoria"]=="051. RESEARCH TECHNICIAN ADVANCED"||
+            per["Categoria"]=="052. RESEARCH TECHNICIAN"||
+            per["Categoria"]=="095. SPECIALIST TECHNICIAN (Suport Recerca)"
+          )&&
+          per["Descripcio"]=="DONA" &&
+          new Date(per["Datainicicontracte"]).getFullYear()<=year &&
+          new Date(per["DataFiContracte"   ]).getFullYear()>=year &&
+          !per["Nom"].startsWith("TBA")
+        );
+      });
+
+      //elimina duplicats
+      let persones_uniques = new Set(personal.map(row=>row.Nom));
+
+      if(indicador){
+        indicador.years[year].valor  = persones_uniques.size;
+        indicador.years[year].llista = personal;
+      }
+
+      app.taules.personal.columnes["Nom"]=true;
+      app.taules.personal.columnes["Categoria"]=true;
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.rrhh_personal_recerca_dones={
+        "personal":[
+          "Categoria",
+          "Descripcio",
+          "Datainicicontracte",
+          "DataFiContracte",
+        ],
+      };
+
+      return personal.length;
+    },
+
+    rrhh_tecnics_suport_especialitzats(year,indicador){
+      let personal=app.taules.personal.taula.filter(per=>{
+        return(
+          (
+            per["Categoria"]=="051. RESEARCH TECHNICIAN ADVANCED"||
+            per["Categoria"]=="052. RESEARCH TECHNICIAN"||
+            per["Categoria"]=="095. SPECIALIST TECHNICIAN (Suport Recerca)"
+          )&&
+          new Date(per["Datainicicontracte"]).getFullYear()<=year &&
+          new Date(per["DataFiContracte"   ]).getFullYear()>=year &&
+          !per["Nom"].startsWith("TBA")
+        );
+      });
+
+      //elimina duplicats
+      let persones_uniques = new Set(personal.map(row=>row.Nom));
+
+      if(indicador){
+        indicador.years[year].valor  = persones_uniques.size;
+        indicador.years[year].llista = personal;
+      }
+
+      app.taules.personal.columnes["Nom"]=true;
+      app.taules.personal.columnes["Categoria"]=true;
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.rrhh_tecnics_suport_especialitzats={
+        "personal":[
+          "Categoria",
+          "Descripcio",
+          "Datainicicontracte",
+          "DataFiContracte",
+        ],
+      };
+
+      return personal.length;
+    },
+
+    rrhh_investigadors_postdoctorals(year,indicador){
+      let personal=app.taules.personal.taula.filter(per=>{
+        return(
+          (
+            per["Categoria"]=="030. POSTDOC RESEARCHER ADVANCED"||
+            per["Categoria"]=="035. POSTDOC RESEARCHER"
+          )&&
+          new Date(per["Datainicicontracte"]).getFullYear()<=year &&
+          new Date(per["DataFiContracte"   ]).getFullYear()>=year &&
+          !per["Nom"].startsWith("TBA")
+        );
+      });
+
+      //elimina duplicats
+      let persones_uniques = new Set(personal.map(row=>row.Nom));
+
+      if(indicador){
+        indicador.years[year].valor  = persones_uniques.size;
+        indicador.years[year].llista = personal;
+      }
+
+      app.taules.personal.columnes["Nom"]=true;
+      app.taules.personal.columnes["Categoria"]=true;
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.rrhh_investigadors_postdoctorals={
+        "personal":[
+          "Categoria",
+          "Datainicicontracte",
+          "DataFiContracte",
+        ],
+      };
+
+      return personal.length;
+    },
   };
 
   //diccionari: "id_indicador"=> "responsable icra"
@@ -4747,7 +5134,9 @@
     "euros_recerca_estatal"                                 : `ecofin (isanchez)`,
     "euros_recerca_regional"                                : `ecofin (isanchez)`,
 
+    "euros_recerca_internacional"                           : `ecofin (isanchez)`,
     "euros_projectes_competitius"                           : `ecofin (isanchez)`,
+    "euros_pressupost_executat"                             : `ecofin (isanchez)`,
 
     "projectes_horizon"                                     : `ordi (jalemany)`,
     "projectes_erc_eic"                                     : `ordi (jalemany)`,
@@ -5336,8 +5725,11 @@
       ambit_actual:ambits[6], //objecte TODO
 
       //veure detalls d'un sol indicador
-      vista_detalls_indicador:false,
-      html_detalls_indicador:false,
+      detalls_indicador:{
+        visible:true, //false
+        indicador:null,
+        year:null,
+      },
 
       //columna responsable indicador
       veure_responsable:false,
@@ -5432,100 +5824,32 @@
 
       //veure detalls indicador
       click_detalls_indicador(indi,year){
-        this.vista_detalls_indicador=true;
-        indi.marcat = 1;
-        let html = this.crea_html_caption(indi,year);
-        this.html_detalls_indicador=html;
+        indi.marcat=1;
+        this.detalls_indicador.indicador=indi;
+        this.detalls_indicador.year=year;
+        this.detalls_indicador.visible=true;
 
-        //scroll
         this.$nextTick().then(()=>{
+          //scroll
           let el = document.querySelector("#detalls");
           if(el) el.scrollIntoView();
+
+          //syntax on
           PR.prettyPrint();
+
+          //aplica llibreria datatables
+          let table=new DataTable('#taula_detalls',{
+            //options
+            paging:false,
+            layout:{
+              topStart:{
+                //buttons:['copy','csv','excel','pdf','print'],
+                buttons:['copy','csv'],
+              },
+            },
+            columnControl:['order', ['orderAsc', 'orderDesc', 'search']]
+          });
         });
-      },
-
-      //genera HTML per vista detalls indicador
-      crea_html_caption(indi,year){
-        let incr = indi.increment(year);
-        let header=`
-          <div><code>Detalls indicador [id=${indi.id}]</code></div>
-          <p style="font-size:larger">
-            <b>${indi.text}</b>
-          </p>
-          <p>Any: ${year}</p>
-          <table border=1 small>
-            <tr>
-              <td>Valor (${year})</td>
-              <td>${indi.years[year].valor} ${indi.unit}</td>
-            </tr>
-            <tr>
-              <td>Valor basal (${indi.base_year})</td>
-              <td>${indi.years[indi.base_year].valor} ${indi.unit}</td>
-            </tr>
-            <tr>
-              <td>Canvi respecte valor basal</td>
-              <td>${incr.delta} ${indi.unit} (${incr.perc.toFixed(0)}%)</td>
-            </tr>
-            <tr>
-              <td>Objectiu ${year}</td>
-              <td>+${incr.objectiu}%</td>
-            </tr>
-            <tr>
-              <td>Compleix ${year}</td>
-              <td>${incr.compleix?'Sí':'No'}</td>
-            </tr>
-          </table>
-        `;
-        let funcio="";
-        let fx = funcions_calculadores[indi.funcio_calculadora];
-        if(fx && app.debug){
-          funcio+="<hr>";
-          funcio+="<details>";
-          funcio+="<summary small><b>[MODE DEBUG] Codi que calcula l'indicador</b></summary>";
-          funcio+="<p>";
-          funcio+=`<pre class="prettyprint lang-js"><code xsmall>`;
-          fx.toString().split("\n").forEach(linia=>{
-            funcio+=`${linia}\n`;
-          });
-          funcio+=`</code></pre>`;
-          funcio+="</p>";
-          funcio+="</details>";
-        }
-
-        let llista="";
-        let arr = indi.years[year].llista;
-        if(arr){
-          llista+="<hr>";
-          llista+=`Nombre d'elements: ${arr.length}`;
-          llista+="<table border=1 xsmall>";
-          arr.forEach((row,i)=>{
-            if(i==0){
-              llista+="<tr>";
-              Object.entries(row).forEach(([key,_])=>{
-                llista+=`<th>${key}</th>`;
-              });
-              llista+="</tr>";
-            }
-            llista+="<tr>";
-            Object.entries(row).forEach(([_,val])=>{
-              if(val && val.constructor===Object){
-                val = JSON.stringify(val);
-              }
-              llista+=`<td>${val}</td>`;
-            });
-            llista+="</tr>";
-          });
-          llista+="</table>";
-        }
-
-        let ret=[
-          header,
-          funcio,
-          llista,
-        ].join("");
-
-        return ret;
       },
 
       get_ips(year){
