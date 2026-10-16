@@ -79,6 +79,9 @@
     [nowrap]{
       white-space:nowrap;
     }
+    [valigntop]{
+      vertical-align:top;
+    }
     [vista_detalls_indicador]{
       border:1px solid #ccc;
       background:lightyellow;
@@ -158,11 +161,11 @@
 
 <div id=app>
   <div style="background:azure">
-    Avís 2026-10-16:<br>
+    Acutalització 2026-10-19:<br>
     PÀGINA EN MODE MANTENIMENT<br>
     <b>ELS INDICADORS QUE APAREIXEN NO ESTÀN VALIDATS PELS SEUS RESPONSABLES</b><br>
-    - Treballant en la sincronització amb fundanet i icranet (lbosch+rdiaz)<br>
-    - Implementant indicadors "memòria anual" (lbosch+sdrammeh)
+    - S'està treballant en la sincronització completa amb fundanet i icranet (lbosch+rdiaz)<br>
+    - S'estan implementant indicadors "memòria anual" (lbosch+sdrammeh)
   </div>
 
   <h2>
@@ -273,7 +276,7 @@
         <!--codi que calcula l'indicador-->
         <div v-if="funcions_calculadores[indi.funcio_calculadora] && debug"><hr>
           <details>
-            <summary small><b>[MODE DEBUG] Codi que calcula l'indicador</b></summary>
+            <summary small><b>[MODE DEBUG] Veure codi que calcula l'indicador</b></summary>
             <div v-for="fx in [funcions_calculadores[indi.funcio_calculadora]]">
               <p v-if="fx">
                 <code xsmall><pre class="prettyprint lang-js">{{fx}}</pre></code>
@@ -548,7 +551,7 @@
   <!--taules dev "Conf_Taula"-->
   <details v-if="debug && tot_carregat">
     <summary large bold>
-      [dev] Taules desenvolupament ({{Object.keys(taules).length}})
+      [dev] Taules per calcular indicadors ({{Object.keys(taules).length}})
     </summary>
 
     <!--itera taules-->
@@ -578,73 +581,117 @@
           {{taules[taula].error}}
         </div>
 
-        <code v-if="taules[taula].comentaris" style="padding-left:40px">
-          Comentaris: "{{taules[taula].comentaris}}"
-        </code>
+        <div style="background:#fafafa;padding:1px">
+          <code v-if="taules[taula].comentaris">
+            Comentaris: "{{taules[taula].comentaris}}"
+          </code>
 
-        <div v-if="get_indicadors_calculats_a_partir_de_taules" style="padding-left:40px">
-          <div v-for="indicadors_calculats in [get_indicadors_calculats_a_partir_de_taules[taula]]">
-            <details v-if="indicadors_calculats">
-              <summary>
-                Indicadors calculats a partir d'aquesta taula ({{indicadors_calculats.length}})
-              </summary>
-              <code small>
-                {{indicadors_calculats}}
-              </code>
-            </details>
+          <div v-if="get_indicadors_calculats_a_partir_de_taules">
+            <div v-for="indicadors_calculats in [get_indicadors_calculats_a_partir_de_taules[taula]]">
+              <details v-if="indicadors_calculats"
+                style="border:1px solid #ccc;padding:1em 1.618em"
+              >
+                <summary>
+                  Indicadors calculats a partir de la taula "{{taula}}" ({{indicadors_calculats.length}})
+                </summary>
+                <table small monospace border=1>
+                  <tr v-for="codi_indi in indicadors_calculats">
+                    <th left>{{codi_indi}}</th>
+                    <td><i>"{{textos[codi_indi]}}"</i></td>
+                  </tr>
+                </table>
+              </details>
+            </div>
           </div>
-        </div>
 
-        <!--checkboxes per veure columnes-->
-        <div v-if="taules[taula].taula?.length" small>
-          <div>
-            Columnes visibles:
-            <button @click="taules[taula].columnes={}" :disabled="Object.values(taules[taula].columnes).every(val=>!val)">cap</button>
-            <button @click="Object.keys(taules[taula].taula[0]).forEach(key=>taules[taula].columnes[key]=true)">totes</button>
-          </div>
-          <div
-            style="
-              display:grid;
-              grid-template-columns:repeat(7,1fr);
-            "
+          <!--checkboxes per veure columnes-->
+          <div v-if="taules[taula].taula?.length"
+            style="border:1px solid #ccc;margin-top:1px"
           >
-            <label v-for="key in Object.keys(taules[taula].taula[0]).sort()">
-              <div style="display:flex;align-items:center">
-                <input type=checkbox v-model="taules[taula].columnes[key]">
-                <span :style="{color:taules[taula].filtres[key]!=undefined?'blue':''}">{{key}}</span>
-              </div>
-            </label>
+            <div>
+              <span>Columnes visibles </span>
+              <button @click="taules[taula].columnes={}" :disabled="Object.values(taules[taula].columnes).every(val=>!val)">cap</button>
+              <button @click="Object.keys(taules[taula].taula[0]).forEach(key=>taules[taula].columnes[key]=true)"
+                :disabled="Object.keys(taules[taula].taula[0]).length==Object.values(taules[taula].columnes).filter(val=>val).length"
+              >totes</button>
+            </div>
+            <div small
+              style="
+                display:grid;
+                grid-template-columns:repeat(7,1fr);
+              "
+            >
+              <label v-for="key in Object.keys(taules[taula].taula[0]).sort()">
+                <div style="display:flex;align-items:center">
+                  <input type=checkbox v-model="taules[taula].columnes[key]">
+                  <span :style="{color:taules[taula].filtres[key]!=undefined?'blue':''}">{{key}}</span>
+                </div>
+              </label>
+            </div>
           </div>
-        </div>
 
-        <table border=1 v-if="taules[taula].taula?.length" small>
-          <thead>
-            <tr sticky>
-              <th v-for="key in taules[taula].columnes_actives">
-                <button @click="taules[taula].taula.sort((a,b)=>a[key]>b[key]?1:-1)"
-                  title="ordenar taula a partir d'aquesta columna"
-                  >&darr;{{key}}</button>
-                <button v-if="taules[taula].filtres[key]!=undefined" @click="delete taules[taula].filtres[key]"
-                  title="esborra filtre"
-                  marcat=1
-                >
-                          =="{{String(taules[taula].filtres[key]).substring(0,50)}}"
-                </button>
-                <button @click="taules[taula].columnes[key]=false" title="ocultar columna">X</button>
-              </th>
-              <th>
-                <a :href="`#container_taula_${taula}`">
-                  #taula_{{taula}}
-                </a>
-              </th>
+          <table border=1 v-if="taules[taula].taula?.length" small>
+            <thead>
+              <tr sticky>
+                <th v-for="key in taules[taula].columnes_actives" valigntop>
+                  <div
+                    style="
+                      display:flex;
+                      align-items:center;
+                      justify-content:center;
+                    "
+                  >
+                    <button @click="taules[taula].taula.sort((a,b)=>a[key]>b[key]?1:-1)"
+                      title="ordenar taula a partir d'aquesta columna"
+                      style="font-weight:bold"
+                      >&darr;{{key}}</button>
+                    <button v-if="taules[taula].filtres[key]!=undefined" @click="delete taules[taula].filtres[key]"
+                      title="esborrar filtre"
+                      marcat=1
+                    >
+                              =="{{String(taules[taula].filtres[key]).substring(0,50)}}"
+                    </button>
+                    <button @click="taules[taula].columnes[key]=false" title="ocultar columna">
+                      <img src="img/icona_amagar.png" style="width:12px">
+                    </button>
+                  </div>
+
+                  <!--aplicar filtre valors unics-->
+                  <div v-for="valors_unics in [taules[taula].cache_valors_unics[key]]">
+                    <div v-if="valors_unics?.length" style="font-weight:normal">
+                      <details left style="background:#fafafa;border:1px solid #ccc">
+                        <summary style="border:1px solid #ccc;padding:5px">Aplicar filtre</summary>
+                        <div style="overflow-y:scroll;max-height:800px">
+                          <div v-for="valor in valors_unics">
+                            <div
+                              clicable @click="taules[taula].filtres[key] = taules[taula].filtres[key]==valor ? undefined:valor "
+                              :marcat="taules[taula].filtres[key]==valor?1:0"
+                            >
+                              {{valor}}
+                            </div>
+                          </div>
+                        </div>
+                      </details>
+                    </div>
+                    <div v-else>
+                      <button @click="calcular_valors_unics(taula,key)">Calcular valors únics</button>
+                    </div>
+                  </div>
+                </th>
+                <th>
+                  <a :href="`#container_taula_${taula}`">
+                    #taula_{{taula}}
+                  </a>
+                </th>
+              </tr>
+            </thead>
+            <tr v-for="row in taules[taula].files_filtrades">
+              <td v-for="key in taules[taula].columnes_actives">
+                <span @click="taules[taula].filtres[key]=row[key]">{{row[key]}}</span>
+              </td>
             </tr>
-          </thead>
-          <tr v-for="row in taules[taula].files_filtrades">
-            <td v-for="key in taules[taula].columnes_actives">
-              <span @click="taules[taula].filtres[key]=row[key]">{{row[key]}}</span>
-            </td>
-          </tr>
-        </table>
+          </table>
+        </div>
       </details>
     </div>
   </details>
@@ -805,6 +852,7 @@
         <li>IPs/professors-UDG sense orcid</li>
         <li>IPs/professors-UDG sense sage-id</li>
         <li>idea: botó per reportar "missing data"</li>
+        <li>idea: dashboard per encarregats/responsables amb botó per validar implementació indicadors</li>
       </ul>
     </div>
   </details>
@@ -5124,6 +5172,103 @@
 
       return personal.length;
     },
+
+    rrhh_investigadors_predoctorals(year,indicador){
+      let personal=app.taules.personal.taula.filter(per=>{
+        return(
+          (per["Categoria"]=="040. PREDOCTORAL RESEARCHER")&&
+          new Date(per["Datainicicontracte"]).getFullYear()<=year &&
+          new Date(per["DataFiContracte"   ]).getFullYear()>=year &&
+          !per["Nom"].startsWith("TBA")
+        );
+      });
+
+      //elimina duplicats
+      let persones_uniques = new Set(personal.map(row=>row.Nom));
+
+      if(indicador){
+        indicador.years[year].valor  = persones_uniques.size;
+        indicador.years[year].llista = personal;
+      }
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.rrhh_investigadors_predoctorals={
+        "personal":[
+          "Categoria",
+          "Datainicicontracte",
+          "DataFiContracte",
+        ],
+      };
+
+      return personal.length;
+    },
+
+    rrhh_professors_recerca(year,indicador){
+      let personal=app.taules.personal.taula.filter(per=>{
+        return(
+          (
+            per["Categoria"]=="010. RESEARCH PROFESSOR"||
+            per["Categoria"]=="015. RESEARCH PROFESSOR ASSOCIATED"
+          )&&
+          new Date(per["Datainicicontracte"]).getFullYear()<=year &&
+          new Date(per["DataFiContracte"   ]).getFullYear()>=year &&
+          !per["Nom"].startsWith("TBA")
+        );
+      });
+
+      //elimina duplicats
+      let persones_uniques = new Set(personal.map(row=>row.Nom));
+
+      if(indicador){
+        indicador.years[year].valor  = persones_uniques.size;
+        indicador.years[year].llista = personal;
+      }
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.rrhh_professors_recerca={
+        "personal":[
+          "Categoria",
+          "Datainicicontracte",
+          "DataFiContracte",
+        ],
+      };
+
+      return personal.length;
+    },
+
+    rrhh_tecnics_suport_recerca(year,indicador){
+      let personal=app.taules.personal.taula.filter(per=>{
+        return(
+          (
+            per["Categoria"]=="051. RESEARCH TECHNICIAN ADVANCED"||
+            per["Categoria"]=="052. RESEARCH TECHNICIAN"||
+            per["Categoria"]=="095. SPECIALIST TECHNICIAN (Suport Recerca)"
+          )&&
+          new Date(per["Datainicicontracte"]).getFullYear()<=year &&
+          new Date(per["DataFiContracte"   ]).getFullYear()>=year &&
+          !per["Nom"].startsWith("TBA")
+        );
+      });
+
+      //elimina duplicats
+      let persones_uniques = new Set(personal.map(row=>row.Nom));
+
+      if(indicador){
+        indicador.years[year].valor  = persones_uniques.size;
+        indicador.years[year].llista = personal;
+      }
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.rrhh_tecnics_suport_recerca={
+        "personal":[
+          "Categoria",
+          "Datainicicontracte",
+          "DataFiContracte",
+        ],
+      };
+
+      return personal.length;
+    },
   };
 
   //diccionari: "id_indicador"=> "responsable icra"
@@ -5242,6 +5387,31 @@
     "ips_actes_disseminacio_participats_o_organitzats"    :"esdeveniments (rdiaz)",
     "ips_aparicions_mitjans_comunicacio_nacionals"        :"esdeveniments (rdiaz)",
     "ips_aparicions_mitjans_comunicacio_internacionals"   :"esdeveniments (rdiaz)",
+
+    "rrhh_personal_laboral_i_adscrits"   : "RRHH (dlopez)",
+    "rrhh_personal_recerca"              : "RRHH (dlopez)",
+    "rrhh_personal_recerca_dones"        : "RRHH (dlopez)",
+    "rrhh_tecnics_suport_especialitzats" : "RRHH (dlopez)",
+    "rrhh_investigadors_postdoctorals"   : "RRHH (dlopez)",
+    "rrhh_investigadors_predoctorals"    : "RRHH (dlopez)",
+    "rrhh_investigadors_sèniors"         : "RRHH (dlopez)",
+    "rrhh_professors_recerca"            : "RRHH (dlopez)",
+    "rrhh_ssr"                           : "RRHH (dlopez)",
+    "rrhh_tecnics_suport_recerca"        : "RRHH (dlopez)",
+    "rrhh_administracio_homes"           : "RRHH (dlopez)",
+    "rrhh_administracio_dones"           : "RRHH (dlopez)",
+    "rrhh_sct_homes"                     : "RRHH (dlopez)",
+    "rrhh_sct_dones"                     : "RRHH (dlopez)",
+    "rrhh_tecnics_recerca_homes"         : "RRHH (dlopez)",
+    "rrhh_tecnics_recerca_dones"         : "RRHH (dlopez)",
+    "rrhh_predoctors_homes"              : "RRHH (dlopez)",
+    "rrhh_predoctors_dones"              : "RRHH (dlopez)",
+    "rrhh_postdoctors_homes"             : "RRHH (dlopez)",
+    "rrhh_postdoctors_dones"             : "RRHH (dlopez)",
+    "rrhh_investigadors_seniors_homes"   : "RRHH (dlopez)",
+    "rrhh_investigadors_seniors_dones"   : "RRHH (dlopez)",
+    "rrhh_professors_recerca_homes"      : "RRHH (dlopez)",
+    "rrhh_professors_recerca_dones"      : "RRHH (dlopez)",
   };
 
   /*utils*/
@@ -5682,6 +5852,9 @@
       //status lectura base de dades o excels
       this.carregant = false;
       this.error     = null;
+
+      //[nom_columna]=>[...array valors únics]
+      this.cache_valors_unics={};
     }
 
     get columnes_actives(){
@@ -5720,6 +5893,7 @@
 
       ambits,                 //indicadors
       funcions_calculadores,  //taula helper funcions dels indicadors
+      textos,                 //descripcions indicadors
 
       //paquet indicadors per defecte
       ambit_actual:ambits[6], //objecte TODO
@@ -5769,6 +5943,20 @@
     }},
 
     methods:{
+      //calcular valors unics columna
+      calcular_valors_unics(nom_taula, nom_columna){
+        let set = new Set();//valors unics
+        this.taules[nom_taula].taula.forEach(row=>{
+          let valor = row[nom_columna];
+          if(valor){
+            set.add(valor);
+          }
+        });
+        let arr = Array.from(set);
+        arr.sort();
+        this.taules[nom_taula].cache_valors_unics[nom_columna] = arr;
+      },
+
       //calcular ambit actual
       calcular_tots_els_indicadors(){
         this.ambit_actual.blocs.forEach(bloc=>{
