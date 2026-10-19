@@ -1,0 +1,815 @@
+<!doctype html><html><head>
+  <meta charset=utf8>
+  <title>últims articles</title>
+  <script src="../lib/vue.global.prod.js"></script>
+  <style>
+    #taula_metadades tr:hover{
+      background:lightblue;
+    }
+    button[seleccionat=true]{
+      background:gold;
+    }
+    [center]{
+      text-align:center;
+    }
+    [nowrap]{
+      white-space:nowrap;
+    }
+    [data]{
+      font-family:monospace;
+      font-size:larger;
+      white-space:nowrap;
+    }
+    [small]{
+      font-size:smaller;
+    }
+    [xsmall]{
+      font-size:x-small;
+    }
+    summary{
+      font-weight:bold;
+      cursor:pointer;
+    }
+    summary:hover{
+      text-decoration:underline;
+    }
+    table{
+      border-collapse:collapse;
+    }
+    [first_or_last]{
+      color:#666;
+      border-radius:5px;
+      border:1px solid #ccc;
+      font-size:smaller;
+    }
+    [first_or_last=true]{
+      background:#af0;
+      box-shadow:inset 1px 1px 10px lightgreen;
+    }
+    [is_corresponding=true]{
+      background:#af0;
+      box-shadow:inset 1px 1px 10px lightgreen;
+      color:#666;
+      border-radius:5px;
+      border:1px solid #ccc;
+      font-size:smaller;
+    }
+    [gender]{
+      color:#666;
+      border-radius:5px;
+      border:1px solid #ccc;
+      font-size:smaller;
+    }
+    [gender=male]{
+      background:lightblue;
+    }
+    [gender=female]{
+      background:pink;
+    }
+    [gender=false]{
+      background:red;
+    }
+    div[selector_dataset] button{
+      padding:1em 1.618em;
+    }
+    [field_sort]{
+      cursor:pointer;
+      color:royalblue;
+    }
+    [field_sort]:hover{
+      text-decoration:underline;
+    }
+    [field_sort=true]{
+      color:blue;
+    }
+  </style>
+</head><body>
+<h1>ICRA Últimes publicacions (segons OpenAlex)</h1>
+
+<script src="lib/qrcode.min.js"></script>
+<div id="qrcode" style="margin-bottom:5px"></div>
+<script>
+  const div = document.querySelector("#qrcode");
+  div.innerHTML="";
+  new QRCode(div, {
+    text:"https://indicadors.icradev.cat/ultims_articles",
+    width:127,
+    height:127,
+  });
+</script>
+
+<div id=app>
+  <div v-if="!works"><p>Carregant...</p></div>
+  <div v-if="works">
+    <!--secció amagada-->
+    <div v-if="0">
+      <!--taules context-->
+      <details>
+        <summary>Metadades resultats (tots els anys)</summary>
+        <table border=1 id=taula_metadades>
+          <tr>
+            <th>Tipus publicació</th>
+            <th>Publicacions<br>totals</th>
+            <th>Publicacions<br>lideratge</th>
+            <th>Publicacions<br>lideratge<br>femení</th>
+            <th>Publicacions<br>lideratge<br>masculí</th>
+          </tr>
+          <tr>
+            <th>tots els tipus</th>
+            <th>{{works.length}}</th>
+            <th>{{get_works_amb_lideratge.length}}</th>
+            <th>{{get_works_amb_lideratge_femeni.length}}</th>
+            <th>{{get_works_amb_lideratge_masculi.length}}</th>
+          </tr>
+          <tr>
+            <th>tipus seleccionats</th>
+            <th>{{works.filter(w=>work_types[w.type]).length}}</th>
+            <th>{{get_works_amb_lideratge.filter(w=>work_types[w.type]).length}}</th>
+            <th>{{get_works_amb_lideratge_femeni.filter(w=>work_types[w.type]).length}}</th>
+            <th>{{get_works_amb_lideratge_masculi.filter(w=>work_types[w.type]).length}}</th>
+          </tr>
+          <tr v-for="tipus in get_tipus_publicacions">
+            <td>
+              <label>
+                <input type=checkbox v-model="work_types[tipus]">
+                {{tipus}}
+              </label>
+            </td>
+            <td center> {{works.filter(w=>w.type==tipus).length}}                           </td>
+            <td center> {{get_works_amb_lideratge.filter(w=>w.type==tipus).length}}         </td>
+            <td center> {{get_works_amb_lideratge_femeni.filter(w=>w.type==tipus).length}}  </td>
+            <td center> {{get_works_amb_lideratge_masculi.filter(w=>w.type==tipus).length}} </td>
+          </tr>
+          <tr>
+            <td>
+              <button @click="function(){
+                  Object.keys(work_types).forEach(t=>work_types[t]=false)
+                }"
+                :disabled="Object.values(work_types).every(val=>!val)"
+              >deselecciona tots</button>
+            </td>
+          </tr>
+        </table>
+      </details>
+
+      <!--seleccionar filtre-->
+      <div selector_dataset>
+        Veure taula:
+        <button @click="array_works_visible=works;                          array_works_seleccionat='P'"   :seleccionat="array_works_seleccionat=='P'"  >Publicacions totals</button>
+        <button @click="array_works_visible=get_works_amb_lideratge;        array_works_seleccionat='PL'"  :seleccionat="array_works_seleccionat=='PL'" >Publicacions lideratge ICRA</button>
+        <button @click="array_works_visible=get_works_amb_lideratge_femeni; array_works_seleccionat='PLF'" :seleccionat="array_works_seleccionat=='PLF'">Publicacions lideratge ICRA femení</button>
+        <button @click="array_works_visible=get_works_amb_lideratge_masculi; array_works_seleccionat='PLM'" :seleccionat="array_works_seleccionat=='PLM'">Publicacions lideratge ICRA masculí</button>
+      </div>
+
+      <!--opcions-->
+      <details v-if="array_works_visible">
+        <summary>Altres filtres</summary>
+        <div>
+          <table border=1>
+            <!--seleccionar any-->
+            <tr>
+              <td>Període seleccionat</td>
+              <td>
+                <span v-for="y in get_publication_years">
+                  <button @click="year_inici=y;year_final=y" :disabled="year_inici==y && year_final==y">{{y}}</button>
+                </span>
+                <span>
+                  <label> de <input type=number v-model.number="year_inici" placeholder="any inici" :min="get_publication_years.at(0)" :max="get_publication_years.at(-1)"></label>
+                  <label> a  <input type=number v-model.number="year_final" placeholder="any final" :min="get_publication_years.at(0)" :max="get_publication_years.at(-1)"></label>
+                </span>
+              </td>
+            </tr>
+            <!--seleccionar columnes visibles-->
+            <tr>
+              <td>Columnes visibles</td>
+              <td>
+                <label v-for="key in Object.keys(columnes_visibles)" small>
+                  <input type=checkbox v-model="columnes_visibles[key]">
+                  {{key}}
+                </label>
+              </td>
+            </tr>
+          </table>
+
+          <table border=1 style="margin-top:5px">
+            <tr>
+              <td>
+                Filtrar per ranking revista
+                <span v-if="modul_scimago">
+                  (scimago rankings: {{Object.keys(modul_scimago.scimagojr).join(", ")}})
+                </span>
+              </td>
+            </tr>
+            <tr><td>&emsp;<label><input type=checkbox v-model="filtrar_per_Q1"> Q1 (percentil&lt;25%)</label></td></tr>
+            <tr><td>&emsp;<label><input type=checkbox v-model="filtrar_per_D1"> D1 (percentil&lt;10%)</label></td></tr>
+            <tr>
+              <td>
+                <label>
+                  <input type=checkbox v-model="filtrar_per_FWCI">
+                  Filtrar per FWCI &ge;
+                </label>
+                <input type=number v-model="filtrar_per_FWCI_valor" :disabled="!filtrar_per_FWCI" style="width:4em">
+                <button @click="filtrar_per_FWCI_valor=0" :disabled="!filtrar_per_FWCI_valor || !filtrar_per_FWCI">X</button>
+              </td>
+            </tr>
+          </table>
+        </div>
+      </details>
+
+      <!--veure noms que no s'han pogut classificar bé (gènere)-->
+      <div v-if="array_works_visible && names_not_found.size">
+        <details>
+          <summary>Noms no classificats en gènere ({{names_not_found.size}})</summary>
+          <div>
+            <div v-for="nom in Array.from(names_not_found)">
+              {{nom}}
+              <button @click="genders[nom]='male'"   :disabled="genders[nom]=='male'">male</button>
+              <button @click="genders[nom]='female'" :disabled="genders[nom]=='female'">female</button>
+            </div>
+          </div>
+        </details><hr>
+      </div>
+    </div>
+
+    <!--taula principal resultats-->
+    <div v-if="get_works_filtrats_per_tipus">
+      <table border=1 >
+        <thead>
+          <tr>
+            <th v-for="key in Object.entries(columnes_visibles).filter(en=>en[1]).map(en=>en[0])" nowrap>
+              <div v-if="columnes_visibles[key]">
+                <div v-if="columnes_ordenables[key]">
+                  <span
+                    @click="set_field_sort_resultats(key)"
+                    :field_sort="field_sort_resultats==key"
+                  >
+                    <span v-html="noms_columnes[key]"></span>
+                    <span v-if="field_sort_resultats==key">
+                      {{field_sort_inv==-1?"&darr;":"&uarr;"}}
+                    </span>
+                  </span>
+                </div>
+                <div v-else>
+                  <div v-html="noms_columnes[key]"></div>
+                </div>
+              </div>
+            </th>
+          </tr>
+        </thead>
+
+        <tbody v-for="work,i in get_works_filtrats_per_tipus">
+          <tr>
+            <td v-if="columnes_visibles.numero">{{i+1}}</td>
+            <td v-if="columnes_visibles.data" data>{{work.publication_date}}</td>
+            <td v-if="columnes_visibles.tipus" center>{{work.type}}</td>
+            <td v-if="columnes_visibles.titol" style="padding-left:5px">
+              <i>{{work.title}}</i>
+              <div v-if="true">
+                <div v-if="work.doi">
+                  <a :href="work.doi" target=_blank>{{work.doi}}</a>
+                </div>
+                <div v-else-if="work.primary_location && work.primary_location.landing_page_url">
+                  <a :href="work.primary_location.landing_page_url" target=_blank>{{work.primary_location.landing_page_url}}</a>
+                </div>
+              </div>
+            </td>
+            <td v-if="columnes_visibles.autors_icra">
+              <table border=1>
+                <tr v-for="authorship in filtra_authorships(work)">
+                  <td nowrap :title="authorship.raw_author_name">
+                    <span>
+                      {{authorship.author.display_name}}
+                    </span>
+                    <span v-if="authorship.author.display_name!=authorship.raw_author_name">
+                      ({{authorship.raw_author_name}})
+                    </span>
+                    <div>
+                      <span :first_or_last="['first','last'].includes(authorship.author_position)">
+                        {{authorship.author_position}}
+                      </span>
+                      <span :is_corresponding="authorship.is_corresponding">
+                        <span v-if="authorship.is_corresponding">
+                          corresponding
+                        </span>
+                      </span>
+                      <span v-if="false">
+                        <span v-for="gen in [gender_authorship(authorship)]">
+                          <span :gender="gen">
+                            {{gen}}
+                          </span>
+                        </span>
+                      </span>
+                    </div>
+                  </td>
+                  <td v-if="false">
+                    <div v-for="ins in [authorship.institutions.find(i=>i.id==id_icra)]">
+                      <div v-if="ins">
+                        <table xsmall border=1>
+                          <tr v-for="str in authorship.raw_affiliation_strings">
+                            <td>{{str}}</td>
+                          </tr>
+                        </table>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+            <td v-if="columnes_visibles.fwci" center>
+              {{work.fwci}}
+            </td>
+            <td v-if="columnes_visibles.cites" center>
+              <table border=1 small>
+                <tr>
+                  <td>total</td>
+                  <td>{{work.cited_by_count}}</td>
+                </tr>
+                <tr v-for="ye in work.counts_by_year">
+                  <td>{{ye.year}}</td>
+                  <td>{{ye.cited_by_count}}</td>
+                </tr>
+              </table>
+            </td>
+            <td nowrap v-if="columnes_visibles.detalls">
+              <details>
+                <summary>detalls</summary>
+                <div>
+                  <code><pre>{{JSON.stringify(work,null,'  ')}}</pre></code>
+                </div>
+              </details>
+            </td>
+            <td nowrap v-if="columnes_visibles.revista">
+              <div v-if="work?.primary_location?.source?.type=='journal'">
+                <details>
+                  <summary>
+                    {{work.primary_location.source.display_name}}
+                    <code>(issn: {{
+                      Array.from(
+                        new Set([
+                          work.primary_location.source.issn_l,
+                          ...work.primary_location.source.issn,
+                        ])
+                      ).join(", ")
+                    }})</code>
+                  </summary>
+                  <div v-for="sjr in [busca_ranking_journal(work)]">
+                    <div v-if="sjr">
+                      <table border=1 style="font-size:smaller">
+                        <tr v-for="[key,val] in Object.entries(sjr)">
+                          <th>{{key}}</th>
+                          <td>
+                            <div v-if="val.constructor===Object">
+                              <table border=1 style="font-size:smaller">
+                                <tr v-for="en in Object.entries(val)">
+                                  <td>{{en[0]}}</td>
+                                  <td>{{en[1]}}</td>
+                                </tr>
+                              </table>
+                            </div>
+                            <div v-else>{{val}}</div>
+                          </td>
+                        </tr>
+                      </table>
+                    </div>
+                  </div>
+                </details>
+              </div>
+              <div v-else>
+                {{work?.primary_location?.source?.type}}
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  //api calls sense filtrar per nom institució
+  async function query_oa_api(year_inici, year_final){
+    year_inici = year_inici || 2021;
+    year_final = year_final || 2025;
+
+    let codi_icra  = "I2799562678"; //institution code
+    let api_key    = "tGXbKHpYBXs5jv8YOFteH5";
+
+    let page     = 1;
+    let per_page = 200;
+    let results  = [];
+
+    while(true){
+      let url=`https://api.openalex.org/works?api_key=${api_key}&filter=institutions.id:${codi_icra},publication_year:${year_inici}-${year_final}&per_page=${per_page}&page=${page}`;
+
+      //fetch openalex api
+      console.log(`[openalex] Fetching page ${page}...`);
+      const res  = await fetch(url);
+      const data = await res.json();
+
+      //append results
+      results = results.concat(data.results);
+
+      //next page
+      if(data.results.length < per_page){
+        break;
+      }else{
+        page++;
+      }
+    }
+
+    return results;
+  }
+
+  //genera arxiu per disminuir crides a openalex
+  //wrapper (api call + descarregar arxiu)
+  async function fes_query_i_guarda_json(){
+    //part FilePicker a la mateixa funcio onclick per evitar security_error
+    const handle = await window.showSaveFilePicker({
+      suggestedName: "query-works-2021-2025.json"
+    });
+    let writable = await handle.createWritable();
+
+    //query i generacio blob
+    let array_works = await query_oa_api(2021,2025);
+    let str         = JSON.stringify(array_works);
+    let blob        = new Blob([str],{type:"application/json"});
+
+    //ajunta writable i blob
+    await writable.write(blob);
+    await writable.close();
+    console.log("arxiu escrit correctament");
+  }
+</script>
+<!--
+<button onclick="fes_query_i_guarda_json()">fes_query_i_guarda_json</button>
+-->
+
+<!--llibreria gender-->
+<script src="../lideratge/genders.js"></script>
+
+<script>
+  let app=Vue.createApp({
+    data(){return{
+      genders, //from genders.js
+      real_people, //from genders.js
+
+      year_inici:new Date().getFullYear(),
+      year_final:new Date().getFullYear(),
+      codi_icra:                   "I2799562678", //codi openAlex institution ICRA
+      id_icra:"https://openalex.org/I2799562678", //id   openAlex institution ICRA
+      works:null,
+
+      //tipus de works mostrats (configurable per usuari)
+      work_types:{
+        "article":true,
+        "review":true,
+        "letter":true,
+        "editorial":true,
+      },
+      columnes_visibles:{
+        "numero":false,
+        "data":true,
+        "tipus":false,
+        "titol":true,
+        "autors_icra":true,
+        "fwci":false,
+        "cites":false,
+        "detalls":false,
+        "revista":false,
+      },
+      noms_columnes:{
+        "numero"      : "Nº",
+        "data"        : "Data",
+        "tipus"       : "Tipus publicació",
+        "titol"       : "Títol",
+        "autors_icra" : "Autors ICRA<br>(nom, posició, corresponding)",
+        "fwci"        : "FWCI",
+        "cites"       : "Cites",
+        "detalls"     : "Detalls(JSON)",
+        "revista"     : "Revista",
+      },
+      columnes_ordenables:{
+        "numero":false,
+        "data":true,
+        "tipus":true,
+        "titol":true,
+        "doi":true,
+        "autors_icra":false,
+        "fwci":true,
+        "cites":true,
+        "detalls":false,
+        "revista":false,
+      },
+
+      //set de resultats visible usuari
+      array_works_seleccionat:null, //string
+      array_works_visible:null,     //objecte
+
+      //ordenar resultats
+      field_sort_resultats:null, //string
+      field_sort_inv      :1,    //number (es multiplica per -1 per invertir ordre)
+
+      //set per guardar noms no trobats
+      names_not_found:new Set(),
+
+      //filtrar per Q1, D1 i FWCI
+      filtrar_per_Q1:false,      //bool
+      filtrar_per_D1:false,      //bool
+      filtrar_per_FWCI:false,    //bool
+      filtrar_per_FWCI_valor:10, //number
+
+      modul_scimago:null,
+    }},
+
+    methods:{
+      gender_authorship(authorship){
+        //check real name
+        let g = this.real_people[authorship.author.display_name];
+        if(g) return g;
+        g = this.real_people[authorship.raw_author_name];
+        if(g) return g;
+        //guess first name
+        g = this.gender(authorship.author.display_name);
+        if(g) return g;
+        g = this.gender(authorship.raw_author_name);
+        if(g) return g;
+        return false;
+      },
+
+      gender(name){
+        let nom_pila = name
+          .split("‐")[0] //guio1
+          .split("-")[0] //guio2
+          .split(" ")[0] //espai
+          .toLowerCase(); //minuscula
+
+        let g = genders[nom_pila];
+        if(g) return g;
+
+        //si un nom de pila acaba amb "," probablement és un cognom
+        if(nom_pila.at(-1)==",") return false;
+
+        //evita noms tipus "E.", "L.",...
+        if(nom_pila.length==1)                                         return false; //"a"
+        if(nom_pila.length==2 && nom_pila[1]==".")                     return false; //"a."
+        if(nom_pila.length==4 && nom_pila[1]=="." && nom_pila[3]==".") return false; //"a.b."
+
+        //posa el nom a la llista de no trobats per classificar-los manualment
+        this.names_not_found.add(nom_pila);
+        return false;
+      },
+
+      filtra_authorships(work){
+        if(this.array_works_seleccionat=="P"){
+          return work.authorships.filter(a=>a.institutions.some(i=>i.id==this.id_icra));
+        }else if(this.array_works_seleccionat=="PL"){
+          return work.authorships.filter(a=>{
+            let lideratge = a.is_corresponding || a.author_position!='middle';
+            if(!lideratge) return false;
+            return a.institutions.some(i=>i.id==this.id_icra);
+          });
+        }else if(this.array_works_seleccionat=="PLF"){
+          return work.authorships.filter(a=>{
+            let lideratge = a.is_corresponding || a.author_position!='middle';
+            if(!lideratge) return false;
+            let icra = a.institutions.some(i=>i.id==this.id_icra);
+            if(!icra) return false;
+            let gender = this.gender_authorship(a);
+            return gender=="female";
+          });
+        }else if(this.array_works_seleccionat=="PLM"){
+          return work.authorships.filter(a=>{
+            let lideratge = a.is_corresponding || a.author_position!='middle';
+            if(!lideratge) return false;
+            let icra = a.institutions.some(i=>i.id==this.id_icra);
+            if(!icra) return false;
+            let gender = this.gender_authorship(a);
+            return gender=="male";
+          });
+        }else{
+          return [];
+        }
+      },
+
+      set_field_sort_resultats(new_value){
+        if(this.field_sort_resultats == new_value){
+          this.field_sort_inv *= -1;
+        }
+        this.field_sort_resultats = new_value;
+      },
+
+      busca_ranking_journal(work){
+        let PLS = work?.primary_location?.source;
+
+        if(!PLS)                return false;
+        if(PLS.type!="journal") return false;
+
+        let nom_revista = PLS.display_name; //string
+        let issn_l      = PLS.issn_l; //string
+        let issn        = PLS.issn; //array
+        let year        = work.publication_year; //string
+
+        //busca objecte scimago ranking
+        let sjr = null;
+        for(let i=0;i<issn.length;i++){
+          sjr = modul_scimago.busca_a_scimagocsv(nom_revista, issn_l, issn[i], year);
+          if(sjr) break;
+        };
+
+        return sjr;
+      },
+    },
+
+    computed:{
+      get_tipus_publicacions(){
+        if(!this.works) return [];
+        let tipus = new Set(this.works.map(w=>w.type));
+        return Array.from(tipus);
+      },
+      get_openalex_url(){
+        //url consultable manualment
+        return `https://openalex.org/works?filter=institutions.id:${this.codi_icra},publication_year:${this.year_inici}-${this.year_final}`;
+      },
+
+      get_works_amb_lideratge(){
+        if(!this.works) return [];
+
+        let works = this.works.filter(work=>{
+          //filtra authorships icra
+          let authorships = work.authorships.filter(a=>a.institutions.some(i=>i.id==this.id_icra));
+
+          //mira si algun authorship té lideratge
+          return authorships.some(a=>{
+            return a.is_corresponding || a.author_position!='middle';
+          });
+        });
+
+        return works;
+      },
+
+      get_works_amb_lideratge_femeni(){
+        if(!this.get_works_amb_lideratge) return [];
+
+        let works = this.get_works_amb_lideratge.filter(work=>{
+          //filtra authorships icra
+          let authorships = work.authorships.filter(a=>a.institutions.some(i=>i.id==this.id_icra));
+
+          //check lideratge i gènere
+          return authorships.some(a=>{
+            let gender = this.gender_authorship(a);
+            return gender=="female" && (a.is_corresponding || a.author_position!='middle');
+          });
+        });
+
+        return works;
+      },
+
+      get_works_amb_lideratge_masculi(){
+        if(!this.get_works_amb_lideratge) return [];
+
+        let works = this.get_works_amb_lideratge.filter(work=>{
+          //filtra authorships icra
+          let authorships = work.authorships.filter(a=>a.institutions.some(i=>i.id==this.id_icra));
+
+          //check lideratge i gènere
+          return authorships.some(a=>{
+            let gender = this.gender_authorship(a);
+            return gender=="male" && (a.is_corresponding || a.author_position!='middle');
+          });
+        });
+
+        return works;
+      },
+
+      //aplicar filtres any, tipus i ordenar
+      get_works_filtrats_per_tipus(){
+        if(!this.array_works_visible) return false;
+
+        //filtra per any i tipus publicació
+        let works = this.array_works_visible.filter(work=>{
+          let y = work.publication_year;
+          return (
+            this.year_inici <= y&&y <= this.year_final
+            &&
+            this.work_types[work.type]
+          );
+        });
+
+        //filtra per FWCI
+        if(this.filtrar_per_FWCI){
+          works = works.filter(w=>w.fwci>=this.filtrar_per_FWCI_valor);
+        }
+
+        //filtra per Q1 i/o D1 (últim perquè és el més car computacionalment)
+        if(this.filtrar_per_Q1 || this.filtrar_per_D1){
+          //valor desitjat a filtrar
+          let percentil = this.filtrar_per_D1 ? 10 : 25;
+          works = works.filter(w=>{
+            let sjr = this.busca_ranking_journal(w);
+            if(!sjr)            return false;
+            if(!sjr.percentils) return false;
+
+            //aplica check percentil
+            return Object.values(sjr.percentils).some(per=>per.percentil<=percentil);
+          });
+        }
+
+        //ordena
+        let inv = this.field_sort_inv;
+        if(this.field_sort_resultats=="data"){
+          works.sort((a,b)=>{
+            let aa = a.publication_date;
+            let bb = b.publication_date;
+            return bb<aa?1*inv:-1*inv;
+          });
+        }
+        if(this.field_sort_resultats=="tipus"){
+          works.sort((a,b)=>{
+            let aa = a.type;
+            let bb = b.type;
+            return bb<aa?1*inv:-1*inv;
+          });
+        }
+        if(this.field_sort_resultats=="titol"){
+          works.sort((a,b)=>{
+            let aa = a.title;
+            let bb = b.title;
+            return bb<aa?1*inv:-1*inv;
+          });
+        }
+        if(this.field_sort_resultats=="doi"){
+          works.sort((a,b)=>{
+            let aa = a.doi;
+            let bb = b.doi;
+            return bb<aa?1*inv:-1*inv;
+          });
+        }
+        if(this.field_sort_resultats=="fwci"){
+          works.sort((a,b)=>{
+            let aa = a.fwci;
+            let bb = b.fwci;
+            return bb<aa?1*inv:-1*inv;
+          });
+        }
+        if(this.field_sort_resultats=="cites"){
+          works.sort((a,b)=>{
+            let aa = a.cited_by_count;
+            let bb = b.cited_by_count;
+            return bb<aa?1*inv:-1*inv;
+          });
+        }
+
+        return works;
+      },
+
+      //tots els anys sense filtres
+      get_publication_years(){
+        if(!this.works) return [];
+        let s = new Set();
+        this.works.forEach(w=>{
+          s.add(w.publication_year);
+        });
+        return Array.from(s);
+      },
+    },
+    mounted(){
+      //carrega presaved results
+      let year_inici = new Date().getFullYear();
+      let year_final = new Date().getFullYear();
+
+      query_oa_api(year_inici, year_final)
+      .then(arr=>{
+        arr = arr.filter(work=>{
+          return work.authorships.some(auth=>{
+            return auth.raw_affiliation_strings.some(str=>{
+              let str_lc = str.toLowerCase();
+              return (
+                str_lc.includes("icra")||
+                str_lc.includes("catalan institute for water research")||
+                str_lc.includes("catalan institute of water research")||
+                str_lc.includes("institut catala de recerca de l'aigua")||
+                str_lc.includes("institut català de recerca de l'aigua")
+              );
+            });
+          });
+        });
+        arr.sort((a,b)=>{
+          let aa = a.publication_date;
+          let bb = b.publication_date;
+          return bb<aa?-1:1;
+        });
+        this.works=arr;
+
+        this.array_works_visible=arr;
+        this.array_works_seleccionat="P";
+      });
+    },
+  }).mount("#app");
+</script>
+
+<!--modul scimago-->
+<script src="../modul_scimago.js"></script>
+<script>
+  modul_scimago.init("../csv")//descarrega i parseja csvs
+  app.modul_scimago = modul_scimago;
+</script>
