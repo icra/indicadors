@@ -221,7 +221,7 @@
   <div v-if="detalls_indicador.visible" vista_detalls_indicador id=detalls>
     <div sticky>
       <button
-        @click="detalls_indicador.visible=false"
+        @click="tancar_detalls()"
         title="Tancar finestra detalls"
         style="padding:0.618em 1em"
         v-html="'X'"
@@ -4683,10 +4683,6 @@
         return(
           responsable==nom_ip &&
           row["Categoria"]=="120. VISITING STUDENT"&&
-          (
-            row["Titulacio"]=="070. BATXILLERAT"||
-            row["Titulacio"]=="085. ESO"
-          )&&
           new Date(row["Datainicicontracte"]).getFullYear()<=year &&
           new Date(row["DataFiContracte"   ]).getFullYear()>=year
         );
@@ -6038,6 +6034,12 @@
             columnControl:['order', ['orderAsc', 'orderDesc', 'search']]
           });
         });
+      },
+
+      tancar_detalls(){
+        this.detalls_indicador.indicador=null;
+        this.detalls_indicador.year=null;
+        this.detalls_indicador.visible=false;
       },
 
       get_ips(year){
