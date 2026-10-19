@@ -163,7 +163,7 @@
   <div style="background:azure">
     Actualització 2026-10-19:<br>
     PÀGINA EN MODE MANTENIMENT<br>
-    <b>ELS INDICADORS QUE APAREIXEN NO ESTÀN VALIDATS PELS SEUS RESPONSABLES</b><br>
+    <b>ELS INDICADORS QUE APAREIXEN NO ESTAN VALIDATS PELS SEUS RESPONSABLES</b><br>
     - S'està treballant en la sincronització completa amb fundanet i icranet (lbosch+rdiaz)<br>
     - S'estan implementant indicadors "memòria anual" (lbosch+sdrammeh)
   </div>
@@ -551,7 +551,7 @@
   <!--taules dev "Conf_Taula"-->
   <details v-if="debug && tot_carregat">
     <summary large bold>
-      [dev] Taules per calcular indicadors ({{Object.keys(taules).length}})
+      [dev] Taules desenvolupament ({{Object.keys(taules).length}})
     </summary>
 
     <!--itera taules-->
@@ -6024,6 +6024,7 @@
           PR.prettyPrint();
 
           //aplica llibreria datatables
+          return //TODO la llibreria genera errors, mirar què passa
           let table=new DataTable('#taula_detalls',{
             //options
             paging:false,
