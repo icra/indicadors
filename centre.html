@@ -6008,6 +6008,8 @@
 
       //veure detalls indicador
       click_detalls_indicador(indi,year){
+        this.tancar_detalls();
+
         indi.marcat=1;
         this.detalls_indicador.indicador=indi;
         this.detalls_indicador.year=year;
