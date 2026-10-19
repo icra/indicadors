@@ -1692,6 +1692,63 @@
       };
     },
 
+    euros_pressupost_executat(year,indicador){
+      let projectes = app.taules.projectes.taula.filter(row=>{
+        return(
+          new Date(row["Fecha Comienzo"]).getFullYear()<=year&&
+          new Date(row["Fecha Fin Real"]).getFullYear()>=year
+        );
+      });
+
+      //ajunta amb taula "projectes_imports" per veure els budgets
+      let joined=[];
+      projectes.forEach(pro=>{
+        let codi = pro["Código Identificativo"];
+
+        let pro_import = busca_projecte(codi,app.taules.projectes_imports.taula,"Código Identificativo");
+        if(!pro_import) return;
+
+        //comprova budget
+        let pressupost = parseFloat(pro_import["Importe Base"]);
+
+        //guarda resultat
+        let new_row={
+          codi,
+          projecte:pro,
+          pressupost,
+        };
+        joined.push(new_row);
+      });
+
+      let llista = joined; //array
+      let Meuros = llista.map(obj=>obj.pressupost).suma()/1e6; //number
+
+      if(indicador){
+        indicador.years[year].valor  = Meuros; //number
+        indicador.years[year].llista = llista.map(row=>{
+          let new_row={
+            pressupost: row.pressupost,
+          };
+          app.taules.projectes.columnes_actives.forEach(key=>{
+            new_row[key] = row.projecte[key];
+          });
+          return new_row;
+        });
+      }
+
+      //recopila taules i columnes utilitzades
+      taules_i_columnes_usades.euros_pressupost_executat={
+        "projectes":[
+          "Código Identificativo",
+        ],
+        "projectes_imports":[
+          "Importe Base",
+        ],
+      };
+
+      return Meuros;
+    },
+
     projectes_horizon(year, indicador){
       //projectes europeus coordinats
       let projectes = app.taules.projectes.taula.filter(pro=>{
