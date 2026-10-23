@@ -1,4 +1,3 @@
-
 root@undarius$ cd /home/json_fundanet; ls -lh
 -rw-rw-r-- 1 json_fundanet json_fundanet 102K Oct 13 07:41 comandes_pendents.json
 -rw-rw-r-- 1 json_fundanet json_fundanet  32M Oct 13 07:41 linies_propostes_compra.json
