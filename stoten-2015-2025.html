@@ -4,38 +4,46 @@
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.2.0/dist/chart.umd.min.js"></script>
   <style>
+    dt{
+      font-weight:bold;
+    }
+    dd{
+      margin-bottom:1em;
+    }
     [center]{
       text-align:center;
     }
-    dt{
-      font-weight:bold;
+    [number]{
+      text-align:right;
+      font-family:monospace;
     }
   </style>
 </head><body>
 <h1>STOTEN (2015-2025): 62715 publications analyzed</h1>
+<h4>Data Retrieved from OpenAlex</h4>
 
 <div id=app>
   <div
     style="
       display:grid;
-      grid-template-columns:1fr 5fr;
+      grid-template-columns:2fr 6fr;
     "
   >
     <div>
       <p>
         <b>Legend</b>
         <dl>
-          <dt>n<sub>ES</sub></dt>
+          <dt>n_ES</dt>
           <dd>
-            Publications from Spain
+            Publications with first author or institution from Spain
           </dd>
-          <dt>n<sub>US</sub></dt>
+          <dt>n_US</dt>
           <dd>
-            Publications from United States
+            Publications with first author or institution from United States
           </dd>
           <dt>n</dt>
           <dd>
-            Publications with nonblank first author or institution country
+            Publications with nonblank country of first author or institution
           </dd>
           <dt>N</dt>
           <dd>
@@ -53,13 +61,13 @@
         </tr>
         <tr v-for="year in Object.keys(works)">
           <td center>{{year}}</td>
-          <td v-for="key in Object.keys(works[year])">
+          <td v-for="key in Object.keys(works[year])" number>
             {{works[year][key]}}
           </td>
         </tr>
         <tr>
           <th>2015-2025</th>
-          <th v-for="key in Object.keys(works[2015])">
+          <th v-for="key in Object.keys(works[2015])" number>
             {{
               Object.values(works).map(v=>v[key]).reduce((p,c)=>p+c,0)
             }}
@@ -68,7 +76,7 @@
       </table>
     </div>
 
-    <div style="height:700px">
+    <div style="max-height:600px">
       <canvas id=grafic>grafic aqui</canvas>
     </div>
   </div>
