@@ -1,0 +1,221 @@
+<!doctype html><html><head>
+  <meta charset=utf8>
+  <title>stoten 2015-2025</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.2.0/dist/chart.umd.min.js"></script>
+  <style>
+    [center]{
+      text-align:center;
+    }
+    dt{
+      font-weight:bold;
+    }
+  </style>
+</head><body>
+<h1>STOTEN (2015-2025): 62715 publications analyzed</h1>
+
+<div id=app>
+  <div
+    style="
+      display:grid;
+      grid-template-columns:1fr 5fr;
+    "
+  >
+    <div>
+      <p>
+        <b>Legend</b>
+        <dl>
+          <dt>n<sub>ES</sub></dt>
+          <dd>
+            Publications from Spain
+          </dd>
+          <dt>n<sub>US</sub></dt>
+          <dd>
+            Publications from United States
+          </dd>
+          <dt>n</dt>
+          <dd>
+            Publications with nonblank first author or institution country
+          </dd>
+          <dt>N</dt>
+          <dd>
+            Total publications
+          </dd>
+        </dl>
+      </p>
+
+      <table border=1>
+        <tr>
+          <th>year</th>
+          <th v-for="key in Object.keys(works[2015])">
+            {{key}}
+          </th>
+        </tr>
+        <tr v-for="year in Object.keys(works)">
+          <td center>{{year}}</td>
+          <td v-for="key in Object.keys(works[year])">
+            {{works[year][key]}}
+          </td>
+        </tr>
+        <tr>
+          <th>2015-2025</th>
+          <th v-for="key in Object.keys(works[2015])">
+            {{
+              Object.values(works).map(v=>v[key]).reduce((p,c)=>p+c,0)
+            }}
+          </th>
+        </tr>
+      </table>
+    </div>
+
+    <div style="height:700px">
+      <canvas id=grafic>grafic aqui</canvas>
+    </div>
+  </div>
+</div>
+
+<script>
+  //dades representades
+  let works={
+    "2015": {
+      "n_ES": 193,
+      "n_US": 209,
+      "n": 1687,
+      "N": 1748
+    },
+    "2016": {
+      "n_ES": 226,
+      "n_US": 368,
+      "n": 2687,
+      "N": 2838
+    },
+    "2017": {
+      "n_ES": 344,
+      "n_US": 361,
+      "n": 3462,
+      "N": 3627
+    },
+    "2018": {
+      "n_ES": 351,
+      "n_US": 529,
+      "n": 5047,
+      "N": 5190
+    },
+    "2019": {
+      "n_ES": 354,
+      "n_US": 538,
+      "n": 5911,
+      "N": 6044
+    },
+    "2020": {
+      "n_ES": 409,
+      "n_US": 643,
+      "n": 7493,
+      "N": 7767
+    },
+    "2021": {
+      "n_ES": 378,
+      "n_US": 590,
+      "n": 7642,
+      "N": 7827
+    },
+    "2022": {
+      "n_ES": 341,
+      "n_US": 521,
+      "n": 7891,
+      "N": 8041
+    },
+    "2023": {
+      "n_ES": 347,
+      "n_US": 529,
+      "n": 8131,
+      "N": 8202
+    },
+    "2024": {
+      "n_ES": 321,
+      "n_US": 554,
+      "n": 8391,
+      "N": 8460
+    },
+    "2025": {
+      "n_ES": 140,
+      "n_US": 386,
+      "n": 2925,
+      "N": 2971
+    }
+  };
+
+  let app=Vue.createApp({
+    data(){return{
+      works,
+    }},
+
+    methods:{
+    },
+
+    computed:{
+    },
+
+    mounted(){
+      Vue.nextTick(function(){
+        dibuixa();
+      });
+    },
+  }).mount("#app");
+
+  let chart_object = null;
+  function dibuixa(){
+    Chart.defaults.animation=false;
+    if(chart_object) chart_object.destroy();
+    let el = document.getElementById("grafic");
+
+    let datasets=[];
+    Object.keys(works[2015]).forEach(key=>{
+      let dataset = {
+        type:'bar',
+        label:key,
+        data:Object.values(works).map(d=>d[key]),
+        borderWidth:1,
+      };
+      datasets.push(dataset);
+    });
+
+    chart_object = new Chart(el,{
+      type:'bar',
+      data:{
+        labels:Object.keys(works),
+        datasets,
+      },
+      options:{
+        scales:{
+          y:{
+            beginAtZero:true,
+            title:{
+              display:true,
+              text:"number of publications",
+            },
+          },
+          x:{
+            title:{
+              display:true,
+              text:"year",
+            },
+          },
+        },
+        plugins:{
+          title:{
+            display:false,
+            text:"h1",
+            font:{
+              size:20,
+            },
+          },
+          legend:{
+            display:true,
+            position:"top",
+          },
+        },
+      },
+    });
+  }
+</script>
