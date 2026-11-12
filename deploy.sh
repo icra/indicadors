@@ -12,5 +12,4 @@ git push
 # -r  actua recursivament
 rsync -hPvr \
   --exclude ".git" \
-  --exclude "querys-openalex-guardades/" \
   . root@icra.loading.net:/var/www/vhosts/icradev.cat/indicadors.icradev.cat
