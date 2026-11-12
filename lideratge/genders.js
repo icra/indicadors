@@ -193,6 +193,7 @@ let genders={
   "enrico":"male",
   "enrique":"male",
   "eric":"male",
+  "èric":"male",
   "erik":"male",
   "erika":"female",
   "ernesto":"male",
