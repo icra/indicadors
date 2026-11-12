@@ -87,7 +87,7 @@
 
 <h1>ICRA publicacions (segons OpenAlex)</h1>
 <h2>Càlcul automàtic lideratge &amp; gènere &amp; percentil</h2>
-<h3>Resultats 2021-2025 (nota: es podrà consultar qualsevol any quan la web estigui acabada)</h3><hr>
+<h3>Resultats 2021-2026 (nota: es podrà consultar qualsevol any quan la web estigui acabada)</h3><hr>
 
 <div id=app>
   Link web OpenAlex:
@@ -387,7 +387,7 @@
   //api calls sense filtrar per nom institució
   async function query_oa_api(year_inici, year_final){
     year_inici = year_inici || 2021;
-    year_final = year_final || 2025;
+    year_final = year_final || 2026;
 
     let codi_icra  = "I2799562678"; //institution code
     let api_key    = "tGXbKHpYBXs5jv8YOFteH5";
@@ -421,14 +421,17 @@
   //genera arxiu per disminuir crides a openalex
   //wrapper (api call + descarregar arxiu)
   async function fes_query_i_guarda_json(){
+    let yi = 2021;
+    let yf = 2026;
+
     //part FilePicker a la mateixa funcio onclick per evitar security_error
     const handle = await window.showSaveFilePicker({
-      suggestedName: "query-works-2021-2025.json"
+      suggestedName:`query-works-${yi}-${yf}.json`
     });
     let writable = await handle.createWritable();
 
     //query i generacio blob
-    let array_works = await query_oa_api(2021,2025);
+    let array_works = await query_oa_api(yi,yf);
     let str         = JSON.stringify(array_works);
     let blob        = new Blob([str],{type:"application/json"});
 
@@ -452,7 +455,7 @@
       real_people, //from genders.js
 
       year_inici:2021,
-      year_final:2025,
+      year_final:2026,
       codi_icra:                   "I2799562678", //codi openAlex institution ICRA
       id_icra:"https://openalex.org/I2799562678", //id   openAlex institution ICRA
       works:null,
@@ -774,7 +777,8 @@
     },
     mounted(){
       //carrega presaved results
-      fetch("query-works-2021-2025.json")
+      let url="query-works-2021-2026.json";
+      fetch(url)
       .then(r=>r.json())
       .then(arr=>{
         arr = arr.filter(work=>{
@@ -797,7 +801,7 @@
           return bb<aa?1:-1;
         });
         this.works=arr;
-        console.log("[ok] query-works-2021-2025.json");
+        console.log(`[ok] ${url}`);
       });
     },
   }).mount("#app");
