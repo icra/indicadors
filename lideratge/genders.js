@@ -670,20 +670,32 @@ let genders={
 
 //llista manual noms mal classificats
 let real_people={
-  "E. García-Gómez":"female", //elisa
-  "J.M. Castaño-Ortiz":"male", //jose maría
-  "Marcè, Rafael":"male", //rafael
-  "Mercado-BettÃ­n, Daniel":"male", //daniel
-  "Pueyo-Ros Josep":"male", //josep
-  "S. Zahedi":"female", //soraya
-  "M. Isabel Cadena-Aizaga":"female",
-  "Llorente-Moragrega, Oliu":"male",
-  "Estrada, Laia":"female",
-  "Comalada, Francesc":"male",
   "Acuña, Vicenç":"male",
-  "Lide Jaurrieta":"female",
+  "Alonso, Lucas Leonel":"male",//lucas
+  "Castaño-Trias, Marc":"male",
+  "Castellar da Cunha, Joana América":"female",
+  "Comalada, Francesc":"male",
+  "D. Barceló":"male",//damià
+  "D. Primo-Catalunya":"male",//David
+  "E. García-Gómez":"female", //elisa
+  "Estrada, Laia":"female",
   "Garcia, Xavier":"male",
   "Itzel Alcaraz Bernades":"female",
-  "Castellar da Cunha, Joana América":"female",
+  "J Pueyo-Ros":"male",
+  "J.L. Balcazar":"male",//jose luis
+  "J.M. Castaño-Ortiz":"male", //jose maría
+  "L. Corominas":"male",//lluis
+  "LL Corominas":"male",//lluis
+  "Lide Jaurrieta":"female",
+  "Ll. Corominas":"male",//lluis
+  "Llorente-Moragrega, Oliu":"male",
+  "M. Isabel Cadena-Aizaga":"female",
+  "M.I. Peña-Castro":"female",//milagros irene
+  "Marcè, Rafael":"male", //rafael
+  "Mendoza, Esther":"female",//esther
+  "Mercado-BettÃ­n, Daniel":"male", //daniel
+  "Pueyo-Ros Josep":"male", //josep
   "R. Gil-Solsona":"male",//ruben
+  "Riva, Massimiliano":"male",//max
+  "S. Zahedi":"female", //soraya
 };
