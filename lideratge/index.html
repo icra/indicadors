@@ -87,7 +87,7 @@
 
 <h1>ICRA publicacions (segons OpenAlex)</h1>
 <h2>Càlcul automàtic lideratge &amp; gènere &amp; percentil</h2>
-<h3>Resultats 2021-2026 (nota: es podrà consultar qualsevol any quan la web estigui acabada)</h3><hr>
+<h3>Resultats 2021-2026 (important: consulta feta el dia 12-11-2026)</h3><hr>
 
 <div id=app>
   Link web OpenAlex:
@@ -183,17 +183,25 @@
 
       <table border=1 style="margin-top:5px">
         <tr>
-          <td>
+          <td colspan=4>
             Filtrar per ranking revista
             <span v-if="modul_scimago">
               (scimago rankings: {{Object.keys(modul_scimago.scimagojr).join(", ")}})
             </span>
           </td>
         </tr>
-        <tr><td>&emsp;<label><input type=checkbox v-model="filtrar_per_Q1"> Q1 (percentil&lt;25%)</label></td></tr>
-        <tr><td>&emsp;<label><input type=checkbox v-model="filtrar_per_D1"> D1 (percentil&lt;10%)</label></td></tr>
         <tr>
-          <td>
+          <td>&emsp;<label><input type=checkbox v-model="filtrar_per_Q1"> Q1 (percentil&lt;25%)</label></td>
+          <td>      <label><input type=checkbox v-model="filtrar_per_Q2"> Q2</label></td>
+          <td>      <label><input type=checkbox v-model="filtrar_per_Q3"> Q3</label></td>
+          <td>      <label><input type=checkbox v-model="filtrar_per_Q4"> Q4</label></td>
+        </tr>
+
+        <tr>
+          <td colspan=4>&emsp;<label><input type=checkbox v-model="filtrar_per_D1"> D1 (percentil&lt;10%)</label></td>
+        </tr>
+        <tr>
+          <td colspan=4>
             <label>
               <input type=checkbox v-model="filtrar_per_FWCI">
               Filtrar per FWCI &ge;
@@ -517,6 +525,10 @@
 
       //filtrar per Q1, D1 i FWCI
       filtrar_per_Q1:false,      //bool
+      filtrar_per_Q2:false,      //bool
+      filtrar_per_Q3:false,      //bool
+      filtrar_per_Q4:false,      //bool
+
       filtrar_per_D1:false,      //bool
       filtrar_per_FWCI:false,    //bool
       filtrar_per_FWCI_valor:10, //number
@@ -704,16 +716,34 @@
         }
 
         //filtra per Q1 i/o D1 (últim perquè és el més car computacionalment)
-        if(this.filtrar_per_Q1 || this.filtrar_per_D1){
+        if(
+          this.filtrar_per_Q1||
+          this.filtrar_per_Q2||
+          this.filtrar_per_Q3||
+          this.filtrar_per_Q4||
+          this.filtrar_per_D1
+        ){
+
           //valor desitjat a filtrar
-          let percentil = this.filtrar_per_D1 ? 10 : 25;
+          let percentils=[];
+
+          if(this.filtrar_per_D1) percentils.push([0 ,10 ]);
+          if(this.filtrar_per_Q1) percentils.push([0 ,25 ]);
+          if(this.filtrar_per_Q2) percentils.push([25,50 ]);
+          if(this.filtrar_per_Q3) percentils.push([50,75 ]);
+          if(this.filtrar_per_Q4) percentils.push([75,100]);
+
           works = works.filter(w=>{
             let sjr = this.busca_ranking_journal(w);
             if(!sjr)            return false;
             if(!sjr.percentils) return false;
 
-            //aplica check percentil
-            return Object.values(sjr.percentils).some(per=>per.percentil<=percentil);
+            let p = Math.min( ...Object.values(sjr.percentils).map(per=>per.percentil) );
+
+            return percentils.some(rang=>{
+              return rang[0] < p&&p <= rang[1];
+            });
+
           });
         }
 
