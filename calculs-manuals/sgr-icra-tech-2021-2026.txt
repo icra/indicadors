@@ -1,0 +1,202 @@
+Query:
+(
+  ORCID(0000000334190511) OR
+  ORCID(0000000171141730) OR
+  ORCID(0000000343562110) OR
+  ORCID(0000000250502389) OR
+  ORCID(0000000256920282) OR
+  ORCID(0000000333177710) OR
+  ORCID(0000000264686203)
+) AND (
+  PUBYEAR IS 2021 OR
+  PUBYEAR IS 2022 OR
+  PUBYEAR IS 2023 OR
+  PUBYEAR IS 2024 OR
+  PUBYEAR IS 2025 OR
+  PUBYEAR IS 2026
+)
+
+Resum:
+174 total published items:
+  - Articles           129
+  - Book_Chapters      18
+  - Reviews            17
+  - Conference Papers  4
+  - Erratums           3
+  - Editorials         2
+  - Data Papers        1
+
+Resultats:
+nº	cited	subtype	         date         author, publication title
+1	  2	    Book Chapter     [2021-01-01] Cruz S.G. Methanotrophic bacterial biorefineries: Resource recovery and GHG mitigation through the production of bacterial biopolymers
+2	  3	    Book Chapter     [2021-01-01] Farré M.J. Disinfection byproducts in potable reuse
+3	  21	  Article          [2021-01-01] Benito Mundet H. Multidimensional research on university engagement using a mixed method approach
+4	  63	  Review           [2021-01-01] Bertagna Silva D. State-of-the-art and current challenges for TiO2/UV-LED photocatalytic degradation of emerging organic micropollutants
+5	  6	    Book Chapter     [2021-01-01] Castaño-Trias M. Fate and Removal of Pharmaceuticals in CAS for Water and Sewage Sludge Reuse
+6	  0	    Book Chapter     [2021-01-01] Mendoza E. LIVING WALLS: VERTECO®: A VERTICAL ECOSYSTEM FOR WASTEWATER TREATMENT
+7	  177	  Article          [2021-01-01] Botturi A. Combined sewer overflows: A critical review on best practice and innovative solutions to mitigate impacts on environment and human health
+8	  58	  Article          [2021-01-15] Jaén-Gil A. Combining biological processes with UV/H2O2 for metoprolol and metoprolol acid removal in hospital wastewater
+9	  6	    Article          [2021-02-01] Gionchetta G. Side effects of free nitrous acid on the sewer resistome and mobilome
+10	14	  Article          [2021-04-01] Ribalta M. Sediment level prediction of a combined sewer system using spatial features
+11	13	  Article          [2021-04-05] Corominas L. Can source control of pharmaceuticals decrease the investment needs in urban wastewater infrastructure?
+12	26	  Article          [2021-04-05] Sanchís J. Fate of N-nitrosodimethylamine and its precursors during a wastewater reuse trial in the Llobregat River (Spain)
+13	22	  Article          [2021-05-01] García-Pacheco R. Novel housing designs for nanofiltration and ultrafiltration gravity-driven recycled membrane-based systems
+14	3	    Article          [2021-05-01] Aryal R. Role of environmental variables in the transport of microbes in stormwater
+15	75	  Article          [2021-05-01] Escolà Casas M. Showcasing the potential of wastewater-based epidemiology to track pharmaceuticals consumption in cities: Comparison against prescription data collected at fine spatial resolution
+16	94	  Article          [2021-05-10] Forés E. Evaluation of two rapid ultrafiltration-based methods for SARS-CoV-2 concentration from wastewater
+17	299	  Review           [2021-05-14] Guerrero-Cruz S. Methanotrophs: Discoveries, Environmental Relevance, and a Perspective on Current and Future Applications
+18	25	  Review           [2021-06-01] Mannina G. Integrated membrane bioreactors modelling: A review on new comprehensive modelling framework
+19	41	  Article          [2021-06-15] Mir-Tutusaus J.A. Prospects on coupling UV/H2O2 with activated sludge or a fungal treatment for the removal of pharmaceutically active compounds in real hospital wastewater
+20	63	  Article          [2021-07-01] Abily M. Climate change impact on EU rivers' dilution capacity and ecological status
+21	35	  Article          [2021-07-15] Palatsi J. Enhancement of biological nutrient removal process with advanced process control tools in full-scale wastewater treatment plant
+22	214	  Article          [2021-07-20] Castellar J.A.C. Nature-based solutions in the urban context: terminology, classification and scoring for urban challenges and ecosystem services
+23	78	  Article          [2021-08-05] Norra G.F. Removal of persistent organic contaminants from wastewater using a hybrid electrochemical-granular activated carbon (GAC) system
+24	7	    Article          [2021-09-01] Juan-García P. A framework for model-based assessment of resilience in water resource recovery facilities against power outage
+25	24	  Article          [2021-09-01] Bertagna Silva D. Impact of UV-LED photoreactor design on the degradation of contaminants of emerging concern
+26	18	  Review           [2021-09-01] Mino E. Tools for edible cities: A review of tools for planning and assessing edible nature-based solutions
+27	36	  Article          [2021-09-01] Langergraber G. Towards a cross-sectoral view of nature-based solutions for enabling circular cities
+28	29	  Article          [2021-09-15] Estelrich M. Feasibility of vertical ecosystem for sustainable water treatment and reuse in touristic resorts
+29	22	  Article          [2021-09-15] Zahedi S. Enhancing biogas production from the anaerobic treatment of municipal wastewater by forward osmosis pretreatment
+30	72	  Article          [2021-09-15] Baptista-Pires L. Graphene-based sponges for electrochemical degradation of persistent organic contaminants
+31	78	  Article          [2021-09-15] Prosenc F. Microalgae-based removal of contaminants of emerging concern: Mechanisms in Chlorella vulgaris and mixed algal-bacterial cultures
+32	61	  Article          [2021-09-15] Rusiñol M. Monitoring waves of the COVID-19 pandemic: Inferences from WWTPs of different sizes
+33	39	  Article          [2021-10-01] Zahedi S. Assessing the occurrence of pharmaceuticals and antibiotic resistance genes during the anaerobic treatment of slaughterhouse wastewater at different temperatures
+34	84	  Article          [2021-11-01] Kumar A. Cold atmospheric plasma technology for removal of organic micropollutants from wastewater—a review
+35	20	  Article          [2021-11-05] Sergienko N. Manganese oxide coated TiO2 nanotube-based electrode for efficient and selective electrocatalytic sulfide oxidation to colloidal sulfur
+36	35	  Article          [2021-12-01] Calle E. Optimal selection of monitoring sites in cities for SARS-CoV-2 surveillance in sewage networks
+37	87	  Article          [2021-12-01] Oral H.V. Management of urban waters with nature-based solutions in circular cities—exemplified through seven urban circularity challenges
+38	22	  Article          [2021-12-15] Galizia A. Advanced control system for reverse osmosis optimization in water reuse systems
+39	4	    Book Chapter     [2022-01-01] Abily M. Assessment of Spanish Rivers Current and Future Ecological Status Using Urban Wastewater Dilution Factor
+40	0	    Book Chapter     [2022-01-01] Byrne D.M. Environmental assessment of urban water systems: LCA case studies
+41	12	  Article          [2022-01-01] Silva D.B. Performance of TiO2 /UV-LED-Based Processes for Degradation of Pharmaceuticals: Effect of Matrix Composition and Process Variables
+42	0	    Book Chapter     [2022-02-15] Pikaar I. Resource recovery from drinking water production facilities: What and how much is there?
+43	22	  Article          [2022-02-15] Kumar A. Direct and Indirect Treatment of Organic Dye (Acid Blue 25) Solutions by Using Cold Atmospheric Plasma Jet
+44	13	  Article          [2022-03-01] Mendoza E. Exploring the limitations of forward osmosis for direct hydroponic fertigation: Impact of ion transfer and fertilizer composition on effective dilution
+45	56	  Article          [2022-03-01] Cibati A. Unravelling the performance of UV/H2O2 on the removal of pharmaceuticals in real industrial, hospital, grey and urban wastewaters
+46	83	  Article          [2022-03-15] Castellar J.A.C. Nature-based solutions coupled with advanced technologies: An opportunity for decentralized water reuse in cities
+47	7	    Book Chapter     [2022-04-15] Pijuan M. Full-scale source, mechanisms and factors affecting nitrous oxide emissions
+48	0	    Book Chapter     [2022-04-15] Vasilaki V. Full-scale emission results (Ninf2/infO and CHinf4/inf)
+49	2	    Book Chapter     [2022-04-15] Gutierrez O. Mechanisms, source, and factors that affect methane emissions
+50	9	    Book Chapter     [2022-04-15] Parravicini V. Full-scale quantification of Ninf2/infO and CHinf4/inf emissions from urban water systems
+51	2	    Book Chapter     [2022-04-15] Sharma K. Modelling of methane production and emissions
+52	3	    Book Chapter     [2022-04-15] Flores-Alsina X. Benchmarking strategies to control GHG production and emissions
+53	25	  Article          [2022-04-20] Zahedi S. Anaerobic treatment of swine manure under mesophilic and thermophilic temperatures: Fate of veterinary drugs and resistance genes
+54	28	  Article          [2022-05-01] Solís B. Systematic calibration of N2O emissions from a full-scale WWTP including a tracer test and a global sensitivity approach
+55	24	  Article          [2022-05-20] Zahedi S. Occurrence of veterinary drugs and resistance genes during anaerobic digestion of poultry and cattle manures
+56	74	  Article          [2022-06-30] Ferrari F. Ammonia recovery from anaerobic digester centrate using onsite pilot scale bipolar membrane electrodialysis coupled to membrane stripping
+57	7	    Article          [2022-07-01] Gionchetta G. Impact of nitrate addition on the resistome and mobilome from a full-scale sewer
+58	79	  Article          [2022-09-01] Mutzner L. A decade of monitoring micropollutants in urban wet-weather flows: What did we learn?
+59	17	  Article          [2022-11-01] García-Pacheco R. Landfill Leachate Treatment by Using Second-Hand Reverse Osmosis Membranes: Long-Term Case Study in a Full-Scale Operating Facility
+60	21	  Article          [2022-11-01] Senta I. Applicability of an on-line solid-phase extraction liquid chromatography – tandem mass spectrometry for the wastewater-based assessment of human exposure to chemicals from personal care and household products
+61	5	    Article          [2022-11-25] Solís B. Exploring GHG emissions in the mainstream SCEPPHAR configuration during wastewater resource recovery
+62	8	    Article          [2022-12-01] Kovoor George N. A novel approach to interpret quasi-collimated beam results to support design and scale-up of vacuum UV based AOPs
+63	22	  Article          [2022-12-01] Guerrero-Latorre L. The Catalan Surveillance Network of SARS-CoV-2 in Sewage: design, implementation, and performance
+64	7	    Erratum          [2022-12-01] Dueholm M.K.D. Author Correction: MiDAS 4: A global catalogue of full-length 16S rRNA gene sequences and taxonomy for studies of bacterial communities in wastewater treatment plants (Nature Communications, (2022), 13, 1, (1908), 10.1038/s41467-022-29438-7)
+65	365	  Article          [2022-12-01] Dueholm M.K.D. MiDAS 4: A global catalogue of full-length 16S rRNA gene sequences and taxonomy for studies of bacterial communities in wastewater treatment plants
+66	3	    Erratum          [2022-12-20] Radjenovic J. Erratum: Facing the Challenge of Poly- and Perfluoroalkyl Substances in Water: Is Electrochemical Oxidation the Answer? (Environmental Science and Technology (2020) 54:23 (14815-14829) DOI: 10.1021/acs.est.0c06212)
+67	3	    Article          [2023-01-01] Pueyo-Ros J. ediblecity: an R package to model and estimate the benefits of urban agriculture
+68	20	  Article          [2023-01-01] Mendoza E. Water management practices in Euro-Mediterranean hotels and resorts
+69	6	    Article          [2023-01-01] Acuña V. Development of a decision-support system to select nature-based solutions for domestic wastewater treatment
+70	9	    Article          [2023-01-01] Turull M. Analytical upgrade of a methodology based on UHPLC-MS/MS for the analysis of endocrine disrupting compounds in greywater
+71	112	  Article          [2023-01-01] Santos L.H.M.L.M. Analysis of microplastics in the environment: Identification and quantification of trace levels of common types of plastic polymers using pyrolysis-GC/MS
+72	14	  Article          [2023-01-15] Gabrielli M. Modelling and prediction of the effect of operational parameters on the fate of contaminants of emerging concern in WWTPs
+73	9	    Article          [2023-02-01] Mendoza E. Second-Generation Magnesium Phosphates as Water Extractant Agents in Forward Osmosis and Subsequent Use in Hydroponics
+74	15	  Article          [2023-02-01] Velo-Gala I. Influence of water matrix components on the UV/chlorine process and its reactions mechanism
+75	4	    Article          [2023-03-01] Acuña V. Could we estimate industrial wastewater flows composition using the UN-ISIC classification system?
+76	19	  Article          [2023-03-01] Poch M. Increasing resilience through nudges in the urban water cycle: An integrative conceptual framework to support policy decision-making
+77	38	  Article          [2023-03-15] Kumar A. Degradation of diclofenac and 4-chlorobenzoic acid in aqueous solution by cold atmospheric plasma source
+78	37	  Article          [2023-04-01] Mejías-Molina C. Effectiveness of passive sampling for the detection and genetic characterization of human viruses in wastewater
+79	25	  Article          [2023-05-01] Casabella-Font O. Graphene oxide addition to anaerobic digestion of waste activated sludge: Impact on methane production and removal of emerging contaminants
+80	29	  Article          [2023-05-10] Pico-Tomàs A. Surveillance of SARS-CoV-2 in sewage from buildings housing residents with different vulnerability levels
+81	15	  Article          [2023-06-05] Farré M.J. N-Nitrosamines and their precursors in wastewater effluents from selected industries in Spain
+82	0	    Book Chapter     [2023-06-15] Mendoza E. Verteco®: Un ecosistema vertical para el tratamiento de agua
+83	81	  Review           [2023-08-15] Mannina G. Biological processes modelling for MBR systems: A review of the state-of-the-art focusing on SMP and EPS
+84	26	  Article          [2023-08-20] Morgan A. Strategic routes for wastewater treatment plant upgrades to reduce micropollutants in European surface water bodies
+85	18	  Article          [2023-09-01] Casabella-Font O. Impact of graphene oxide addition on pharmaceuticals removal in anaerobic membrane bioreactor
+86	8	    Article          [2023-09-01] Silva D.B. Transformation products of contaminants of emerging concern in water by UV-based processes
+87	16	  Article          [2023-09-15] Segues Codina A. Manganese oxide-functionalized graphene sponge electrodes for electrochemical chlorine-free disinfection of tap water
+88	1	    Book Chapter     [2023-09-15] Popartan L.A. 'I don't care about tomatoes': Building situated urban commons in girona
+89	11	  Article          [2023-10-01] Mendoza E. Rejection of organic micropollutants from greywater with forward osmosis: A matter of time
+90	19	  Article          [2023-10-05] Sergienko N. Electrocatalytic removal of persistent organic contaminants at molybdenum doped manganese oxide coated TiO2 nanotube-based anode
+91	19	  Article          [2023-10-15] Sergienko N. (Electro)catalytic oxidation of sulfide and recovery of elemental sulfur from sulfide-laden streams
+92	1	    Conference Paper [2023-10-19] Ribalta M. Explainable Machine Learning Models for Predicting COVID-19 Cases in Catalonia Based on Wastewater Monitoring Data
+93	7	    Article          [2023-11-15] Lumbaque E.C. Electro-oxidation of persistent organic contaminants at graphene sponge electrodes using intermittent current
+94	12	  Article          [2023-12-01] Calle E. Optimal design of water reuse networks in cities through decision support tool development and testing
+95	2	    Editorial        [2023-12-01] Boyer T.H. Why stories matter in water research: A case for narrative style paper writing
+96	16	  Article          [2023-12-01] Pueyo-Ros J. Design of a serious game for participatory planning of nature-based solutions: The experience of the Edible City Game
+97	19	  Article          [2023-12-01] Castaño-Trias M. A decade of water monitoring in a Mediterranean region: Pharmaceutical prioritisation for an upgraded analytical methodology
+98	3	    Article          [2024-01-01] Boada I. H2O-EduK, A Serious Game for Children to Educate on the Urban Water Cycle
+99	0	    Editorial        [2024-01-01] Boyer T.H. Research stories along the urban water cycle
+100	29	  Article          [2024-01-01] Pueyo-Ros J. Beyond food: A stochastic model to estimate the contributions of urban agriculture to sustainability
+101	0	    Conference Paper [2024-01-01] Kim M. In-Sewer Treatment Strategies to Control H2S Emissions from Sewers Using a Physical Twin
+102	1	    Conference Paper [2024-01-01] Mannina G. Optimization of MBRs Through Integrated Modelling
+103	0	    Conference Paper [2024-01-01] Sandoval-García V. Classifying Membrane Fouling for Standardised Resistance-in-Series-Based Filtration Process Modelling in MBR Technology
+104	8	    Article          [2024-01-10] Zammit I. Zooming in to the neighborhood level: A year-long wastewater-based epidemiology monitoring campaign for COVID-19 in small intraurban catchments
+105	0	    Article          [2024-01-15] Martínez D. Seamless integration of sewer system topology and tree location data: An algorithm to diagnose the potential impact of tree roots on pipes and propose rearrangement solutions
+106	31	  Article          [2024-03-01] Castellar J.A.C. What does it take to renature cities? An expert-based analysis of barriers and strategies for the implementation of nature-based solutions
+107	7	    Article          [2024-03-01] Casas P.F.I. Applying a Digital Twin and wastewater analysis for robust validation of COVID-19 pandemic forecasts: insights from Catalonia
+108	5	    Article          [2024-03-15] Corominas L. Profiling wastewater characteristics in intra-urban catchments using online monitoring stations
+109	26	  Article          [2024-03-15] Castaño-Trias M. Selection of pharmaceuticals of concern in reclaimed water for crop irrigation in the Mediterranean area
+110	7	    Article          [2024-04-01] Gené M.R. Sewer sediment deposition prediction using a two-stage machine learning solution
+111	7	    Article          [2024-04-01] Kim M. Experimental investigation on hydrogen sulfide production, wastewater characteristics and microbial ecology profiles in anaerobic sewer lines using a sewer physical twin
+112	443	  Review           [2024-05-15] Hübner U. Advanced oxidation processes for water and wastewater treatment – Guidance for systematic future research
+113	8	    Article          [2024-06-01] Mendoza E. From shower to table: fate of organic micropollutants in hydroponic systems for greywater treatment and lettuce cultivation
+114	13	  Review           [2024-06-01] Arnaud N. How Scale Influences the Resilience of Urban Water Systems: A Literature Review of Trade-Offs and Recommendations
+115	0	    Book Chapter     [2024-06-15] Aguado D. Analytical methods for online data quality assessment
+116	4	    Article          [2024-07-01] Klink J. Coupling hydrological and sanitation datasets to simulate wastewater-derived contamination in European rivers: Model development and calibration
+117	16	  Article          [2024-07-01] Casabella-Font O. Distinctive effects of graphene oxide and reduced graphene oxide on methane production kinetics and pharmaceuticals removal in anaerobic reactors
+118	7	    Article          [2024-07-01] Tsiarta N. Catalytic Ozonation of Pharmaceuticals Using CeO2-CeTiOx-Doped Crossflow Ultrafiltration Ceramic Membranes
+119	0	    Article          [2024-07-01] Bosch L.M. Watching the guards: A data-driven method to trigger warnings in national wastewater surveillance networks
+120	3	    Article          [2024-07-15] Guillaume-Ruty S.H.Y. A validation workflow for treatment wetland performance data
+121	2	    Article          [2024-08-15] Martínez D. Enhancing reclaimed water distribution network resilience with cost-effective meshing
+122	4	    Article          [2024-09-01] Galizia A. Optimizing full-scale MBR performance: A dual-phase approach for real-time air-scouring and permeate flow modifications
+123	15	  Article          [2024-09-10] Ormeño-Cano N. Electrochemical removal of antibiotics and multi-drug resistant bacteria using S-functionalized graphene sponge electrodes
+124	6	    Article          [2024-11-01] Kovoor George N. Development and validation of a simplified kinetic model for predicting organic micropollutant degradation in vacuum ultraviolet water treatment
+125	5	    Article          [2024-11-01] Aranda A. Draft genome sequence of Methyloversatilis sp. strain NSM2, isolated from a wastewater treatment plant
+126	9	    Article          [2024-11-01] Tsiarta N. Heterogeneous Catalytic Ozonation of Pharmaceuticals: Optimization of the Process by Response Surface Methodology
+127	8	    Review           [2024-11-01] Mannina G. Optimization of MBRs through integrated modelling: A state of the art
+128	4	    Article          [2024-11-01] El Brahmi A. Are Membrane Bioreactors Really More Efficient in Removing Pharmaceutical Substances?—Variance Component Analysis Of Micropollutant Removal
+129	16	  Article          [2024-11-15] Jiang W. Inhibition of chlorinated byproducts formation by boron-doped rGO electrodes during electrooxidation of trace organic contaminants
+130	25	  Article          [2024-12-01] Malinauskaite J. Wastewater Reuse in the EU and Southern European Countries: Policies, Barriers and Good Practices
+131	20	  Article          [2024-12-01] Mejías-Molina C. Wastewater-based epidemiology applied at the building-level reveals distinct virome profiles based on the age of the contributing individuals
+132	48	  Article          [2024-12-01] Cojoc L. Pollutants in urban runoff: Scientific evidence on toxicity and impacts on freshwater ecosystems
+133	51	  Review           [2025-01-01] Sandoval-García V. Modeling MBR fouling: A critical review analysis towards establishing a framework for good modeling practices
+134	28	  Review           [2025-01-01] Carneiro R.B. A critical review of wastewater-based epidemiology as a tool to evaluate the unintentional human exposure to potentially harmful chemicals
+135	2	    Article          [2025-01-01] Amadó Codony A. Combined Analysis of Academic Climate and PBL: Influence on university engagement
+136	0	    Book Chapter     [2025-01-01] Aguado D. Dataanalytiska metoder för kvalitetsbedömning av givardata
+137	6	    Article          [2025-03-01] Pérez-López C. Changes in the rhizosphere metabolome profile of wastewater-irrigated lettuces (Lactuca sativa L.) highlighted using non-target HRMS and ROIMCR chemometrics method
+138	8	    Article          [2025-03-15] Codina A.S. Electrochemical removal of contaminants of emerging concern with manganese oxide-functionalized graphene sponge electrode
+139	2	    Article          [2025-04-01] Galizia A. Integration of Specific Aeration Demand (SAD) into Flux-Step Test for Submerged Membrane Bioreactor
+140	6	    Data Paper       [2025-06-01] Pueyo-Ros J. Knowledge base dataset on nature-based solutions for wastewater treatment and stormwater management
+141	1	    Article          [2025-07-24] Castaño-Trias M. Evaluation of pharmaceutical removal through a full-scale UASB-CW system in a water-scarce Mediterranean region
+142	3	    Article          [2025-08-15] Casabella-Font O. Anaerobic biotransformation of carbamazepine during graphene oxide biological reduction
+143	3	    Article          [2025-09-01] Saló-Grau J. Integrated modeling of the generation, attenuation, and transport of point-source pollutants at the watershed-scale using SWAT+
+144	4	    Article          [2025-09-05] Trueba-Santiso A. Ciprofloxacin biotransformation during anaerobic digestion: Major transformation products elucidation and environmental proteomics
+145	3	    Review           [2025-11-01] Tizchang A. Investigating the impact of surfactant-salt feed solution on PTFE membrane performance under varying feed and permeate temperatures in membrane distillation
+146	10	  Article          [2025-11-01] Garcia X. Evaluating the effectiveness of a serious game to educate children about the urban water cycle
+147	4	    Article          [2025-11-14] Zappulla-Sabio B. Membrane Recycling: Exploring Ozone as a Viable Alternative to Chlorine for Polymeric Membrane Transformation
+148	5	    Article          [2025-12-01] Caccavo V. Impact of irrigation with fipronil-contaminated waters on zucchini plants and their main insect pest, Aphis gossypii
+149	1	    Article          [2025-12-01] Cano N.O. Irreversible inactivation of multidrug-resistant Gram-positive bacteria using S-functionalized graphene sponge anode
+150	3	    Article          [2025-12-01] Samuelsson O. Mobility data for reduced uncertainties in model-based WWTP design
+151	4	    Article          [2025-12-01] Tsiarta N. Impact of ceramic membrane pore size and metal oxide modifications on pharmaceutical degradation in a Hybrid Ozonation–Membrane Filtration reactor
+152	5	    Article          [2025-12-01] Zhao H.N. A resource to empirically establish drug exposure records directly from untargeted metabolomics data
+153	2	    Article          [2025-12-12] Pico-Tomàs A. Tracking Age-Linked Antibiotic Resistance Patterns through Building-Level Wastewater Analysis
+154	26    Article          [2025-12-19] Baaloudj O. Biochar-based Downflow Fixed-Bed Adsorption Systems for Water Treatment: Process Optimization, Reusability, and Techno-Economic Evaluation
+155	0	    Book Chapter     [2026-01-01] Bellandi G. Sampling campaign design and emission factor calculation
+156	1	    Article          [2026-01-30] Pueyo-Ros J. Nat4Wat: a co-developed decision-support system for resilient urban water management with nature-based solutions
+157	3	    Article          [2026-02-01] Gusmaroli L. Occurrence of Organic Micropollutants in the Water Cycle of a Euro-Mediterranean Resort: A Case Study
+158	23	  Review           [2026-02-01] Santos L.H.M.L.M. Pharmaceutical contamination in edible plants grown on soils amended with wastewater, manure, and biosolids: a review
+159	2	    Article          [2026-02-01] Pueyo-Ros J. No one-size-fits-all. Multicriteria selection of nature-based wastewater treatment solutions across simulated scenarios
+160	8	    Review           [2026-03-01] Padhye L.P. The PFAS roadmap–Navigating a path together to improved management
+161	0	    Article          [2026-04-01] Primo-Catalunya D. Influence of pH and nitrogen source on metabolism and extracellular polymeric substance production in a mixed aerobic methanotrophic community
+162	2	    Article          [2026-04-01] Corominas L. Differences in drug use across three neighbourhoods with varying socioeconomic levels: A wastewater-based surveillance study
+163	2	    Article          [2026-05-01] Braga F.S. Strategic framework for sustainable centralisation of wastewater treatment plants: integrating economic and environmental analysis
+164	0	    Review           [2026-05-01] Sandoval-García V. New framework for standardized resistance-in-series-based membrane filtration modeling in wastewater treatment
+165	4	    Review           [2026-05-05] Liu F. Electrochemical Valorization of Organic Pollutants in Wastewater: Progress and Perspective
+166	0	    Article          [2026-06-01] Tizchang A. Spacer-filled membrane distillation coupled with pretreatment processes for steel tube manufacturing wastewater treatment: A case study
+167	1	    Review           [2026-07-01] Ali S. Decision support systems for urban water scarcity: Gaps, barriers and pathways to integrate nature-based solutions - A systematic review
+168	0	    Article          [2026-08-01] Mendoza E. Hybrid green wall - ozonation system for greywater and rainwater reclamation in a residential building: technical performance and social insights
+169	0	    Article          [2026-08-01] Wang Y. Direct photolysis at 184.9 nm: An underestimated pathway for organic micropollutant removal during VUV/UV treatment
+170	0	    Article          [2026-08-01] Aranda A. Exploring the capabilities of Methylotuvimicrobium alcaliphilum 20Z to produce exopolymeric substances from methane 171	0	Article [2026-08-14] Braga F.S. Capacity Analysis of Urban Water Systems under Centralization: A Case Study in Denmark
+172	0	    Erratum          [2026-08-15] Mendoza E. Corrigendum to “Hybrid green wall - ozonation system for greywater and rainwater reclamation in a residential building: technical performance and social insights” [J. Environ. Manag. 414 (2026) 130536] (Journal of Environmental Management (2026) 414, (S0301479726019961), (10.1016/j.jenvman.2026.130536)) 173	0	Article [2026-10-01] Galvis L.K.S. Discursive coalitions and environmental justice: Empty signifiers in green and blue infrastructure planning in Girona, Spain
+174	0	    Review           [2026-11-01] Baaloudj O. Sulfamethoxazole in the environment: Occurrence, fate, risks, and remediation strategies

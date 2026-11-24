@@ -1,0 +1,87 @@
+<!doctype html><html><head>
+  <meta charset=utf8>
+  <title>kahoot</title>
+  <style>
+    span[id]{
+      font-weight:bold;
+    }
+  </style>
+</head><body>
+
+<h1>Preguntes kahoot</h1>
+
+<div>
+  Quantes notícies hem publicat aquest any?
+  <span id=n_noticies>[consultant...]</span>
+  <script>
+    //1: quantes notícies hem publicat aquest any?
+    fetch("https://icra.cat/esdeveniments_api/noticies.php")
+      .then(r=>r.json())
+      .then(arr=>{
+        //filtra només articles en catala
+        arr = arr.filter(el=>el.lang=='ca');
+
+        //filtra
+        arr = arr.filter(el=>el.data.startsWith("2026"));
+        console.log({arr});
+
+        //escriu
+        document.querySelector("#n_noticies").innerText=arr.length;
+      });
+  </script>
+</div>
+
+<div>
+  Quants contractes han començat aquest any?
+  <span id>73</span>
+</div>
+
+<div>
+  Quantes estades de recerca hem tingut aquest 2026?
+  <span id>6</span>
+</div>
+
+<div>
+  Quina proporció de dones hi ha al centre?
+  <span id>2026: 57% (94/165)</span>
+</div>
+
+<div>
+  Quantes nacionalitats tenim actualment representades a l’ICRA?
+  <span id>24</span>
+</div>
+
+<div>
+  Quina proporció dels ingressos en projectes de recerca creieu que ve de projectes nacionals?
+  <span id>2025: 41%</span>
+</div>
+
+<div>
+  Quina creieu que ve de projectes de transferència de coneixement i tecnologies?
+  <span id>2025: 13%</span>
+</div>
+
+<div>
+  Quants MWh hem consumit aquest any?
+  <span id>(de gener a novembre 2026: 703 MWh)</span>
+</div>
+
+<div>
+  Quantes tesis s’han defensat aquest any?
+  <span id>2026: 3 (laia estrada, atefeh tizchang, anna segués)</span>
+</div>
+
+<div>
+  Quants projectes s’han concedit aquest any?
+  <span id>14</span>
+</div>
+
+<div>
+  Quants articles hem publicat aquest any?
+  <span id>90 (segons scopus)</span>
+</div>
+
+<div>
+  Quantes cites hem aconseguit aquest any?
+  <span id>14479: cites rebudes el 2026 a tots els articles icra (2007-2026)</span>
+</div>

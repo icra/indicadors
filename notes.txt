@@ -1,12 +1,11 @@
-=== COSES PENDENTS ===
+COSES PENDENTS
 
 === 2026-04-10 reunió elisabet ==========================
-  * [fet] afegir relació quartils (SJR) i lideratge + gènere
-  * [   ] implementar exportació taules a excel sense taules intermitges (scopus: taula articles i journals)
+  * [ ] implementar exportació taules a excel sense taules intermitges (scopus:
+        taula articles i journals)
 
 === 2026-10-09 reunió vicenç ============================
-  [fet] * projectes_KTT: afegir filtre situacion proyecto excloure denegats i en preparació
-  [fet] * adaptar taula stakeholders
+  tot fet
 
 === 2026-10-09 reunió elisabet ============================
   * calcular lideratge/gènere/Q1,D1,FWCI amb Scopus amb una web on s'hi carregui un excel
@@ -170,8 +169,22 @@ reunió sady, vicenç
         - centres de recerca: 10
         - nacionalitats: 10
 
-  - kahoot
-    - instalar classquiz al loading
+=== 2026-11-23 ==========================================
+* reunió vicenç
+  - introduir concepte "indicadors validats"
 
-  per calcular articles Q1:
-    - desmarcar de scopus.html: erratum, book chapter, conference paper
+  - indicador 2.7 (DTER) és el 
+    "8.2. Aportacions de projectes o contractes de KTT amb l'ACA, via contracte programa o licitació"
+    mirar si stakeholders inclou DTER (consultar jaume)
+
+  - mail a jaume (CC ruben i vicenç): de la taula "stakeholders", els que posa
+    "Generalitat de Catalunya" cal que es determini el departament concret
+    - arits:    departament de recerca
+    - sars:     departament de salut
+    - icralist: departament de recerca
+
+  - comentar ruben tipus d'esdeveniment "narrativa" a "historia" publicades a
+    la web de CERCA
+
+  - preguntar sady com va calcular aparicions a mitjans (61), a la meva web indicadors apareix 25
+    - tant nacionals com internacionals
